@@ -44,11 +44,14 @@ class FakeDocument:
         self.opened = []
         self.commits = 0
         self.aborts = 0
+        self.fail_commit = False
 
     def openTransaction(self, name):
         self.opened.append(name)
 
     def commitTransaction(self):
+        if self.fail_commit:
+            raise RuntimeError("commit failure")
         self.commits += 1
 
     def abortTransaction(self):
@@ -67,10 +70,15 @@ def load_controller():
     freecad.Gui = types.SimpleNamespace(Selection=selection)
     member = types.ModuleType(f"{package_name}.member")
     member.create_member = lambda **_kwargs: None
+    axis_source = types.ModuleType(f"{package_name}.member_axis_source")
+    axis_source.resolve_axis_source = lambda link: getattr(
+        link[0], "resolved_axis", None
+    ) if link else None
     injected = {
         package_name: package,
         interactive_name: interactive,
         f"{package_name}.member": member,
+        f"{package_name}.member_axis_source": axis_source,
         "FreeCAD": freecad,
     }
     previous = {name: sys.modules.get(name) for name in injected}
@@ -202,6 +210,88 @@ class MemberControllerTests(unittest.TestCase):
         self.assertEqual(call["rotation"], 15.0)
         self.assertEqual(call["color"], (0.7, 0.8, 0.9))
         self.assertEqual(call["display_name"], "Pilar principal")
+
+    def test_linked_creation_hides_source_only_after_factory_success(self):
+        source = types.SimpleNamespace(
+            ViewObject=types.SimpleNamespace(Visibility=True)
+        )
+        self.controller.start()
+        self.controller.create(self.options(axis_source=(source, ["Edge1"]), link_axis=True))
+        self.assertFalse(source.ViewObject.Visibility)
+        self.assertTrue(self.calls[0]["link_axis"])
+        self.assertIs(self.calls[0]["axis_source"][0], source)
+
+    def test_independent_creation_hides_source_after_success(self):
+        source = types.SimpleNamespace(
+            ViewObject=types.SimpleNamespace(Visibility=True)
+        )
+        self.controller.start()
+        self.controller.create(self.options(axis_source=(source, ["Edge1"]), link_axis=False))
+        self.assertFalse(source.ViewObject.Visibility)
+
+    def test_source_axis_overrides_both_interactive_points_even_when_independent(self):
+        source = types.SimpleNamespace(
+            ViewObject=types.SimpleNamespace(Visibility=True),
+            resolved_axis=types.SimpleNamespace(
+                start=Vector(11, 22, 33), end=Vector(4011, 5022, 6033)
+            ),
+        )
+        self.controller.start()
+        self.controller.create(self.options(
+            start=Vector(-1, -1, -1), end=Vector(1, 1, 1),
+            axis_source=(source, ["Edge1"]), link_axis=False,
+            geometry_mode=self.module.CreationGeometryMode.SOURCE_AXIS,
+        ))
+        call = self.calls[0]
+        self.assertEqual((call["start"].x, call["start"].y, call["start"].z),
+                         (11, 22, 33))
+        self.assertEqual((call["end"].x, call["end"].y, call["end"].z),
+                         (4011, 5022, 6033))
+        self.assertFalse(source.ViewObject.Visibility)
+
+    def test_initially_hidden_source_remains_hidden(self):
+        source = types.SimpleNamespace(
+            ViewObject=types.SimpleNamespace(Visibility=False)
+        )
+        self.controller.start()
+        self.controller.create(self.options(
+            axis_source=(source, ["Edge1"]), link_axis=False
+        ))
+        self.assertFalse(source.ViewObject.Visibility)
+
+    def test_failed_independent_commit_restores_source_visibility(self):
+        source = types.SimpleNamespace(
+            ViewObject=types.SimpleNamespace(Visibility=True)
+        )
+        self.document.fail_commit = True
+        self.controller.start()
+        with self.assertRaisesRegex(RuntimeError, "commit failure"):
+            self.controller.create(self.options(
+                axis_source=(source, ["Edge1"]), link_axis=False
+            ))
+        self.assertTrue(source.ViewObject.Visibility)
+
+    def test_source_axis_rejects_invalid_source_before_transaction(self):
+        source = types.SimpleNamespace(
+            ViewObject=types.SimpleNamespace(Visibility=True), resolved_axis=None
+        )
+        self.controller.start()
+        with self.assertRaisesRegex(ValueError, "linha de origem"):
+            self.controller.create(self.options(
+                axis_source=(source, ["Edge1"]),
+                geometry_mode=self.module.CreationGeometryMode.SOURCE_AXIS,
+            ))
+        self.assertEqual(self.document.opened, [])
+
+    def test_failed_linked_commit_restores_source_visibility(self):
+        source = types.SimpleNamespace(
+            ViewObject=types.SimpleNamespace(Visibility=True)
+        )
+        self.document.fail_commit = True
+        self.controller.start()
+        with self.assertRaisesRegex(RuntimeError, "commit failure"):
+            self.controller.create(self.options(axis_source=(source, ["Edge1"]), link_axis=True))
+        self.assertTrue(source.ViewObject.Visibility)
 
     def test_repeated_creation_advances_automatic_name(self):
         self.controller.start()

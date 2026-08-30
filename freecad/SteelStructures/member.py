@@ -21,6 +21,7 @@ from .member_adjustment_reference import (
     unpack_link_sub,
     would_create_adjustment_cycle,
 )
+from .member_axis_source import resolve_axis_source
 from .member_plane_cut import (
     PlaneCutSpec,
     build_plane_cuts,
@@ -163,6 +164,7 @@ class StructuralMemberProxy:
         self._updating = True
         self._syncing_length = False
         self._syncing_placement = False
+        self._syncing_axis_source = False
         self._placement_from_points_pending = True
         self._last_placement = None
         self._last_section_rotation = 0.0
@@ -237,6 +239,7 @@ class StructuralMemberProxy:
                 "normal": App.Vector(obj.FixedPlaneNormal),
             }
         group_geometry = "Geometria"
+        group_axis = "Eixo nominal"
         group_section = "Seção"
         group_identity = "Identificação"
         group_quantities = "Quantitativos"
@@ -244,6 +247,8 @@ class StructuralMemberProxy:
         group_end_adjustment = "Ajuste final"
         group_adjustment_results = "Resultados dos ajustes"
 
+        created_axis_mode = _add_property(obj, "App::PropertyEnumeration", "AxisDefinitionMode", "Definição", group_axis, "Define o eixo por pontos independentes ou por uma linha vinculada.")
+        _add_property(obj, "App::PropertyLinkSub", "AxisSource", "Linha de origem", group_axis, "Draft Line que define continuamente o eixo nominal.")
         created_start = _add_property(obj, "App::PropertyVector", "StartPoint", "Ponto inicial", group_geometry, "Ponto inicial do eixo do elemento.")
         created_end = _add_property(obj, "App::PropertyVector", "EndPoint", "Ponto final", group_geometry, "Ponto final do eixo do elemento.")
         created_length = _add_property(obj, "App::PropertyLength", "Length", "Length", group_geometry, "Comprimento editável do elemento. Ao alterar, o ponto inicial é mantido e o ponto final é deslocado ao longo da direção atual.")
@@ -289,6 +294,7 @@ class StructuralMemberProxy:
         # Enumeration options are assigned only after all dependent properties
         # exist. This prevents the onChanged race reported in FreeCAD 1.1.3.
         current_insertion = str(obj.Insertion) if not created_insertion else ""
+        _set_enum(obj, "AxisDefinitionMode", ("Independent", "Linked"), "Independent" if created_axis_mode else None)
         _set_enum(obj, "ElementType", ELEMENT_TYPES, "Membro" if created_type else None)
         _set_enum(obj, "Material", MATERIALS, "ASTM A572 Grau 50" if created_material else None)
         for prefix in ("Start", "End"):
@@ -394,6 +400,38 @@ class StructuralMemberProxy:
                     pass
 
         self._update_catalog_properties(obj)
+        self._update_axis_editor_mode(obj)
+
+    def _update_axis_editor_mode(self, obj):
+        linked = str(getattr(obj, "AxisDefinitionMode", "Independent")) == "Linked"
+        for name in ("StartPoint", "EndPoint", "Length"):
+            try:
+                obj.setEditorMode(name, 1 if linked else 0)
+            except (AttributeError, RuntimeError):
+                pass
+
+    def _sync_axis_from_source(self, obj):
+        if str(getattr(obj, "AxisDefinitionMode", "Independent")) != "Linked":
+            return False
+        resolved = resolve_axis_source(getattr(obj, "AxisSource", None))
+        if resolved is None:
+            return False
+        current_start = App.Vector(obj.StartPoint)
+        current_end = App.Vector(obj.EndPoint)
+        if (current_start.sub(resolved.start).Length <= LENGTH_TOLERANCE
+                and current_end.sub(resolved.end).Length <= LENGTH_TOLERANCE):
+            return True
+        self._syncing_axis_source = True
+        self._syncing_length = True
+        try:
+            obj.StartPoint = App.Vector(resolved.start)
+            obj.EndPoint = App.Vector(resolved.end)
+            self._sync_length_from_points(obj)
+            self._placement_from_points_pending = True
+        finally:
+            self._syncing_length = False
+            self._syncing_axis_source = False
+        return True
 
     def _sync_length_from_points(self, obj):
         length = App.Vector(obj.EndPoint).sub(App.Vector(obj.StartPoint)).Length
@@ -479,6 +517,9 @@ class StructuralMemberProxy:
                 self._setup_properties(obj)
             finally:
                 self._updating = False
+
+        self._update_axis_editor_mode(obj)
+        self._sync_axis_from_source(obj)
 
         start = App.Vector(obj.StartPoint)
         end = App.Vector(obj.EndPoint)
@@ -653,15 +694,21 @@ class StructuralMemberProxy:
 
     def onChanged(self, obj, prop):
         if (getattr(self, "_updating", False) or getattr(self, "_syncing_length", False)
-                or getattr(self, "_syncing_placement", False)):
+                or getattr(self, "_syncing_placement", False)
+                or getattr(self, "_syncing_axis_source", False)):
             return
         if prop == "Placement":
+            if str(getattr(obj, "AxisDefinitionMode", "Independent")) == "Linked":
+                self._placement_from_points_pending = True
+                return
             try:
                 self._sync_points_from_placement(obj)
             except (AttributeError, RuntimeError, TypeError, ValueError):
                 pass
             return
         if prop in ("Length", "StartPoint", "EndPoint"):
+            if str(getattr(obj, "AxisDefinitionMode", "Independent")) == "Linked":
+                return
             self._syncing_length = True
             try:
                 if prop == "Length":
@@ -676,7 +723,9 @@ class StructuralMemberProxy:
             return
         self._updating = True
         try:
-            if prop == "Rotation":
+            if prop == "AxisDefinitionMode":
+                self._update_axis_editor_mode(obj)
+            elif prop == "Rotation":
                 self._apply_section_rotation_change(obj)
             elif prop == "ProfileCategory" and "ProfileSeries" in obj.PropertiesList:
                 self._refresh_series_and_profiles(obj)
@@ -731,6 +780,7 @@ class StructuralMemberProxy:
         self._updating = False
         self._syncing_length = False
         self._syncing_placement = False
+        self._syncing_axis_source = False
         self._placement_from_points_pending = False
         self._last_placement = None
         self._last_section_rotation = 0.0
@@ -789,6 +839,8 @@ def create_member(
     rotation: float = 0.0,
     color=(0.72, 0.72, 0.76),
     display_name: str | None = None,
+    axis_source=None,
+    link_axis: bool = False,
 ):
     obj = document.addObject("Part::FeaturePython", "StructuralMember")
     StructuralMemberProxy(obj)
@@ -797,6 +849,12 @@ def create_member(
     profile = profile_catalog.get(designation)
     obj.StartPoint = start
     obj.EndPoint = end
+    if link_axis and resolve_axis_source(axis_source) is not None:
+        obj.AxisDefinitionMode = "Linked"
+        obj.AxisSource = axis_source
+    else:
+        obj.AxisDefinitionMode = "Independent"
+        obj.AxisSource = None
     obj.ProfileCategory = profile.category
     obj.ProfileSeries = profile.series
     obj.Profile = profile_catalog.property_designation(profile.designation)

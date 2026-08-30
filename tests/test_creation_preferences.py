@@ -427,7 +427,15 @@ class SaveLifecycleTests(unittest.TestCase):
         Tool = extracted_method(COLUMN_TOOL, "StructuralColumnDraftTool", "_confirm_base", {
             "App": app, "save_column_creation_settings": self.saved.append,
         })
+        Creation = extracted_method(
+            COLUMN_TOOL, "StructuralColumnDraftTool", "_create_from_options", {
+                "App": app, "save_column_creation_settings": self.saved.append,
+            }
+        )
         tool = Tool(); tool.node = [1]
+        tool._create_from_options = types.MethodType(
+            Creation._create_from_options, tool
+        )
         tool.ui = types.SimpleNamespace(continueMode=True)
         settings = object()
         tool.column_panel = types.SimpleNamespace(

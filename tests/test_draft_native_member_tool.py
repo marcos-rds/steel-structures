@@ -155,8 +155,9 @@ class DraftNativeArchitectureTests(unittest.TestCase):
         self.assertNotIn("set_point_stage", self.options)
         self.assertNotIn("_stage_label", self.options)
         self.assertNotIn("stage_font", self.options)
-        self.assertIn('QtWidgets.QGroupBox("Identificação")', self.options)
-        self.assertIn('QtWidgets.QGroupBox("Seleção do perfil")', self.options)
+        self.assertNotIn('QtWidgets.QGroupBox("Identificação")', self.options)
+        self.assertNotIn('QtWidgets.QGroupBox("Seleção do perfil")', self.options)
+        self.assertGreaterEqual(self.options.count("QtWidgets.QWidget()"), 2)
         self.assertIn("_OrientationPanel(", self.options)
 
     def test_continue_restores_first_point_status_without_rebuilding_widget(self):

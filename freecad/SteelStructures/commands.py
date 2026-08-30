@@ -139,7 +139,8 @@ def _load_native_draft_tool(column=False):
     return tool_class
 
 
-def _start_native_member_tool(tool_class, document, icon=MEMBER_ICON, task_title="Criar elemento estrutural"):
+def _start_native_member_tool(tool_class, document, icon=MEMBER_ICON,
+                              task_title="Criar elemento estrutural", axis_source=None):
     """Start one native session with Draft's process-wide toolbar."""
     global _active_member_tool
     if getattr(App, "activeDraftCommand", None) is not None:
@@ -152,7 +153,7 @@ def _start_native_member_tool(tool_class, document, icon=MEMBER_ICON, task_title
     tool = tool_class(on_closed=_member_draft_tool_closed)
     _active_member_tool = tool
     try:
-        tool.Activated(icon=icon, task_title=task_title)
+        tool.Activated(icon=icon, task_title=task_title, axis_source=axis_source)
     except Exception:
         try:
             tool.abort_activation(skip_native_ui_cleanup=True)
@@ -203,6 +204,10 @@ class CreateMemberCommand:
         document = App.ActiveDocument
         if document is None:
             document = App.newDocument("SteelStructures")
+        from .member_axis_source import axis_source_from_selection
+        selection = getattr(Gui, "Selection", None)
+        selection_ex = getattr(selection, "getSelectionEx", lambda: ())()
+        axis_source = axis_source_from_selection(selection_ex)
 
         try:
             tool_class = _load_native_draft_tool()
@@ -221,7 +226,7 @@ class CreateMemberCommand:
 
         tool = None
         try:
-            tool = _start_native_member_tool(tool_class, document)
+            tool = _start_native_member_tool(tool_class, document, axis_source=axis_source)
         except Exception:
             failed_tool = tool or _active_member_tool
             App.Console.PrintError(
@@ -276,10 +281,15 @@ class CreateColumnCommand(CreateMemberCommand):
         document = App.ActiveDocument
         if document is None:
             document = App.newDocument("SteelStructures")
+        from .member_axis_source import axis_source_from_selection
+        selection = getattr(Gui, "Selection", None)
+        selection_ex = getattr(selection, "getSelectionEx", lambda: ())()
+        axis_source = axis_source_from_selection(selection_ex)
         try:
             tool_class = _load_native_draft_tool(column=True)
             _start_native_member_tool(
-                tool_class, document, icon=COLUMN_ICON, task_title="Criar Pilar"
+                tool_class, document, icon=COLUMN_ICON, task_title="Criar Pilar",
+                axis_source=axis_source,
             )
         except DraftInterfaceUnavailable:
             App.Console.PrintError(

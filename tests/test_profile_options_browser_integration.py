@@ -33,6 +33,7 @@ def _load_options_runtime_module():
     preferences = types.ModuleType(root_name + ".preferences")
     preferences.MemberCreationSettings = object
     controller = types.ModuleType(root_name + ".interactive.member_controller")
+    controller.CreationGeometryMode = types.SimpleNamespace(INTERACTIVE=object())
     controller.MemberCreationOptions = object
     controller.compact_profile_designation = lambda value: value
     controller.next_default_label = lambda *_args: "Membro"

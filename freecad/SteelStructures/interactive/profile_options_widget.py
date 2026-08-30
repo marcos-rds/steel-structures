@@ -7,7 +7,10 @@ from .. import profile_catalog
 from ..member import ELEMENT_TYPES, INSERTION_OPTIONS
 from ..preferences import MemberCreationSettings
 from ..profiles import build_section_geometry
-from .member_controller import MemberCreationOptions, compact_profile_designation, next_default_label
+from .member_controller import (
+    CreationGeometryMode, MemberCreationOptions, compact_profile_designation,
+    next_default_label,
+)
 from .quick_color_menu import QuickColorMenu
 from .section_orientation_preview import SectionOrientationPreview
 
@@ -204,10 +207,16 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
         self._programmatic_name = False
         self._color = QtGui.QColor(184, 184, 194)
         root = QtWidgets.QVBoxLayout(self)
-        identity = QtWidgets.QGroupBox("Identificação")
+        root.setContentsMargins(6, 6, 6, 6)
+        root.setSpacing(5)
+        identity = QtWidgets.QWidget()
         identity_form = QtWidgets.QFormLayout(identity)
-        selection = QtWidgets.QGroupBox("Seleção do perfil")
+        identity_form.setContentsMargins(0, 0, 0, 0)
+        identity_form.setSpacing(4)
+        selection = QtWidgets.QWidget()
         selection_form = QtWidgets.QFormLayout(selection)
+        selection_form.setContentsMargins(0, 0, 0, 0)
+        selection_form.setSpacing(4)
         self.name_edit = QtWidgets.QLineEdit()
         self.name_edit.textEdited.connect(self._mark_custom_name)
         self.element_type = QtWidgets.QComboBox()
@@ -460,12 +469,15 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
             return
         self._set_name(next_default_label(self.document, self.element_type.currentText(), self.profile_designation))
 
-    def creation_options(self, start, end):
+    def creation_options(self, start, end, axis_source=None, link_axis=False,
+                         geometry_mode=CreationGeometryMode.INTERACTIVE):
         name = self.name_edit.text().strip() or next_default_label(
             self.document, self.element_type.currentText(), self.profile_designation)
         return MemberCreationOptions(start=start, end=end, designation=self.profile_designation,
             element_type=self.element_type.currentText(), insertion=self.insertion.currentText(),
-            rotation=self.rotation.value(), color=self.rgb, display_name=name)
+            rotation=self.rotation.value(), color=self.rgb, display_name=name,
+            axis_source=axis_source, link_axis=bool(link_axis),
+            geometry_mode=geometry_mode)
 
     def creation_succeeded(self, next_name):
         self._name_custom = False

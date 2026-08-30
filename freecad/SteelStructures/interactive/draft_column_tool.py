@@ -3,17 +3,23 @@
 
 import FreeCAD as App
 from FreeCAD import Gui
-from PySide import QtGui
+from PySide import QtCore, QtGui
 from draftguitools import gui_base_original, gui_lines
-from draftutils import gui_utils, todo
+from draftutils import todo
 from draftutils.messages import _toolmsg
 
-from .. import profile_catalog
-from ..member import _section_face, _insertion_translation
+from ..member_axis_source import resolve_axis_source
 from ..paths import COLUMN_ICON
 from ..preferences import load_column_creation_settings, save_column_creation_settings
 from .column_task_panel import ColumnTaskPanel, column_top
-from .member_controller import MemberController
+from .member_controller import CreationGeometryMode, MemberController
+from .member_creation_preview import (
+    PreviewState, configure_preview_object, update_member_preview,
+)
+from .axis_source_widget import (
+    configure_source_axis_draft_ui, install_source_axis_create_button,
+    remove_source_axis_create_button,
+)
 
 
 TOOL_NEW = "NEW"
@@ -34,14 +40,15 @@ class StructuralColumnDraftTool(gui_lines.Line):
         self.controller = None
         self.column_panel = None
         self._current_hover_point = None
-        self._preview_shape_signature = None
-        self._preview_placement_signature = None
-        self._preview_color = None
+        self._preview_state = PreviewState()
+        self.axis_source = None
+        self._source_axis_button_binding = None
 
     def is_active(self):
         return self._lifecycle_state == TOOL_ACTIVE and self._tool_active
 
-    def Activated(self, name="StructuralColumn", icon=None, task_title=None):
+    def Activated(self, name="StructuralColumn", icon=None, task_title=None,
+                  axis_source=None):
         if self._lifecycle_state != TOOL_NEW:
             raise RuntimeError("StructuralColumnDraftTool já foi ativada")
         self._lifecycle_state = TOOL_ACTIVE
@@ -49,7 +56,13 @@ class StructuralColumnDraftTool(gui_lines.Line):
         self._tool_active = True
         self.controller = MemberController(self.doc)
         self.controller.start()
-        self.column_panel = ColumnTaskPanel(self.doc, self._preview_options_changed)
+        self.axis_source = axis_source if resolve_axis_source(axis_source) else None
+        self.column_panel = ColumnTaskPanel(
+            self.doc, self._preview_options_changed, axis_source=self.axis_source
+        )
+        self.column_panel.axis_source_controls.linkChanged.connect(
+            self._axis_link_changed
+        )
         settings = load_column_creation_settings()
         self.column_panel.apply_creation_settings(settings)
         self.ui.lineUi(title="Criar Pilar", icon="Draft_Draft", extra=self.column_panel)
@@ -63,14 +76,45 @@ class StructuralColumnDraftTool(gui_lines.Line):
             if widget is not None:
                 widget.setVisible(False)
         self.obj = self.doc.addObject("Part::Feature", "SteelStructuresColumnPreview")
-        gui_utils.format_object(self.obj)
-        self.obj.ViewObject.ShowInTree = False
-        self.obj.ViewObject.Transparency = 65
-        self._keep_preview_unsnappable()
-        self.call = self.view.addEventCallback("SoEvent", self.action)
-        _toolmsg("Selecione o ponto da base do pilar")
+        configure_preview_object(self.obj)
+        if self.axis_source is not None:
+            self._prepare_axis_source_input()
+            configure_source_axis_draft_ui(self.ui)
+            QtCore.QTimer.singleShot(100, self._install_source_axis_create_button)
+            self.call = None
+        else:
+            self.call = self.view.addEventCallback("SoEvent", self.action)
+            _toolmsg("Selecione o ponto da base do pilar")
+
+    def _axis_link_changed(self, linked):
+        self._prepare_axis_source_input()
+
+    def _install_source_axis_create_button(self):
+        if not self.is_active() or self._source_axis_button_binding is not None:
+            return
+        self._source_axis_button_binding = install_source_axis_create_button(
+            self.ui, self._confirm_axis_source
+        )
+
+    def _prepare_axis_source_input(self):
+        resolved = resolve_axis_source(self.axis_source)
+        if resolved is None:
+            return False
+        self.point = App.Vector(resolved.end)
+        self._set_hover_point(self.point)
+        for name, value in zip(
+                ("xValue", "yValue", "zValue"),
+                (self.point.x, self.point.y, self.point.z)):
+            widget = getattr(self.ui, name, None)
+            if widget is not None:
+                widget.setText(App.Units.Quantity(value, App.Units.Length).UserString)
+        self.column_panel.set_axis_length(resolved.end.sub(resolved.start).Length)
+        _toolmsg("Eixo definido pela linha selecionada")
+        return True
 
     def action(self, arg):
+        if getattr(self, "axis_source", None) is not None:
+            return None
         before = len(self.node)
         result = super().action(arg)
         # Draft Line makes its temporary object selectable again on every
@@ -92,6 +136,8 @@ class StructuralColumnDraftTool(gui_lines.Line):
             obj.ViewObject.Selectable = False
 
     def numericInput(self, numx, numy, numz):
+        if self.axis_source is not None:
+            return None
         before = len(self.node)
         result = super().numericInput(numx, numy, numz)
         if self.is_active() and before == 0 and len(self.node) == 1:
@@ -126,41 +172,38 @@ class StructuralColumnDraftTool(gui_lines.Line):
             return
         try:
             options = self.column_panel.profile_options
-            profile = profile_catalog.get(options.profile_designation)
-            height = self.column_panel.height_value
-            insertion = options.insertion.currentText()
-            rotation = float(options.rotation.value())
-            shape_signature = (options.profile_designation, height, insertion)
-            if shape_signature != self._preview_shape_signature:
-                face = _section_face(profile)
-                tx, ty = _insertion_translation(profile, insertion)
-                face.translate(App.Vector(tx, ty, 0.0))
-                self.obj.Shape = face.extrude(App.Vector(0.0, 0.0, height))
-                self._preview_shape_signature = shape_signature
-
-            point = self._current_hover_point
-            placement_signature = (point.x, point.y, point.z, rotation)
-            if placement_signature != self._preview_placement_signature:
-                roll = App.Rotation(App.Vector(0.0, 0.0, 1.0), rotation)
-                self.obj.Placement = App.Placement(point, roll)
-                self._preview_placement_signature = placement_signature
-
-            color = tuple(options.rgb)
-            if color != self._preview_color:
-                self.obj.ViewObject.ShapeColor = color
-                self._preview_color = color
-            self.obj.ViewObject.Visibility = True
+            source_geometry = resolve_axis_source(self.axis_source)
+            if source_geometry is not None:
+                start = App.Vector(source_geometry.start)
+                end = App.Vector(source_geometry.end)
+            else:
+                point = self._current_hover_point
+                start = App.Vector(point)
+                end = start.add(App.Vector(0.0, 0.0, self.column_panel.height_value))
+            self._preview_state = update_member_preview(
+                self.obj, self._preview_state, options.profile_designation,
+                start, end, options.insertion.currentText(),
+                float(options.rotation.value()), options.rgb,
+            )
         except (KeyError, RuntimeError, ValueError):
             self.obj.ViewObject.Visibility = False
 
     def _confirm_base(self, base):
         try:
             options = self.column_panel.creation_options(base)
-            result = self.controller.create(options)
         except Exception as exc:
             App.Console.PrintError(f"Steel Structures: erro ao criar pilar: {exc}\n")
             self.node = []
             return
+        self._create_from_options(options)
+
+    def _create_from_options(self, options):
+        try:
+            result = self.controller.create(options)
+        except Exception as exc:
+            App.Console.PrintError(f"Steel Structures: erro ao criar pilar: {exc}\n")
+            self.node = []
+            return False
         save_column_creation_settings(
             self.column_panel.creation_settings(self.ui.continueMode)
         )
@@ -168,6 +211,26 @@ class StructuralColumnDraftTool(gui_lines.Line):
         if self.ui.continueMode:
             self._reset_for_continue()
         else:
+            self._terminate_native_session()
+        return True
+
+    def _confirm_axis_source(self):
+        resolved = resolve_axis_source(self.axis_source)
+        if resolved is None:
+            App.Console.PrintError("Steel Structures: a linha de origem está inválida.\n")
+            self._terminate_native_session()
+            return
+        start = App.Vector(resolved.start)
+        end = App.Vector(resolved.end)
+        try:
+            options = self.column_panel.axis_creation_options(
+                start, end, CreationGeometryMode.SOURCE_AXIS
+            )
+        except Exception as exc:
+            App.Console.PrintError(f"Steel Structures: erro ao criar pilar: {exc}\n")
+            self._terminate_native_session()
+            return
+        if not self._create_from_options(options):
             self._terminate_native_session()
 
     def finish(self, cont=False, closed=False):
@@ -181,6 +244,12 @@ class StructuralColumnDraftTool(gui_lines.Line):
         self.pos = []
         self.support = None
         self.constrain = None
+        self.axis_source = None
+        self.column_panel.clear_axis_source()
+        for name in ("xValue", "yValue", "zValue"):
+            widget = getattr(self.ui, name, None)
+            if widget is not None and hasattr(widget, "setReadOnly"):
+                widget.setReadOnly(False)
         accept = getattr(self.ui, "acceptPointInput", None)
         if callable(accept):
             accept()
@@ -195,7 +264,7 @@ class StructuralColumnDraftTool(gui_lines.Line):
 
     def _clear_hover_state(self):
         self._current_hover_point = None
-        self._preview_placement_signature = None
+        self._preview_state = PreviewState()
         obj = getattr(self, "obj", None)
         if obj is not None:
             obj.ViewObject.Visibility = False
@@ -205,12 +274,16 @@ class StructuralColumnDraftTool(gui_lines.Line):
         self._tool_active = False
         self._clear_hover_state()
         try:
+            remove_source_axis_create_button(self._source_axis_button_binding)
+            self._source_axis_button_binding = None
             call = getattr(self, "call", None)
             if call is not None:
                 self.end_callbacks(call)
                 self.call = None
             self.removeTemporaryObject()
             gui_base_original.Creator.finish(self)
+            if App.activeDraftCommand is self:
+                App.activeDraftCommand = None
             from ..init_gui import schedule_draft_snap_toolbar_visible
             schedule_draft_snap_toolbar_visible()
         finally:
@@ -227,6 +300,8 @@ class StructuralColumnDraftTool(gui_lines.Line):
         self._tool_active = False
         self._clear_hover_state()
         try:
+            remove_source_axis_create_button(self._source_axis_button_binding)
+            self._source_axis_button_binding = None
             call = getattr(self, "call", None)
             if call is not None:
                 self.end_callbacks(call)
@@ -251,9 +326,7 @@ class StructuralColumnDraftTool(gui_lines.Line):
 
     def removeTemporaryObject(self):
         self._current_hover_point = None
-        self._preview_shape_signature = None
-        self._preview_placement_signature = None
-        self._preview_color = None
+        self._preview_state = PreviewState()
         obj = getattr(self, "obj", None)
         if obj:
             try:
