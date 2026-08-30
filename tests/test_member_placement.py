@@ -93,9 +93,52 @@ class Quantity:
 
 
 class Face:
+    Area = 1000.0
     def __init__(self, wire): self.wire = wire; self.translation = Vector()
     def translate(self, vector): self.translation = Vector(vector)
-    def extrude(self, vector): return types.SimpleNamespace(local_vector=Vector(vector), face_translation=self.translation)
+    def copy(self):
+        copied = Face(self.wire); copied.translation = Vector(self.translation); return copied
+    @property
+    def BoundBox(self):
+        points = [point for edge in self.wire.edges for point in edge]
+        xs = [point.x + self.translation.x for point in points]
+        ys = [point.y + self.translation.y for point in points]
+        return types.SimpleNamespace(XMin=min(xs), XMax=max(xs), YMin=min(ys), YMax=max(ys),
+                                     XLength=max(xs)-min(xs), YLength=max(ys)-min(ys))
+    @property
+    def point(self):
+        points = [point for edge in self.wire.edges for point in edge]
+        return Vector(
+            sum(point.x for point in points) / len(points) + self.translation.x,
+            sum(point.y for point in points) / len(points) + self.translation.y,
+            sum(point.z for point in points) / len(points) + self.translation.z,
+        )
+    def extrude(self, vector):
+        solid = Solid(Vector(vector), Vector(self.translation), self.Area * max(vector.Length, 1.0))
+        solid.face = self
+        solid.normal = Vector(vector)
+        if solid.normal.Length:
+            solid.normal.normalize()
+        self.normal = solid.normal
+        return solid
+
+
+class Solid:
+    def __init__(self, vector, translation, volume):
+        self.local_vector, self.face_translation, self.Volume = vector, translation, volume
+        self.empty = False; self.clipped = False
+        self.BoundBox = types.SimpleNamespace(
+            XMin=-100.0, XMax=100.0, YMin=-100.0, YMax=100.0,
+            ZMin=min(translation.z, translation.z + vector.z),
+            ZMax=max(translation.z, translation.z + vector.z),
+            XLength=200.0, YLength=200.0, ZLength=abs(vector.z),
+        )
+    def common(self, half_space):
+        result = Solid(self.local_vector, self.face_translation, self.Volume * 0.9)
+        result.clipped = True; result.half_space = half_space
+        return result
+    def isNull(self): return False
+    def isValid(self): return True
 
 
 class Wire:
@@ -104,7 +147,8 @@ class Wire:
 
 
 PROFILE = types.SimpleNamespace(bf=150.0, d=150.0, tw=6.0, tf=9.0, mass_per_m=13.0,
-                                manufacturer="Test", family="W", area_cm2=16.6, source="Test")
+                                manufacturer="Test", family="W", area_cm2=16.6, source="Test",
+                                designation="W 150 x 13,0", category="Aço laminado", series="Perfis W")
 
 
 def load_member():
@@ -114,12 +158,16 @@ def load_member():
     app.Vector, app.Rotation, app.Placement = Vector, Rotation, Placement
     app.Console = types.SimpleNamespace(PrintWarning=lambda *_args: None)
     part = types.ModuleType("Part"); part.Face = Face; part.Wire = Wire; part.Shape = lambda: types.SimpleNamespace(empty=True)
+    part.makePolygon = lambda points: Wire([(points[index], points[index + 1]) for index in range(len(points) - 1)])
     part.makeLine = lambda start, end: (start, end)
     part.Arc = lambda start, _mid, end: types.SimpleNamespace(toShape=lambda: (start, end))
     catalog = types.ModuleType(f"{package_name}.profile_catalog")
     catalog.Profile = object; catalog.get = lambda _name: PROFILE
     catalog.property_designation = lambda value: str(value).replace('"', "″")
     catalog.property_designations = lambda *_args: []
+    catalog.categories = lambda: ["Aço laminado"]
+    catalog.series_for_category = lambda _category: ["Perfis W"]
+    catalog.insertion_options = lambda _profile: ("Centroide",)
     paths = types.ModuleType(f"{package_name}.paths"); paths.OBJECT_ICON = "member.svg"
     injected = {package_name: package, "FreeCAD": app, "Part": part,
                 f"{package_name}.profile_catalog": catalog, f"{package_name}.paths": paths}
@@ -133,17 +181,50 @@ def load_member():
 
 
 class MemberObject:
+    def __setattr__(self, name, value):
+        current = self.__dict__.get(name)
+        if isinstance(current, Quantity) and isinstance(value, (int, float)):
+            current.Value = float(value)
+            return
+        object.__setattr__(self, name, value)
+
     def __init__(self, start, end):
         self.StartPoint, self.EndPoint = Vector(start), Vector(end)
         self.Length = Quantity(self.EndPoint.sub(self.StartPoint).Length); self.MemberLength = 0.0
         self.StartExtension = Quantity(0); self.EndExtension = Quantity(0)
+        self.EndAdjustmentMode = "None"; self.AdjustedEnd = "Start"
+        self.AdjustmentGap = Quantity(0); self.FixedReferenceOffset = Quantity(0)
+        self.AdjustmentReference = None
+        self.AdjustmentGeometryMode = "LengthLimit"; self.FixedPlaneNormal = Vector()
+        self.EffectiveStartPoint = Vector(start); self.EffectiveEndPoint = Vector(end)
+        self.AdjustedLength = 0.0
         self.OffsetX = Quantity(0); self.OffsetY = Quantity(0); self.Rotation = Quantity(0)
         self.Profile = "W 150 x 13,0"; self.Insertion = "Centroide"; self.MassPerMeter = 13.0
         self.ElementType = "Membro"
+        self.ProfileCategory = "Aço laminado"; self.DisplayName = "Member"
         self.TotalMass = 0.0; self.Placement = Placement()
-        self.PropertiesList = ["ProfileCategory", "DisplayName", "Length"]
+        self.PropertiesList = ["ProfileCategory", "DisplayName", "Length", "EndAdjustmentMode",
+                               "AdjustedEnd", "AdjustmentGap", "FixedReferenceOffset",
+                               "EffectiveStartPoint", "EffectiveEndPoint", "AdjustedLength",
+                               "AdjustmentReference",
+                               "AdjustmentGeometryMode", "FixedPlaneNormal",
+                               "StartPoint", "EndPoint", "StartExtension", "EndExtension",
+                               "OffsetX", "OffsetY", "Rotation", "Profile", "Insertion",
+                               "MassPerMeter", "MemberLength", "TotalMass", "ElementType"]
         self.ExpressionEngine = []
+        self.Label = "Member"
+        self.editor_modes = {}
     def getExpression(self, _name): return None
+    def addProperty(self, property_type, name, _group, _description):
+        self.PropertiesList.append(name)
+        if property_type == "App::PropertyLinkSub": setattr(self, name, None)
+        elif property_type in ("App::PropertyDistance", "App::PropertyLength", "App::PropertyAngle"):
+            setattr(self, name, Quantity(0))
+        elif property_type == "App::PropertyVector": setattr(self, name, Vector())
+        elif property_type == "App::PropertyFloat": setattr(self, name, 0.0)
+        else: setattr(self, name, "")
+    def setPropertyStatus(self, _name, _status): pass
+    def setEditorMode(self, name, mode): self.editor_modes[name] = mode
 
 
 class MemberPlacementTests(unittest.TestCase):
@@ -225,6 +306,84 @@ class MemberPlacementTests(unittest.TestCase):
         obj.EndPoint = Vector(1, 2, 13); proxy.onChanged(obj, "EndPoint"); proxy.execute(obj)
         self.assertVector(obj.Placement.Base, (1, 2, 3)); self.assertAlmostEqual(obj.MemberLength, 10)
 
+    def test_fixed_start_gap_extensions_lengths_and_mass(self):
+        obj, proxy = self.create((0, 0, 0), (3000, 0, 0))
+        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "Start"
+        obj.FixedReferenceOffset = Quantity(100); obj.AdjustmentGap = Quantity(20)
+        obj.StartExtension = Quantity(50); obj.EndExtension = Quantity(30)
+        nominal_start, nominal_end = Vector(obj.StartPoint), Vector(obj.EndPoint)
+        proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (120, 0, 0)); self.assertVector(obj.EffectiveEndPoint, (3030, 0, 0))
+        self.assertAlmostEqual(obj.AdjustedLength, 2910); self.assertAlmostEqual(obj.Shape.local_vector.Length, 2910)
+        self.assertAlmostEqual(obj.TotalMass, 13.0 * 2.91)
+        self.assertVector(obj.StartPoint, (nominal_start.x, nominal_start.y, nominal_start.z))
+        self.assertVector(obj.EndPoint, (nominal_end.x, nominal_end.y, nominal_end.z))
+        self.assertAlmostEqual(obj.Length.Value, 3000); self.assertAlmostEqual(obj.MemberLength, 3000)
+        obj.FixedReferenceOffset = Quantity(110); proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (130, 0, 0)); self.assertEqual(obj.AdjustmentGap.Value, 20)
+
+    def test_fixed_end_gap_is_independent_and_opposite_extension_is_kept(self):
+        obj, proxy = self.create((0, 0, 0), (3000, 0, 0))
+        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "End"
+        obj.FixedReferenceOffset = Quantity(100); obj.AdjustmentGap = Quantity(20)
+        obj.StartExtension = Quantity(40); obj.EndExtension = Quantity(90)
+        proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (-40, 0, 0)); self.assertVector(obj.EffectiveEndPoint, (2880, 0, 0))
+        self.assertAlmostEqual(obj.AdjustedLength, 2920)
+        obj.AdjustmentGap = Quantity(30); proxy.execute(obj)
+        self.assertEqual(obj.FixedReferenceOffset.Value, 100)
+        self.assertVector(obj.EffectiveEndPoint, (2870, 0, 0)); self.assertAlmostEqual(obj.AdjustedLength, 2910)
+        obj.EndAdjustmentMode = "None"; proxy.execute(obj)
+        self.assertVector(obj.EffectiveEndPoint, (3090, 0, 0)); self.assertAlmostEqual(obj.AdjustedLength, 3130)
+
+    def test_fixed_reference_remains_anchored_when_nominal_endpoint_changes(self):
+        obj, proxy = self.create((0, 0, 0), (1000, 0, 0))
+        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "End"
+        obj.FixedReferenceOffset = Quantity(100); obj.AdjustmentGap = Quantity(20)
+        obj.EndPoint = Vector(1500, 0, 0); proxy.onChanged(obj, "EndPoint"); proxy.execute(obj)
+        self.assertVector(obj.EffectiveEndPoint, (1380, 0, 0)); self.assertEqual(obj.FixedReferenceOffset.Value, 100)
+        self.assertAlmostEqual(obj.MemberLength, 1500)
+
+    def test_fixed_start_remains_anchored_when_nominal_start_changes(self):
+        obj, proxy = self.create((0, 0, 0), (1000, 0, 0))
+        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "Start"
+        obj.FixedReferenceOffset = Quantity(100); obj.AdjustmentGap = Quantity(20)
+        obj.StartPoint = Vector(100, 0, 0); proxy.onChanged(obj, "StartPoint"); proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (220, 0, 0)); self.assertEqual(obj.FixedReferenceOffset.Value, 100)
+        self.assertAlmostEqual(obj.MemberLength, 900)
+
+    def test_fixed_placement_translation_rotation_and_recompute_have_no_drift(self):
+        obj, proxy = self.create((0, 0, 0), (10, 0, 0))
+        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "Start"
+        obj.FixedReferenceOffset = Quantity(2); obj.AdjustmentGap = Quantity(1)
+        proxy.execute(obj); self.translate(obj, proxy, 5, 6, 7); self.rotate_world(obj, proxy, (0, 0, 1), 90)
+        for _ in range(4):
+            proxy.execute(obj)
+            self.assertVector(obj.StartPoint, (-6, 5, 7)); self.assertVector(obj.EndPoint, (-6, 15, 7))
+            self.assertVector(obj.EffectiveStartPoint, (-6, 8, 7)); self.assertVector(obj.EffectiveEndPoint, (-6, 15, 7))
+            self.assertVector(obj.Placement.Base, (-6, 8, 7))
+            self.assertEqual(obj.FixedReferenceOffset.Value, 2); self.assertEqual(obj.AdjustmentGap.Value, 1)
+
+    def test_invalid_fixed_interval_is_empty_and_consistent(self):
+        obj, proxy = self.create((0, 0, 0), (10, 0, 0))
+        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "Start"
+        for offset in (10, 11, 1000):
+            obj.FixedReferenceOffset = Quantity(offset); proxy.execute(obj)
+            self.assertTrue(obj.Shape.empty); self.assertEqual(obj.AdjustedLength, 0)
+            self.assertVector(obj.EffectiveEndPoint, (offset, 0, 0))
+            self.assertEqual(obj.TotalMass, 0); self.assertEqual(obj.MemberLength, 10)
+
+    def test_profile_and_rotation_edits_preserve_effective_contract(self):
+        obj, proxy = self.create((0, 0, 0), (0, 0, 100))
+        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "End"
+        obj.FixedReferenceOffset = Quantity(10); obj.AdjustmentGap = Quantity(2); proxy.execute(obj)
+        expected = (Vector(obj.EffectiveStartPoint), Vector(obj.EffectiveEndPoint), obj.AdjustedLength)
+        obj.Profile = "W 200 x 15,0"; proxy.onChanged(obj, "Profile")
+        obj.Rotation = Quantity(25); proxy.onChanged(obj, "Rotation"); proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (expected[0].x, expected[0].y, expected[0].z))
+        self.assertVector(obj.EffectiveEndPoint, (expected[1].x, expected[1].y, expected[1].z))
+        self.assertEqual(obj.AdjustedLength, expected[2])
+
     def test_restore_and_legacy_proxy_preserve_existing_placement(self):
         obj, proxy = self.create((0, 0, 6), (10, 0, 6)); self.translate(obj, proxy, 1, 2, -3)
         restored = self.proxy(); restored.__setstate__(None); restored._setup_properties = lambda _obj: None
@@ -242,6 +401,30 @@ class MemberPlacementTests(unittest.TestCase):
         restored.onDocumentRestored(obj)
         restored.execute(obj)
         self.assertEqual(obj.ElementType, "Pilar")
+
+    def test_restore_installs_legacy_adjustment_properties_with_none_default(self):
+        obj = MemberObject((0, 0, 0), (0, 0, 100))
+        for name in ("EndAdjustmentMode", "AdjustedEnd", "AdjustmentGap", "FixedReferenceOffset",
+                     "EffectiveStartPoint", "EffectiveEndPoint", "AdjustedLength", "AdjustmentReference",
+                     "AdjustmentGeometryMode", "FixedPlaneNormal"):
+            obj.PropertiesList.remove(name); delattr(obj, name)
+        restored = self.proxy(); restored.__setstate__(None); restored.onDocumentRestored(obj)
+        self.assertEqual(obj.EndAdjustmentMode, "None"); self.assertEqual(obj.AdjustedEnd, "Start")
+        self.assertEqual(obj.AdjustmentGap.Value, 0); self.assertEqual(obj.FixedReferenceOffset.Value, 0)
+        self.assertIsNone(obj.AdjustmentReference)
+        self.assertEqual(obj.AdjustmentGeometryMode, "LengthLimit")
+        self.assertVector(obj.FixedPlaneNormal, (0, 0, 0))
+        for name in ("EffectiveStartPoint", "EffectiveEndPoint", "AdjustedLength"):
+            self.assertEqual(obj.editor_modes[name], 1)
+
+    def test_restore_preserves_existing_fixed_values(self):
+        obj, proxy = self.create((0, 0, 0), (0, 0, 100))
+        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "End"
+        obj.FixedReferenceOffset = Quantity(-15); obj.AdjustmentGap = Quantity(7); proxy.execute(obj)
+        restored = self.proxy(); restored.__setstate__(None); restored.onDocumentRestored(obj); restored.execute(obj)
+        self.assertEqual(obj.EndAdjustmentMode, "Fixed"); self.assertEqual(obj.AdjustedEnd, "End")
+        self.assertEqual(obj.FixedReferenceOffset.Value, -15); self.assertEqual(obj.AdjustmentGap.Value, 7)
+        self.assertVector(obj.EffectiveEndPoint, (0, 0, 108))
 
     def test_guards_release_after_sync_exception_and_block_recursion(self):
         obj, proxy = self.create((0, 0, 0), (10, 0, 0)); self.translate(obj, proxy, 1, 0, 0)

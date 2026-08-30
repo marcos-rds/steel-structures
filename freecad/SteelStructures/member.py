@@ -9,6 +9,23 @@ import FreeCAD as App
 import Part
 
 from . import profile_catalog
+from .member_adjustment_geometry import (
+    closest_point_on_member_axis,
+    intersect_infinite_axis_with_plane,
+    normalized_vector,
+    physical_extents,
+)
+from .member_adjustment_reference import (
+    linear_reference_from_link,
+    plane_reference_from_link,
+    unpack_link_sub,
+    would_create_adjustment_cycle,
+)
+from .member_plane_cut import (
+    build_plane_cut,
+    global_plane_to_member_local,
+    is_orthogonal_plane,
+)
 from .paths import OBJECT_ICON
 from .profiles.freecad_geometry import section_geometry_to_face
 from .profiles.geometry import build_parallel_flange_i_section, build_section_geometry
@@ -206,6 +223,7 @@ class StructuralMemberProxy:
         group_section = "Seção"
         group_identity = "Identificação"
         group_quantities = "Quantitativos"
+        group_adjustment = "Ajuste de extremidade"
 
         created_start = _add_property(obj, "App::PropertyVector", "StartPoint", "Ponto inicial", group_geometry, "Ponto inicial do eixo do elemento.")
         created_end = _add_property(obj, "App::PropertyVector", "EndPoint", "Ponto final", group_geometry, "Ponto final do eixo do elemento.")
@@ -216,6 +234,17 @@ class StructuralMemberProxy:
         created_offset_y = _add_property(obj, "App::PropertyDistance", "OffsetY", "Deslocamento Y local", group_geometry, "Deslocamento no eixo Y local da seção.")
         created_start_ext = _add_property(obj, "App::PropertyDistance", "StartExtension", "Extensão inicial", group_geometry, "Prolongamento além do ponto inicial.")
         created_end_ext = _add_property(obj, "App::PropertyDistance", "EndExtension", "Extensão final", group_geometry, "Prolongamento além do ponto final.")
+
+        created_adjustment_mode = _add_property(obj, "App::PropertyEnumeration", "EndAdjustmentMode", "Modo", group_adjustment, "Modo do ajuste longitudinal de extremidade.")
+        created_adjusted_end = _add_property(obj, "App::PropertyEnumeration", "AdjustedEnd", "Extremidade ajustada", group_adjustment, "Extremidade nominal afetada pelo ajuste.")
+        created_adjustment_gap = _add_property(obj, "App::PropertyDistance", "AdjustmentGap", "Folga", group_adjustment, "Recuo adicional em relação à referência; valores negativos prolongam o membro.")
+        created_fixed_offset = _add_property(obj, "App::PropertyDistance", "FixedReferenceOffset", "Deslocamento da referência fixa", group_adjustment, "Posição longitudinal da referência com folga zero, medida a partir da extremidade nominal ajustada.")
+        created_effective_start = _add_property(obj, "App::PropertyVector", "EffectiveStartPoint", "Ponto inicial efetivo", group_adjustment, "Ponto inicial efetivo sobre o eixo longitudinal.")
+        created_effective_end = _add_property(obj, "App::PropertyVector", "EffectiveEndPoint", "Ponto final efetivo", group_adjustment, "Ponto final efetivo sobre o eixo longitudinal.")
+        created_adjusted_length = _add_property(obj, "App::PropertyLength", "AdjustedLength", "Comprimento ajustado", group_adjustment, "Distância axial entre os pontos efetivos.")
+        _add_property(obj, "App::PropertyLinkSub", "AdjustmentReference", "Referência", group_adjustment, "Face plana ou aresta reta explícita utilizada pelo ajuste associativo.")
+        created_geometry_mode = _add_property(obj, "App::PropertyEnumeration", "AdjustmentGeometryMode", "Modo geométrico", group_adjustment, "Define se a referência limita o comprimento ou recorta por plano.")
+        created_fixed_plane_normal = _add_property(obj, "App::PropertyVector", "FixedPlaneNormal", "Normal fixa do plano", group_adjustment, "Normal unitária do PlaneCut fixo no sistema local do membro.")
 
         created_category = _add_property(obj, "App::PropertyEnumeration", "ProfileCategory", "Categoria do perfil", group_section, "Categoria tecnológica do perfil.")
         created_series = _add_property(obj, "App::PropertyEnumeration", "ProfileSeries", "Série do perfil", group_section, "Série ou família comercial do perfil.")
@@ -240,6 +269,9 @@ class StructuralMemberProxy:
         current_insertion = str(obj.Insertion) if not created_insertion else ""
         _set_enum(obj, "ElementType", ELEMENT_TYPES, "Membro" if created_type else None)
         _set_enum(obj, "Material", MATERIALS, "ASTM A572 Grau 50" if created_material else None)
+        _set_enum(obj, "EndAdjustmentMode", ("None", "Associative", "Fixed"), "None" if created_adjustment_mode else None)
+        _set_enum(obj, "AdjustedEnd", ("Start", "End"), "Start" if created_adjusted_end else None)
+        _set_enum(obj, "AdjustmentGeometryMode", ("LengthLimit", "PlaneCut"), "LengthLimit" if created_geometry_mode else None)
 
         current_profile = str(obj.Profile) if not created_profile and str(obj.Profile) else ""
         if current_profile:
@@ -278,7 +310,7 @@ class StructuralMemberProxy:
             insertion_preference or ("Centroide" if created_insertion else None),
         )
 
-        for prop in ("Manufacturer", "ProfileFamily", "MemberLength", "MassPerMeter", "TotalMass", "CatalogArea", "CatalogSource"):
+        for prop in ("Manufacturer", "ProfileFamily", "MemberLength", "MassPerMeter", "TotalMass", "CatalogArea", "CatalogSource", "EffectiveStartPoint", "EffectiveEndPoint", "AdjustedLength"):
             obj.setEditorMode(prop, 1)
 
         if created_start:
@@ -299,6 +331,18 @@ class StructuralMemberProxy:
             obj.StartExtension = 0.0
         if created_end_ext:
             obj.EndExtension = 0.0
+        if created_adjustment_gap:
+            obj.AdjustmentGap = 0.0
+        if created_fixed_offset:
+            obj.FixedReferenceOffset = 0.0
+        if created_effective_start:
+            obj.EffectiveStartPoint = App.Vector(obj.StartPoint)
+        if created_effective_end:
+            obj.EffectiveEndPoint = App.Vector(obj.EndPoint)
+        if created_adjusted_length:
+            obj.AdjustedLength = App.Vector(obj.EndPoint).sub(App.Vector(obj.StartPoint)).Length
+        if created_fixed_plane_normal:
+            obj.FixedPlaneNormal = App.Vector(0.0, 0.0, 0.0)
         if created_mark:
             obj.Mark = ""
         if created_phase:
@@ -376,10 +420,19 @@ class StructuralMemberProxy:
 
     def execute(self, obj):
         # Also upgrades objects saved with v0.1.0 when they are recomputed.
-        if "ProfileCategory" not in obj.PropertiesList or "DisplayName" not in obj.PropertiesList or "Length" not in obj.PropertiesList:
+        required_properties = {
+            "ProfileCategory", "DisplayName", "Length", "EndAdjustmentMode",
+            "AdjustedEnd", "AdjustmentGap", "FixedReferenceOffset",
+            "EffectiveStartPoint", "EffectiveEndPoint", "AdjustedLength",
+            "AdjustmentReference",
+            "AdjustmentGeometryMode", "FixedPlaneNormal",
+        }
+        if not required_properties.issubset(set(obj.PropertiesList)):
             self._updating = True
-            self._setup_properties(obj)
-            self._updating = False
+            try:
+                self._setup_properties(obj)
+            finally:
+                self._updating = False
 
         start = App.Vector(obj.StartPoint)
         end = App.Vector(obj.EndPoint)
@@ -389,6 +442,9 @@ class StructuralMemberProxy:
         if base_length <= LENGTH_TOLERANCE:
             obj.Shape = Part.Shape()
             obj.MemberLength = 0.0
+            obj.EffectiveStartPoint = start
+            obj.EffectiveEndPoint = start
+            obj.AdjustedLength = 0.0
             obj.TotalMass = 0.0
             return
 
@@ -397,9 +453,67 @@ class StructuralMemberProxy:
         direction = App.Vector(axis)
         direction.normalize()
 
-        start_extension = max(0.0, float(obj.StartExtension.Value))
-        end_extension = max(0.0, float(obj.EndExtension.Value))
-        total_length = base_length + start_extension + end_extension
+        mode = str(obj.EndAdjustmentMode)
+        geometry_mode = str(obj.AdjustmentGeometryMode)
+        reference_point = None
+        reference_plane = None
+        if mode == "Associative":
+            unpacked_reference = unpack_link_sub(obj.AdjustmentReference)
+            if (unpacked_reference is None
+                    or would_create_adjustment_cycle(obj, unpacked_reference[0])):
+                obj.Shape = Part.Shape()
+                obj.MemberLength = base_length
+                obj.EffectiveStartPoint = start
+                obj.EffectiveEndPoint = start
+                obj.AdjustedLength = 0.0
+                obj.TotalMass = 0.0
+                return
+            subelement = unpacked_reference[1]
+            if subelement.startswith("Face"):
+                reference_plane = plane_reference_from_link(obj.AdjustmentReference)
+                if reference_plane is not None:
+                    reference_point = intersect_infinite_axis_with_plane(
+                        (start.x, start.y, start.z), (end.x, end.y, end.z),
+                        reference_plane.point_global, reference_plane.normal_global,
+                        LENGTH_TOLERANCE,
+                    )
+            elif geometry_mode == "LengthLimit" and subelement.startswith("Edge"):
+                line = linear_reference_from_link(obj.AdjustmentReference, LENGTH_TOLERANCE)
+                if line is not None:
+                    reference_point = closest_point_on_member_axis(
+                        (start.x, start.y, start.z), (end.x, end.y, end.z),
+                        line.point_global, line.direction_global, LENGTH_TOLERANCE,
+                    )
+            if reference_point is None:
+                obj.Shape = Part.Shape()
+                obj.MemberLength = base_length
+                obj.EffectiveStartPoint = start
+                obj.EffectiveEndPoint = start
+                obj.AdjustedLength = 0.0
+                obj.TotalMass = 0.0
+                return
+
+        extents = physical_extents(
+            (start.x, start.y, start.z), (end.x, end.y, end.z),
+            mode=mode, adjusted_end=str(obj.AdjustedEnd),
+            reference_offset=_quantity_value(obj.FixedReferenceOffset),
+            gap=_quantity_value(obj.AdjustmentGap),
+            start_extension=_quantity_value(obj.StartExtension),
+            end_extension=_quantity_value(obj.EndExtension),
+            reference_point=reference_point,
+            tolerance=LENGTH_TOLERANCE,
+        )
+        effective_start = App.Vector(*extents.start)
+        effective_end = App.Vector(*extents.end)
+        obj.EffectiveStartPoint = effective_start
+        obj.EffectiveEndPoint = effective_end if extents.valid else effective_start
+        obj.AdjustedLength = extents.length
+        if not extents.valid:
+            obj.Shape = Part.Shape()
+            obj.MemberLength = base_length
+            obj.TotalMass = 0.0
+            return
+        total_length = extents.length
         try:
             profile = profile_catalog.get(str(obj.Profile))
         except KeyError:
@@ -411,7 +525,6 @@ class StructuralMemberProxy:
         face = _section_face(profile)
         tx, ty = _insertion_translation(profile, str(obj.Insertion))
         face.translate(App.Vector(tx + obj.OffsetX.Value, ty + obj.OffsetY.Value, 0.0))
-        solid = face.extrude(App.Vector(0.0, 0.0, total_length))
 
         # Keep the shape local and drive position/orientation through the
         # Part::Feature Placement. This fixes members remaining vertical when
@@ -419,20 +532,69 @@ class StructuralMemberProxy:
         alignment = _member_frame_rotation(direction)
         roll = App.Rotation(App.Vector(0.0, 0.0, 1.0), float(obj.Rotation.Value))
         combined_rotation = alignment.multiply(roll)
-        base = start.sub(direction * start_extension)
-
-        obj.Shape = solid
+        base = effective_start
         if self._placement_from_points_pending or self._last_placement is None:
-            self._set_placement(obj, App.Placement(base, combined_rotation))
-            self._placement_from_points_pending = False
+            shape_placement = App.Placement(base, combined_rotation)
         else:
             # Preserve the full user rotation. Only the base follows the global
             # start point and extension; profile changes cannot reset Placement.
             preserved = _copy_placement(obj.Placement)
             preserved.Base = base
-            self._set_placement(obj, preserved)
+            shape_placement = preserved
+
+        plane_cut_active = geometry_mode == "PlaneCut" and mode in ("Associative", "Fixed")
+        plane_cut_oblique = False
+        local_plane_point = (0.0, 0.0, 0.0)
+        if plane_cut_active:
+            if mode == "Associative":
+                local_plane = global_plane_to_member_local(
+                    shape_placement, App.Vector,
+                    reference_plane.point_global, reference_plane.normal_global,
+                    LENGTH_TOLERANCE,
+                )
+                if local_plane is None:
+                    obj.Shape = Part.Shape()
+                    obj.MemberLength = base_length
+                    obj.TotalMass = 0.0
+                    return
+                local_plane_point, local_normal = local_plane
+            else:
+                stored_normal = App.Vector(obj.FixedPlaneNormal)
+                local_normal = (stored_normal.x, stored_normal.y, stored_normal.z)
+                if normalized_vector(local_normal, LENGTH_TOLERANCE) is None:
+                    local_normal = (0.0, 0.0, 1.0)
+
+            normalized_normal = normalized_vector(local_normal, LENGTH_TOLERANCE)
+            if normalized_normal is None or abs(normalized_normal[2]) <= LENGTH_TOLERANCE:
+                obj.Shape = Part.Shape()
+                obj.MemberLength = base_length
+                obj.TotalMass = 0.0
+                return
+            plane_cut_oblique = not is_orthogonal_plane(normalized_normal, LENGTH_TOLERANCE)
+        if plane_cut_oblique:
+            cut_station = 0.0 if str(obj.AdjustedEnd) == "Start" else total_length
+            cut_result = build_plane_cut(
+                Part, App.Vector, face, total_length, cut_station, normalized_normal,
+                str(obj.AdjustedEnd), LENGTH_TOLERANCE, point_local=local_plane_point,
+            )
+            if cut_result is None:
+                obj.Shape = Part.Shape()
+                obj.MemberLength = base_length
+                obj.TotalMass = 0.0
+                return
+            solid = cut_result.shape
+        else:
+            solid = face.extrude(App.Vector(0.0, 0.0, total_length))
+
+        obj.Shape = solid
+        self._set_placement(obj, shape_placement)
+        self._placement_from_points_pending = False
         obj.MemberLength = base_length
-        obj.TotalMass = profile.mass_per_m * total_length / 1000.0
+        if plane_cut_oblique and cut_result.section_area > LENGTH_TOLERANCE:
+            equivalent_length = float(solid.Volume) / cut_result.section_area
+            obj.TotalMass = profile.mass_per_m * equivalent_length / 1000.0
+        else:
+            obj.TotalMass = profile.mass_per_m * total_length / 1000.0
         self._update_catalog_properties(obj)
 
     def onChanged(self, obj, prop):
