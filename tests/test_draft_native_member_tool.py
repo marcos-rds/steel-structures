@@ -98,7 +98,8 @@ class DraftNativeArchitectureTests(unittest.TestCase):
         self.assertIn("import DraftTools", self.commands)
         self.assertIn("Não foi possível iniciar a ferramenta nativa", self.commands)
         self.assertNotIn("MemberTaskPanel", self.commands)
-        self.assertNotIn("Gui.Control.showDialog", self.commands)
+        member_source = self.commands.split("class CreateGridCommand", 1)[0]
+        self.assertNotIn("Gui.Control.showDialog", member_source)
         self.assertNotIn("panel.start_automatic_capture", self.commands)
 
     def test_no_custom_axis_filter_or_preview_in_native_tool(self):

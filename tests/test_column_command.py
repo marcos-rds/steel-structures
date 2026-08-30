@@ -44,7 +44,7 @@ class ColumnCommandContractTests(unittest.TestCase):
         self.assertIn("ponto de base", self.commands)
 
     def test_toolbar_and_menu_place_column_next_to_member(self):
-        expected = '["SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_CreateGrid"]'
+        expected = '["SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_AdjustMember", "SteelStructures_CreateGrid"]'
         self.assertIn(expected, self.gui)
 
     def test_icon_exists_and_is_valid_svg(self):

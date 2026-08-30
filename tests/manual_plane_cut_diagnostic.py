@@ -33,6 +33,7 @@ from freecad.SteelStructures.member_plane_cut import (
 
 
 TARGET_OBJECT_NAME = None
+TARGET_END = "End"
 TOLERANCE = 1e-7
 
 
@@ -92,7 +93,7 @@ def selected_member():
             raise RuntimeError("Objeto {!r} não encontrado.".format(TARGET_OBJECT_NAME))
         return target
     candidates = [obj for obj in Gui.Selection.getSelection()
-                  if hasattr(obj, "AdjustmentGeometryMode")]
+                  if hasattr(obj, "StartAdjustmentGeometryMode")]
     if len(candidates) != 1:
         raise RuntimeError("Selecione exatamente um membro Steel Structures.")
     return candidates[0]
@@ -100,15 +101,21 @@ def selected_member():
 
 def run():
     member = selected_member()
-    if str(member.EndAdjustmentMode) != "Associative":
-        raise RuntimeError("EndAdjustmentMode deve ser Associative.")
-    if str(member.AdjustmentGeometryMode) != "PlaneCut":
-        raise RuntimeError("AdjustmentGeometryMode deve ser PlaneCut.")
-    unpacked = unpack_link_sub(member.AdjustmentReference)
+    if TARGET_END not in ("Start", "End"):
+        raise RuntimeError("TARGET_END deve ser Start ou End.")
+    mode = str(getattr(member, TARGET_END + "AdjustmentMode"))
+    geometry_mode = str(getattr(member, TARGET_END + "AdjustmentGeometryMode"))
+    reference = getattr(member, TARGET_END + "AdjustmentReference")
+    gap = getattr(member, TARGET_END + "AdjustmentGap")
+    if mode != "Associative":
+        raise RuntimeError(TARGET_END + "AdjustmentMode deve ser Associative.")
+    if geometry_mode != "PlaneCut":
+        raise RuntimeError(TARGET_END + "AdjustmentGeometryMode deve ser PlaneCut.")
+    unpacked = unpack_link_sub(reference)
     if unpacked is None or not unpacked[1].startswith("Face"):
         raise RuntimeError("AdjustmentReference deve conter exatamente uma FaceN.")
     reference_object, subelement = unpacked
-    reference_plane = plane_reference_from_link(member.AdjustmentReference)
+    reference_plane = plane_reference_from_link(reference)
     if reference_plane is None:
         raise RuntimeError("Não foi possível resolver a Face plana global.")
 
@@ -119,7 +126,7 @@ def run():
         vector_text(member.StartPoint), vector_text(member.EndPoint)))
     emit("Length={:.12g} AdjustedLength={:.12g} AdjustedEnd={} Gap={:.12g}".format(
         value_of(member.Length), value_of(member.AdjustedLength),
-        member.AdjustedEnd, value_of(member.AdjustmentGap)))
+        TARGET_END, value_of(gap)))
     emit("Placement atual={}".format(member.Placement))
 
     # For an established member execute() preserves the complete current
@@ -146,7 +153,7 @@ def run():
     axial_dot = local_normal[2]
     axis_normal_angle = degrees(acos(min(1.0, max(-1.0, abs(axial_dot)))))
     plane_axis_angle = degrees(asin(min(1.0, max(0.0, abs(axial_dot)))))
-    cut_station = 0.0 if str(member.AdjustedEnd) == "Start" else value_of(member.AdjustedLength)
+    cut_station = 0.0 if TARGET_END == "Start" else value_of(member.AdjustedLength)
     cutting_point = plane_point_at_axis_station(
         local_point, local_normal, cut_station, TOLERANCE)
     if cutting_point is None:
@@ -178,9 +185,9 @@ def run():
         raise RuntimeError("plane_axial_span retornou None.")
     section_scale = max(float(bounds.XLength), float(bounds.YLength), 1.0)
     overbuild = max(TOLERANCE * 100.0, section_scale * 1e-6)
-    pre_start = min(0.0, span[0] - overbuild) if str(member.AdjustedEnd) == "Start" else 0.0
+    pre_start = min(0.0, span[0] - overbuild) if TARGET_END == "Start" else 0.0
     pre_end = (max(value_of(member.AdjustedLength), span[1] + overbuild)
-               if str(member.AdjustedEnd) == "End" else value_of(member.AdjustedLength))
+               if TARGET_END == "End" else value_of(member.AdjustedLength))
     precursor_face = section_face.copy()
     if abs(pre_start) > TOLERANCE:
         precursor_face.translate(App.Vector(0, 0, pre_start))
@@ -195,7 +202,7 @@ def run():
     plane_size = max(2.0 * diagonal, 1.0)
     point_vector = App.Vector(*cutting_point)
     normal_vector = App.Vector(*local_normal)
-    keep_z = value_of(member.AdjustedLength) if str(member.AdjustedEnd) == "Start" else 0.0
+    keep_z = value_of(member.AdjustedLength) if TARGET_END == "Start" else 0.0
     keep_point = App.Vector(0, 0, keep_z)
 
     emit("HALF-SPACE LEGADO (DISPONIBILIDADE/COMPARAÇÃO)")

@@ -161,7 +161,8 @@ class EditableLengthTests(unittest.TestCase):
 
     def test_restore_migrates_and_synchronizes_length(self):
         source = MEMBER.read_text(encoding="utf-8")
-        self.assertIn('"ProfileCategory", "DisplayName", "Length", "EndAdjustmentMode"', source)
+        self.assertIn('"StartAdjustmentMode", "StartAdjustmentGeometryMode"', source)
+        self.assertIn('"EndAdjustmentMode", "EndAdjustmentGeometryMode"', source)
         self.assertIn("required_properties.issubset", source)
         self.assertIn("self._sync_length_from_points(obj)", source)
 

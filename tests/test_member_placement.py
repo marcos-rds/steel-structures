@@ -182,6 +182,21 @@ def load_member():
 
 class MemberObject:
     def __setattr__(self, name, value):
+        aliases = {
+            "AdjustmentGeometryMode": "AdjustmentGeometryMode",
+            "AdjustmentReference": "AdjustmentReference",
+            "AdjustmentGap": "AdjustmentGap",
+            "FixedReferenceOffset": "FixedReferenceOffset",
+            "FixedPlaneNormal": "FixedPlaneNormal",
+        }
+        if name in aliases and "StartAdjustmentMode" in self.__dict__:
+            prefix = "Start" if str(self.__dict__.get("AdjustedEnd", "End")) == "Start" else "End"
+            target = prefix + aliases[name]
+            current = self.__dict__.get(target)
+            if isinstance(current, Quantity) and isinstance(value, (int, float)):
+                current.Value = float(value)
+            else:
+                object.__setattr__(self, target, value)
         current = self.__dict__.get(name)
         if isinstance(current, Quantity) and isinstance(value, (int, float)):
             current.Value = float(value)
@@ -196,6 +211,12 @@ class MemberObject:
         self.AdjustmentGap = Quantity(0); self.FixedReferenceOffset = Quantity(0)
         self.AdjustmentReference = None
         self.AdjustmentGeometryMode = "LengthLimit"; self.FixedPlaneNormal = Vector()
+        self.StartAdjustmentMode = "None"; self.StartAdjustmentGeometryMode = "LengthLimit"
+        self.StartAdjustmentReference = None; self.StartAdjustmentGap = Quantity(0)
+        self.StartFixedReferenceOffset = Quantity(0); self.StartFixedPlaneNormal = Vector()
+        self.EndAdjustmentGeometryMode = "LengthLimit"; self.EndAdjustmentReference = None
+        self.EndAdjustmentGap = Quantity(0); self.EndFixedReferenceOffset = Quantity(0)
+        self.EndFixedPlaneNormal = Vector()
         self.EffectiveStartPoint = Vector(start); self.EffectiveEndPoint = Vector(end)
         self.AdjustedLength = 0.0
         self.OffsetX = Quantity(0); self.OffsetY = Quantity(0); self.Rotation = Quantity(0)
@@ -208,6 +229,11 @@ class MemberObject:
                                "EffectiveStartPoint", "EffectiveEndPoint", "AdjustedLength",
                                "AdjustmentReference",
                                "AdjustmentGeometryMode", "FixedPlaneNormal",
+                               "StartAdjustmentMode", "StartAdjustmentGeometryMode",
+                               "StartAdjustmentReference", "StartAdjustmentGap",
+                               "StartFixedReferenceOffset", "StartFixedPlaneNormal",
+                               "EndAdjustmentGeometryMode", "EndAdjustmentReference",
+                               "EndAdjustmentGap", "EndFixedReferenceOffset", "EndFixedPlaneNormal",
                                "StartPoint", "EndPoint", "StartExtension", "EndExtension",
                                "OffsetX", "OffsetY", "Rotation", "Profile", "Insertion",
                                "MassPerMeter", "MemberLength", "TotalMass", "ElementType"]
@@ -308,7 +334,7 @@ class MemberPlacementTests(unittest.TestCase):
 
     def test_fixed_start_gap_extensions_lengths_and_mass(self):
         obj, proxy = self.create((0, 0, 0), (3000, 0, 0))
-        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "Start"
+        obj.AdjustedEnd = "Start"; obj.StartAdjustmentMode = "Fixed"
         obj.FixedReferenceOffset = Quantity(100); obj.AdjustmentGap = Quantity(20)
         obj.StartExtension = Quantity(50); obj.EndExtension = Quantity(30)
         nominal_start, nominal_end = Vector(obj.StartPoint), Vector(obj.EndPoint)
@@ -346,7 +372,7 @@ class MemberPlacementTests(unittest.TestCase):
 
     def test_fixed_start_remains_anchored_when_nominal_start_changes(self):
         obj, proxy = self.create((0, 0, 0), (1000, 0, 0))
-        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "Start"
+        obj.AdjustedEnd = "Start"; obj.StartAdjustmentMode = "Fixed"
         obj.FixedReferenceOffset = Quantity(100); obj.AdjustmentGap = Quantity(20)
         obj.StartPoint = Vector(100, 0, 0); proxy.onChanged(obj, "StartPoint"); proxy.execute(obj)
         self.assertVector(obj.EffectiveStartPoint, (220, 0, 0)); self.assertEqual(obj.FixedReferenceOffset.Value, 100)
@@ -354,7 +380,7 @@ class MemberPlacementTests(unittest.TestCase):
 
     def test_fixed_placement_translation_rotation_and_recompute_have_no_drift(self):
         obj, proxy = self.create((0, 0, 0), (10, 0, 0))
-        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "Start"
+        obj.AdjustedEnd = "Start"; obj.StartAdjustmentMode = "Fixed"
         obj.FixedReferenceOffset = Quantity(2); obj.AdjustmentGap = Quantity(1)
         proxy.execute(obj); self.translate(obj, proxy, 5, 6, 7); self.rotate_world(obj, proxy, (0, 0, 1), 90)
         for _ in range(4):
@@ -366,11 +392,11 @@ class MemberPlacementTests(unittest.TestCase):
 
     def test_invalid_fixed_interval_is_empty_and_consistent(self):
         obj, proxy = self.create((0, 0, 0), (10, 0, 0))
-        obj.EndAdjustmentMode = "Fixed"; obj.AdjustedEnd = "Start"
+        obj.AdjustedEnd = "Start"; obj.StartAdjustmentMode = "Fixed"
         for offset in (10, 11, 1000):
             obj.FixedReferenceOffset = Quantity(offset); proxy.execute(obj)
             self.assertTrue(obj.Shape.empty); self.assertEqual(obj.AdjustedLength, 0)
-            self.assertVector(obj.EffectiveEndPoint, (offset, 0, 0))
+            self.assertVector(obj.EffectiveEndPoint, (0, 0, 0))
             self.assertEqual(obj.TotalMass, 0); self.assertEqual(obj.MemberLength, 10)
 
     def test_profile_and_rotation_edits_preserve_effective_contract(self):
@@ -409,11 +435,14 @@ class MemberPlacementTests(unittest.TestCase):
                      "AdjustmentGeometryMode", "FixedPlaneNormal"):
             obj.PropertiesList.remove(name); delattr(obj, name)
         restored = self.proxy(); restored.__setstate__(None); restored.onDocumentRestored(obj)
-        self.assertEqual(obj.EndAdjustmentMode, "None"); self.assertEqual(obj.AdjustedEnd, "Start")
-        self.assertEqual(obj.AdjustmentGap.Value, 0); self.assertEqual(obj.FixedReferenceOffset.Value, 0)
-        self.assertIsNone(obj.AdjustmentReference)
-        self.assertEqual(obj.AdjustmentGeometryMode, "LengthLimit")
-        self.assertVector(obj.FixedPlaneNormal, (0, 0, 0))
+        self.assertEqual(obj.StartAdjustmentMode, "None")
+        self.assertEqual(obj.EndAdjustmentMode, "None")
+        self.assertEqual(obj.StartAdjustmentGap.Value, 0)
+        self.assertEqual(obj.EndAdjustmentGap.Value, 0)
+        self.assertIsNone(obj.StartAdjustmentReference)
+        self.assertIsNone(obj.EndAdjustmentReference)
+        self.assertEqual(obj.StartAdjustmentGeometryMode, "LengthLimit")
+        self.assertEqual(obj.EndAdjustmentGeometryMode, "LengthLimit")
         for name in ("EffectiveStartPoint", "EffectiveEndPoint", "AdjustedLength"):
             self.assertEqual(obj.editor_modes[name], 1)
 
@@ -425,6 +454,32 @@ class MemberPlacementTests(unittest.TestCase):
         self.assertEqual(obj.EndAdjustmentMode, "Fixed"); self.assertEqual(obj.AdjustedEnd, "End")
         self.assertEqual(obj.FixedReferenceOffset.Value, -15); self.assertEqual(obj.AdjustmentGap.Value, 7)
         self.assertVector(obj.EffectiveEndPoint, (0, 0, 108))
+
+    def test_restore_migrates_single_end_properties_to_the_selected_slot(self):
+        for adjusted_end, mode in (("Start", "Associative"), ("End", "Fixed")):
+            with self.subTest(adjusted_end=adjusted_end, mode=mode):
+                obj = MemberObject((0, 0, 0), (0, 0, 100))
+                for name in (
+                    "StartAdjustmentMode", "StartAdjustmentGeometryMode",
+                    "StartAdjustmentReference", "StartAdjustmentGap",
+                    "StartFixedReferenceOffset", "StartFixedPlaneNormal",
+                    "EndAdjustmentGeometryMode", "EndAdjustmentReference",
+                    "EndAdjustmentGap", "EndFixedReferenceOffset", "EndFixedPlaneNormal",
+                ):
+                    obj.PropertiesList.remove(name); delattr(obj, name)
+                reference = object()
+                obj.EndAdjustmentMode = mode; obj.AdjustedEnd = adjusted_end
+                obj.AdjustmentGeometryMode = "PlaneCut"
+                obj.AdjustmentReference = (reference, ["Face3"])
+                obj.AdjustmentGap = Quantity(7); obj.FixedReferenceOffset = Quantity(11)
+                obj.FixedPlaneNormal = Vector(1, 0, 1)
+                restored = self.proxy(); restored.__setstate__(None); restored.onDocumentRestored(obj)
+                prefix = adjusted_end
+                self.assertEqual(getattr(obj, prefix + "AdjustmentMode"), mode)
+                self.assertEqual(getattr(obj, prefix + "AdjustmentGeometryMode"), "PlaneCut")
+                self.assertEqual(getattr(obj, prefix + "AdjustmentGap").Value, 7)
+                if adjusted_end == "Start":
+                    self.assertEqual(obj.EndAdjustmentMode, "None")
 
     def test_guards_release_after_sync_exception_and_block_recursion(self):
         obj, proxy = self.create((0, 0, 0), (10, 0, 0)); self.translate(obj, proxy, 1, 0, 0)

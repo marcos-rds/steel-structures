@@ -9,11 +9,12 @@ import FreeCAD as App
 from FreeCAD import Gui
 from PySide import QtWidgets
 
-from .paths import COLUMN_ICON, GRID_COMMAND_ICON, MEMBER_ICON
+from .paths import ADJUST_MEMBER_ICON, COLUMN_ICON, GRID_COMMAND_ICON, MEMBER_ICON
 
 
 _active_member_tool = None
 _active_grid_panel = None
+_active_adjustment_panel = None
 _move_copy_registered = False
 
 
@@ -366,6 +367,74 @@ class CreateGridCommand:
                 _active_grid_panel = None
 
 
+class AdjustMemberCommand:
+    """Open the non-preview task panel for one member end adjustment."""
+
+    def GetResources(self):
+        return {
+            "Pixmap": ADJUST_MEMBER_ICON,
+            "MenuText": "Recortar / Ajustar Membro",
+            "ToolTip": "Limita ou recorta uma extremidade usando uma referência geométrica.",
+        }
+
+    def IsActive(self):
+        return App.ActiveDocument is not None
+
+    def Activated(self):
+        global _active_adjustment_panel
+        if (_active_adjustment_panel is not None
+                and not getattr(_active_adjustment_panel, "_closed", False)):
+            App.Console.PrintWarning(
+                "Steel Structures: o painel Recortar / Ajustar Membro já está ativo.\n"
+            )
+            return
+        if _get_active_task_dialog() is not None:
+            App.Console.PrintWarning(
+                "Steel Structures: feche o painel de tarefas atual antes de ajustar um membro.\n"
+            )
+            return
+        document = App.ActiveDocument
+        if document is None:
+            return
+        from .interactive.member_adjustment_controller import is_structural_member
+        from .interactive.member_adjustment_task_panel import MemberAdjustmentTaskPanel
+        selected = [obj for obj in Gui.Selection.getSelection() if is_structural_member(obj)]
+        member = selected[0] if len(selected) == 1 and len(Gui.Selection.getSelection()) == 1 else None
+        try:
+            panel = MemberAdjustmentTaskPanel(document, member, _adjustment_panel_closed)
+            _active_adjustment_panel = panel
+            Gui.Control.showDialog(panel)
+        except Exception:
+            _active_adjustment_panel = None
+            App.Console.PrintError(
+                "Steel Structures: falha ao abrir Recortar / Ajustar Membro:\n"
+                + traceback.format_exc()
+            )
+
+
+def _adjustment_panel_closed(panel, _accepted):
+    global _active_adjustment_panel
+    if _active_adjustment_panel is panel:
+        _active_adjustment_panel = None
+    try:
+        Gui.Control.closeDialog()
+    except Exception:
+        pass
+
+
+def close_adjustment_panel():
+    global _active_adjustment_panel
+    panel = _active_adjustment_panel
+    if panel is None:
+        return False
+    try:
+        panel.reject()
+    finally:
+        if _active_adjustment_panel is panel:
+            _active_adjustment_panel = None
+    return True
+
+
 def _grid_panel_closed(panel, _accepted):
     global _active_grid_panel
     if _active_grid_panel is panel:
@@ -414,4 +483,5 @@ def close_member_tool():
 Gui.addCommand("SteelStructures_CreateMember", CreateMemberCommand())
 Gui.addCommand("SteelStructures_CreateColumn", CreateColumnCommand())
 Gui.addCommand("SteelStructures_CreateGrid", CreateGridCommand())
+Gui.addCommand("SteelStructures_AdjustMember", AdjustMemberCommand())
 Gui.addCommand("SteelStructures_ProfileBrowser", ProfileBrowserCommand())

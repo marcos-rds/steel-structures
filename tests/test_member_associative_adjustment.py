@@ -66,7 +66,7 @@ class MemberAssociativeAdjustmentTests(unittest.TestCase):
                 obj, proxy = self.create(); obj.AdjustmentReference = (reference, ["Edge3"])
                 obj.AdjustmentGap = Quantity(20); proxy.execute(obj)
                 self.assertEqual(obj.AdjustedLength, station - 20)
-        obj, proxy = self.create(); obj.AdjustedEnd = "Start"
+        obj, proxy = self.create(); obj.EndAdjustmentMode = "None"; obj.AdjustedEnd = "Start"; obj.StartAdjustmentMode = "Associative"
         obj.AdjustmentReference = (EdgeReference((200, -10, 100), (200, 10, 100)), ["Edge3"])
         obj.AdjustmentGap = Quantity(-20); proxy.execute(obj)
         self.assertVector(obj.EffectiveStartPoint, (180, 0, 0)); self.assertEqual(obj.AdjustedLength, 2820)
@@ -90,7 +90,7 @@ class MemberAssociativeAdjustmentTests(unittest.TestCase):
             self.assertTrue(obj.Shape.empty); self.assertEqual(obj.AdjustedLength, 0)
 
     def test_associative_start_gap_and_extensions(self):
-        obj, proxy = self.create(); obj.AdjustedEnd = "Start"
+        obj, proxy = self.create(); obj.EndAdjustmentMode = "None"; obj.AdjustedEnd = "Start"; obj.StartAdjustmentMode = "Associative"
         obj.AdjustmentReference = (self.reference(point=(200, 0, 0)), ["Face3"])
         obj.AdjustmentGap = Quantity(20); obj.StartExtension = Quantity(80); obj.EndExtension = Quantity(50)
         proxy.execute(obj)
@@ -198,7 +198,7 @@ class MemberAssociativeAdjustmentTests(unittest.TestCase):
                              obj.Shape.half_space.face.normal.z))
 
     def test_plane_cut_start_and_edge_combination_rules(self):
-        obj, proxy = self.create(); obj.AdjustmentGeometryMode = "PlaneCut"; obj.AdjustedEnd = "Start"
+        obj, proxy = self.create(); obj.EndAdjustmentMode = "None"; obj.AdjustedEnd = "Start"; obj.StartAdjustmentMode = "Associative"; obj.AdjustmentGeometryMode = "PlaneCut"
         obj.AdjustmentReference = (self.reference(point=(200, 0, 0), normal=(1, 1, 0)), ["Face3"])
         obj.AdjustmentGap = Quantity(20); proxy.execute(obj)
         self.assertTrue(obj.Shape.clipped); self.assertVector(obj.EffectiveStartPoint, (220, 0, 0))
@@ -240,6 +240,75 @@ class MemberAssociativeAdjustmentTests(unittest.TestCase):
         self.assertEqual(obj.AdjustmentGeometryMode, "PlaneCut")
         self.assertVector(obj.FixedPlaneNormal, (component, 0, component))
         self.assertTrue(obj.Shape.clipped)
+
+    def test_dual_length_limits_gaps_and_nominal_axis_are_independent(self):
+        obj, proxy = self.create(); nominal = (Vector(obj.StartPoint), Vector(obj.EndPoint))
+        obj.StartAdjustmentMode = "Associative"
+        obj.StartAdjustmentReference = (self.reference(point=(200, 0, 0)), ["Face3"])
+        obj.StartAdjustmentGap = Quantity(25)
+        obj.EndAdjustmentReference = (self.reference(point=(2800, 0, 0)), ["Face3"])
+        obj.EndAdjustmentGap = Quantity(-40); proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (225, 0, 0))
+        self.assertVector(obj.EffectiveEndPoint, (2840, 0, 0))
+        self.assertEqual(obj.AdjustedLength, 2615)
+        self.assertVector(obj.StartPoint, (nominal[0].x, nominal[0].y, nominal[0].z))
+        self.assertVector(obj.EndPoint, (nominal[1].x, nominal[1].y, nominal[1].z))
+
+    def test_dual_references_move_only_their_own_limit(self):
+        obj, proxy = self.create(); start_ref = self.reference(point=(200, 0, 0)); end_ref = self.reference()
+        obj.StartAdjustmentMode = "Associative"; obj.StartAdjustmentReference = (start_ref, ["Face3"])
+        obj.EndAdjustmentReference = (end_ref, ["Face3"]); proxy.execute(obj)
+        baseline_end = Vector(obj.EffectiveEndPoint)
+        start_ref.Placement = Placement(Vector(100, 0, 0), Rotation()); proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (300, 0, 0)); self.assertVector(obj.EffectiveEndPoint, (baseline_end.x, baseline_end.y, baseline_end.z))
+        baseline_start = Vector(obj.EffectiveStartPoint)
+        end_ref.Placement = Placement(Vector(-100, 0, 0), Rotation()); proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (baseline_start.x, baseline_start.y, baseline_start.z))
+        self.assertVector(obj.EffectiveEndPoint, (2700, 0, 0))
+
+    def test_dual_extensions_are_suppressed_per_adjusted_side_and_reactivate(self):
+        obj, proxy = self.create(); obj.EndAdjustmentMode = "None"
+        obj.StartExtension = Quantity(50); obj.EndExtension = Quantity(80)
+        obj.StartAdjustmentMode = "Associative"
+        obj.StartAdjustmentReference = (self.reference(point=(200, 0, 0)), ["Face3"])
+        proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (200, 0, 0)); self.assertVector(obj.EffectiveEndPoint, (3080, 0, 0))
+        obj.EndAdjustmentMode = "Associative"
+        obj.EndAdjustmentReference = (self.reference(point=(2800, 0, 0)), ["Face3"]); proxy.execute(obj)
+        self.assertVector(obj.EffectiveEndPoint, (2800, 0, 0))
+        obj.StartAdjustmentMode = "None"; obj.StartAdjustmentReference = None; proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (-50, 0, 0)); self.assertVector(obj.EffectiveEndPoint, (2800, 0, 0))
+
+    def test_dual_plane_cut_and_mixed_modes_are_valid(self):
+        for start_geometry, end_geometry in (("PlaneCut", "PlaneCut"),
+                                              ("PlaneCut", "LengthLimit"),
+                                              ("LengthLimit", "PlaneCut"),
+                                              ("LengthLimit", "LengthLimit")):
+            with self.subTest(start=start_geometry, end=end_geometry):
+                obj, proxy = self.create(); obj.StartAdjustmentMode = "Fixed"
+                obj.StartAdjustmentGeometryMode = start_geometry; obj.StartFixedReferenceOffset = Quantity(200)
+                obj.StartFixedPlaneNormal = Vector(1, 0, 1)
+                obj.EndAdjustmentGeometryMode = end_geometry; obj.EndAdjustmentReference = (self.reference(normal=(1, 1, 0)), ["Face3"])
+                proxy.execute(obj)
+                self.assertFalse(obj.Shape.empty); self.assertGreater(obj.Shape.Volume, 0)
+                self.assertEqual(obj.AdjustedLength, 2600)
+
+    def test_fixed_and_associative_slots_remain_independent(self):
+        obj, proxy = self.create(); start_ref = self.reference(point=(200, 0, 0)); end_ref = self.reference()
+        obj.StartAdjustmentMode = "Fixed"; obj.StartFixedReferenceOffset = Quantity(200)
+        obj.EndAdjustmentReference = (end_ref, ["Face3"]); proxy.execute(obj)
+        before_start = Vector(obj.EffectiveStartPoint)
+        start_ref.Placement = Placement(Vector(500, 0, 0), Rotation())
+        end_ref.Placement = Placement(Vector(-100, 0, 0), Rotation()); proxy.execute(obj)
+        self.assertVector(obj.EffectiveStartPoint, (before_start.x, before_start.y, before_start.z))
+        self.assertVector(obj.EffectiveEndPoint, (2700, 0, 0))
+
+    def test_crossed_dual_limits_fail_safely(self):
+        obj, proxy = self.create(); obj.StartAdjustmentMode = "Fixed"
+        obj.StartFixedReferenceOffset = Quantity(2000)
+        obj.EndAdjustmentMode = "Fixed"; obj.EndFixedReferenceOffset = Quantity(1500)
+        proxy.execute(obj)
+        self.assertTrue(obj.Shape.empty); self.assertEqual(obj.AdjustedLength, 0)
 
 
 if __name__ == "__main__":

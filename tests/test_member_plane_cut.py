@@ -7,10 +7,12 @@ import unittest
 from freecad.SteelStructures.member_plane_cut import (
     bounding_box_corners,
     build_plane_cut,
+    build_plane_cuts,
     finite_clip_plan,
     global_plane_to_member_local,
     is_orthogonal_plane,
     orthonormal_plane_basis,
+    PlaneCutSpec,
     plane_point_at_axis_station,
 )
 from tests.test_member_placement import Placement, Rotation, Vector
@@ -46,6 +48,8 @@ class Clipped:
     def __init__(self, prism, keep_solid):
         self.prism, self.keep_solid = prism, keep_solid
         self.Volume = 1000.0 * 1000.0
+        self.BoundBox = prism.BoundBox
+        self.common_count = getattr(prism, "common_count", 0) + 1
         point, normal = keep_solid.face.point, keep_solid.normal
         self.cap_vertices = []
         for x in (-50.0, 50.0):
@@ -55,6 +59,7 @@ class Clipped:
                 self.cap_vertices.append(Vector(x, y, z))
     def isNull(self): return False
     def isValid(self): return True
+    def common(self, keep_solid): return Clipped(self, keep_solid)
 
 
 class FakePart:
@@ -199,6 +204,18 @@ class MemberPlaneCutTests(unittest.TestCase):
     def test_parallel_and_zero_normals_are_invalid(self):
         self.assertIsNone(build_plane_cut(FakePart, Vector, SectionFace(), 1000, 1000, (1, 0, 0), "End"))
         self.assertIsNone(build_plane_cut(FakePart, Vector, SectionFace(), 1000, 1000, (0, 0, 0), "End"))
+
+    def test_two_plane_cuts_share_one_precursor_and_are_order_independent(self):
+        cuts = (
+            PlaneCutSpec("Start", (1, 0, 1)),
+            PlaneCutSpec("End", (-1, 0, 1)),
+        )
+        forward = build_plane_cuts(FakePart, Vector, SectionFace(), 1000, cuts)
+        reverse = build_plane_cuts(FakePart, Vector, SectionFace(), 1000, reversed(cuts))
+        self.assertIsNotNone(forward); self.assertIsNotNone(reverse)
+        self.assertEqual((forward.shape.common_count, reverse.shape.common_count), (2, 2))
+        self.assertEqual((forward.pre_start, forward.pre_end),
+                         (reverse.pre_start, reverse.pre_end))
 
 
 if __name__ == "__main__":

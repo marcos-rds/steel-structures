@@ -18,6 +18,13 @@ class PlaneCutResult:
 
 
 @dataclass(frozen=True)
+class PlaneCutSpec:
+    adjusted_end: str
+    normal: tuple[float, float, float]
+    point: tuple[float, float, float] | None = None
+
+
+@dataclass(frozen=True)
 class FiniteClipPlan:
     point: tuple[float, float, float]
     normal: tuple[float, float, float]
@@ -254,6 +261,66 @@ def build_plane_cut(part_module, vector_type, section_face, axial_length: float,
         return _build_plane_cut(
             part_module, vector_type, section_face, axial_length, cut_station,
             normal_local, adjusted_end, tolerance, point_local,
+        )
+    except Exception:
+        return None
+
+
+def _build_plane_cuts(part_module, vector_type, section_face, axial_length: float,
+                      cuts, tolerance: float = 1e-7) -> PlaneCutResult | None:
+    """Build one shared precursor and apply independent Start/End plane clips."""
+    length = float(axial_length)
+    if length <= tolerance:
+        return None
+    bounds = section_face.BoundBox
+    section_scale = max(float(bounds.XLength), float(bounds.YLength), 1.0)
+    overbuild = max(tolerance * 100.0, section_scale * 1e-6)
+    prepared = []
+    pre_start, pre_end = 0.0, length
+    for cut in cuts:
+        normal = normalized_vector(cut.normal, tolerance)
+        if normal is None or cut.adjusted_end not in ("Start", "End"):
+            return None
+        station = 0.0 if cut.adjusted_end == "Start" else length
+        span = plane_axial_span(
+            station, normal, (bounds.XMin, bounds.XMax),
+            (bounds.YMin, bounds.YMax), tolerance,
+        )
+        if span is None:
+            return None
+        pre_start = min(pre_start, span[0] - overbuild)
+        pre_end = max(pre_end, span[1] + overbuild)
+        point = cut.point or (0.0, 0.0, station)
+        point = plane_point_at_axis_station(point, normal, station, tolerance)
+        if point is None:
+            return None
+        prepared.append((cut.adjusted_end, normal, point))
+    face = section_face.copy()
+    if abs(pre_start) > tolerance:
+        face.translate(vector_type(0.0, 0.0, pre_start))
+    shape = face.extrude(vector_type(0.0, 0.0, pre_end - pre_start))
+    for adjusted_end, normal, point in prepared:
+        keep_z = length if adjusted_end == "Start" else 0.0
+        finite = clip_prism_by_plane_finite(
+            part_module, vector_type, shape, point, normal,
+            (0.0, 0.0, keep_z), tolerance,
+        )
+        if finite is None:
+            return None
+        shape = finite.shape
+    area = float(section_face.Area)
+    if not isfinite(area) or area <= tolerance:
+        return None
+    return PlaneCutResult(shape, area, pre_start, pre_end)
+
+
+def build_plane_cuts(part_module, vector_type, section_face, axial_length: float,
+                     cuts, tolerance: float = 1e-7) -> PlaneCutResult | None:
+    """Defensively clip a member by zero, one, or two independent planes."""
+    try:
+        return _build_plane_cuts(
+            part_module, vector_type, section_face, axial_length,
+            tuple(cuts), tolerance,
         )
     except Exception:
         return None

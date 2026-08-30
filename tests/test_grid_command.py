@@ -39,6 +39,7 @@ class GridCommandTests(unittest.TestCase):
         paths.MEMBER_ICON = "member.svg"
         paths.COLUMN_ICON = "column.svg"
         paths.GRID_COMMAND_ICON = "grid.svg"
+        paths.ADJUST_MEMBER_ICON = "adjust.svg"
         self.document = Document()
         self.new_documents = []
         self.warnings, self.errors, self.registered = [], [], []
@@ -102,6 +103,7 @@ class GridCommandTests(unittest.TestCase):
     def test_registration_and_resources(self):
         self.assertEqual([name for name, _cmd in self.registered], [
             "SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_CreateGrid",
+            "SteelStructures_AdjustMember",
             "SteelStructures_ProfileBrowser"
         ])
         resources = self.module.CreateGridCommand().GetResources()
