@@ -129,6 +129,17 @@ class CreationPreferencesTests(unittest.TestCase):
         values.update(changes)
         return self.preferences.ColumnCreationSettings(**values)
 
+    def grid(self, **changes):
+        values = dict(
+            line_color=(0.1, 0.2, 0.3), line_width=2.5,
+            show_intersections=False, intersection_color=(0.2, 0.4, 0.6),
+            intersection_size=8.0, show_labels=False, label_position="End",
+            label_offset=375.0, font_name="Arial", font_size=18.0,
+            text_color=(0.8, 0.7, 0.6),
+        )
+        values.update(changes)
+        return self.preferences.GridAppearanceSettings(**values)
+
     def test_first_member_run_uses_exact_defaults(self):
         value = self.preferences.load_member_creation_settings()
         self.assertEqual((value.designation, value.insertion, value.rotation,
@@ -142,6 +153,14 @@ class CreationPreferencesTests(unittest.TestCase):
                           value.continue_creating),
                          ("W 150 x 13,0", 3000.0, 0.0, True))
 
+    def test_first_grid_run_uses_new_factory_colors(self):
+        value = self.preferences.load_grid_appearance_settings()
+        self.assertEqual(value.line_color, (127.0 / 255.0,) * 3)
+        self.assertEqual(value.intersection_color, (0.0, 170.0 / 255.0, 1.0))
+        self.assertEqual((value.line_width, value.show_intersections,
+                          value.show_labels, value.label_position, value.label_offset),
+                         (1.0, True, True, "Both", 250.0))
+
     def test_member_round_trip_persists_profile_color_rotation_type_and_insertion(self):
         self.preferences.save_member_creation_settings(self.member())
         value = self.preferences.load_member_creation_settings()
@@ -152,6 +171,26 @@ class CreationPreferencesTests(unittest.TestCase):
         value = self.preferences.load_column_creation_settings()
         self.assertEqual(value, self.column())
 
+    def test_grid_appearance_round_trip_persists_only_cosmetic_values(self):
+        self.assertTrue(self.preferences.save_grid_appearance_settings(self.grid()))
+        self.assertEqual(self.preferences.load_grid_appearance_settings(), self.grid())
+        keys = set(self.database.groups[self.preferences.GRID_PREFERENCES])
+        for forbidden in ("XSpacings", "YSpacings", "XStartExtension",
+                          "YStartExtension", "Placement", "XAxisIdentification"):
+            self.assertNotIn(forbidden, keys)
+
+    def test_invalid_grid_values_fall_back_to_factory_defaults(self):
+        group = self.database.groups.setdefault(self.preferences.GRID_PREFERENCES, {})
+        group.update(LineWidth=float("nan"), IntersectionPointSize=-1,
+                     LabelPosition="Around", FontSize=0,
+                     LineColorRed=2.0, LineColorGreen=0.0, LineColorBlue=0.0)
+        value = self.preferences.load_grid_appearance_settings()
+        self.assertEqual(value.line_width, 1.0)
+        self.assertEqual(value.intersection_size, 5.0)
+        self.assertEqual(value.label_position, "Both")
+        self.assertEqual(value.font_size, 14.0)
+        self.assertEqual(value.line_color, (127.0 / 255.0,) * 3)
+
     def test_tools_have_independent_parameter_groups(self):
         self.preferences.save_member_creation_settings(self.member())
         self.preferences.save_column_creation_settings(self.column())
@@ -159,6 +198,9 @@ class CreationPreferencesTests(unittest.TestCase):
         self.assertEqual(self.preferences.load_column_creation_settings(), self.column())
         self.assertNotEqual(self.preferences.MEMBER_PREFERENCES,
                             self.preferences.COLUMN_PREFERENCES)
+        self.assertNotIn(self.preferences.GRID_PREFERENCES,
+                         (self.preferences.MEMBER_PREFERENCES,
+                          self.preferences.COLUMN_PREFERENCES))
 
     def test_new_module_instance_simulating_restart_restores_values(self):
         self.preferences.save_column_creation_settings(self.column(height=5678, rotation=23))

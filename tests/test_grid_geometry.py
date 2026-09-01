@@ -101,6 +101,52 @@ class IdentifierTests(unittest.TestCase):
             expected,
         )
 
+
+class LabelAnchorTests(unittest.TestCase):
+    def geometry(self):
+        return grid.build_grid_geometry(
+            [6000, 6000], [5000, 5000],
+            x_start_extension=1000, x_end_extension=1500,
+            y_start_extension=750, y_end_extension=1250,
+        )
+
+    def test_start_end_and_both_anchor_exact_axis_extensions(self):
+        geometry = self.geometry()
+        start = grid.grid_label_anchors(geometry, "Start", 250)
+        end = grid.grid_label_anchors(geometry, "End", 250)
+        both = grid.grid_label_anchors(geometry, "Both", 250)
+        self.assertEqual(len(start), 6)
+        self.assertEqual(len(end), 6)
+        self.assertEqual({item.side for item in start}, {"bottom", "left"})
+        self.assertEqual({item.side for item in end}, {"top", "right"})
+        self.assertEqual(len(both), len(start) + len(end))
+        x_start = next(item for item in start if item.family == "X")
+        x_end = next(item for item in end if item.family == "X")
+        y_start = next(item for item in start if item.family == "Y")
+        y_end = next(item for item in end if item.family == "Y")
+        self.assertEqual(x_start.anchor_point_local[1], -1000.0)
+        self.assertEqual(x_end.anchor_point_local[1], 11500.0)
+        self.assertEqual(y_start.anchor_point_local[0], -1250.0)
+        self.assertEqual(y_end.anchor_point_local[0], 13750.0)
+
+    def test_offset_custom_two_digits_and_letters_are_preserved(self):
+        geometry = grid.build_grid_geometry(
+            [1000], [2000], x_identifier_scheme="custom",
+            y_identifier_scheme="custom", x_identifiers=["10", "25"],
+            y_identifiers=["Z", "AA"],
+        )
+        anchors = grid.grid_label_anchors(geometry, "End", 400)
+        self.assertEqual([item.text for item in anchors], ["10", "25", "Z", "AA"])
+        self.assertEqual(anchors[0].anchor_point_local, (0.0, 2400.0, 0.0))
+        self.assertEqual(anchors[-1].anchor_point_local, (1400.0, 2000.0, 0.0))
+
+    def test_invalid_position_and_offset_are_rejected(self):
+        geometry = self.geometry()
+        with self.assertRaises(ValueError):
+            grid.grid_label_anchors(geometry, "Middle", 250)
+        with self.assertRaises(ValueError):
+            grid.grid_label_anchors(geometry, "Both", -1)
+
     def test_invalid_identifier_indices_are_rejected(self):
         for value, error in ((-1, ValueError), (1.5, TypeError), (True, TypeError)):
             with self.subTest(value=value), self.assertRaises(error):

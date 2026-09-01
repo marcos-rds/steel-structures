@@ -15,7 +15,11 @@ from .member import INSERTION_OPTIONS
 PREFERENCES_ROOT = "User parameter:BaseApp/Preferences/Mod/SteelStructures"
 MEMBER_PREFERENCES = f"{PREFERENCES_ROOT}/CreateMember"
 COLUMN_PREFERENCES = f"{PREFERENCES_ROOT}/CreateColumn"
+GRID_PREFERENCES = f"{PREFERENCES_ROOT}/CreateGrid"
 DEFAULT_COLOR = (184.0 / 255.0, 184.0 / 255.0, 194.0 / 255.0)
+DEFAULT_GRID_LINE_COLOR = (127.0 / 255.0,) * 3
+DEFAULT_GRID_INTERSECTION_COLOR = (0.0, 170.0 / 255.0, 1.0)
+DEFAULT_GRID_TEXT_COLOR = (242.0 / 255.0,) * 3
 DEFAULT_ROTATION = 0.0
 DEFAULT_COLUMN_HEIGHT = 3000.0
 DEFAULT_CONTINUE = True
@@ -79,6 +83,21 @@ class ColumnCreationSettings:
     continue_creating: bool
 
 
+@dataclass(frozen=True)
+class GridAppearanceSettings:
+    line_color: tuple[float, float, float]
+    line_width: float
+    show_intersections: bool
+    intersection_color: tuple[float, float, float]
+    intersection_size: float
+    show_labels: bool
+    label_position: str
+    label_offset: float
+    font_name: str
+    font_size: float
+    text_color: tuple[float, float, float]
+
+
 def _default_profile():
     for category in profile_catalog.categories():
         for series in profile_catalog.series_for_category(category):
@@ -118,6 +137,23 @@ def _color(group):
     if all(math.isfinite(value) and 0.0 <= value <= 1.0 for value in values):
         return values
     return DEFAULT_COLOR
+
+
+def _named_color(group, prefix, default):
+    values = tuple(group.GetFloat(prefix + suffix, fallback) for suffix, fallback in zip(
+        ("Red", "Green", "Blue"), default
+    ))
+    if all(math.isfinite(value) and 0.0 <= value <= 1.0 for value in values):
+        return values
+    return default
+
+
+def default_grid_appearance(font_name=""):
+    return GridAppearanceSettings(
+        DEFAULT_GRID_LINE_COLOR, 1.0, True, DEFAULT_GRID_INTERSECTION_COLOR,
+        5.0, True, "Both", 250.0, str(font_name), 14.0,
+        DEFAULT_GRID_TEXT_COLOR,
+    )
 
 
 def _shared_settings(group):
@@ -175,6 +211,34 @@ def load_column_creation_settings():
     )
 
 
+def load_grid_appearance_settings():
+    default = default_grid_appearance()
+    try:
+        group = App.ParamGet(GRID_PREFERENCES)
+        position = group.GetString("LabelPosition", default.label_position)
+        if position not in ("Start", "End", "Both"):
+            position = default.label_position
+        return GridAppearanceSettings(
+            _named_color(group, "LineColor", default.line_color),
+            _finite_in_range(group.GetFloat("LineWidth", default.line_width),
+                             default.line_width, 1.0, 20.0),
+            bool(group.GetBool("ShowIntersections", default.show_intersections)),
+            _named_color(group, "IntersectionPointColor", default.intersection_color),
+            _finite_in_range(group.GetFloat("IntersectionPointSize", default.intersection_size),
+                             default.intersection_size, 1.0, 30.0),
+            bool(group.GetBool("ShowLabels", default.show_labels)),
+            position,
+            _finite_in_range(group.GetFloat("LabelOffset", default.label_offset),
+                             default.label_offset, 0.0, 1.0e9),
+            group.GetString("FontName", default.font_name),
+            _finite_in_range(group.GetFloat("FontSize", default.font_size),
+                             default.font_size, 1.0, 200.0),
+            _named_color(group, "TextColor", default.text_color),
+        )
+    except (AttributeError, RuntimeError, TypeError, ValueError, OverflowError):
+        return default
+
+
 def _save_shared(group, settings):
     profile = _valid_profile(settings.category, settings.series, settings.designation)
     valid_insertions = _profile_insertion_options(profile) or tuple(INSERTION_OPTIONS)
@@ -221,9 +285,47 @@ def save_column_creation_settings(settings):
     return True
 
 
+def save_grid_appearance_settings(settings):
+    try:
+        group = App.ParamGet(GRID_PREFERENCES)
+        defaults = default_grid_appearance()
+        colors = (
+            ("LineColor", settings.line_color, defaults.line_color),
+            ("IntersectionPointColor", settings.intersection_color,
+             defaults.intersection_color),
+            ("TextColor", settings.text_color, defaults.text_color),
+        )
+        for prefix, color, fallback in colors:
+            if (len(color) != 3 or not all(
+                    math.isfinite(float(value)) and 0.0 <= float(value) <= 1.0
+                    for value in color)):
+                color = fallback
+            for suffix, value in zip(("Red", "Green", "Blue"), color):
+                group.SetFloat(prefix + suffix, float(value))
+        group.SetFloat("LineWidth", _finite_in_range(
+            settings.line_width, defaults.line_width, 1.0, 20.0))
+        group.SetBool("ShowIntersections", bool(settings.show_intersections))
+        group.SetFloat("IntersectionPointSize", _finite_in_range(
+            settings.intersection_size, defaults.intersection_size, 1.0, 30.0))
+        group.SetBool("ShowLabels", bool(settings.show_labels))
+        position = settings.label_position
+        group.SetString("LabelPosition", position if position in ("Start", "End", "Both")
+                        else defaults.label_position)
+        group.SetFloat("LabelOffset", _finite_in_range(
+            settings.label_offset, defaults.label_offset, 0.0, 1.0e9))
+        group.SetString("FontName", str(settings.font_name))
+        group.SetFloat("FontSize", _finite_in_range(
+            settings.font_size, defaults.font_size, 1.0, 200.0))
+    except (AttributeError, RuntimeError, TypeError, ValueError, OverflowError):
+        return False
+    return True
+
+
 __all__ = [
-    "COLUMN_PREFERENCES", "MEMBER_PREFERENCES", "PREFERENCES_ROOT",
-    "ColumnCreationSettings", "MemberCreationSettings",
-    "load_column_creation_settings", "load_member_creation_settings",
-    "save_column_creation_settings", "save_member_creation_settings",
+    "COLUMN_PREFERENCES", "GRID_PREFERENCES", "MEMBER_PREFERENCES", "PREFERENCES_ROOT",
+    "ColumnCreationSettings", "GridAppearanceSettings", "MemberCreationSettings",
+    "default_grid_appearance", "load_column_creation_settings",
+    "load_grid_appearance_settings", "load_member_creation_settings",
+    "save_column_creation_settings", "save_grid_appearance_settings",
+    "save_member_creation_settings",
 ]
