@@ -213,6 +213,42 @@ class MemberAssociativeAdjustmentTests(unittest.TestCase):
         expected_equivalent_length = obj.Shape.Volume / 1000.0
         self.assertAlmostEqual(obj.TotalMass, 13.0 * expected_equivalent_length / 1000.0)
 
+    def test_plane_cut_uses_the_matching_detailed_or_simplified_section_area(self):
+        original_geometry = self.member._section_geometry
+        original_converter = self.member.section_geometry_to_face
+        original_translation = self.member._geometry_insertion_translation
+        catalog_geometry = original_geometry(self.member.profile_catalog.get("W 150 x 13,0"))
+
+        converted_areas = []
+
+        def face_for_mode(mode):
+            face = original_converter(catalog_geometry)
+            face.Area = 1000.0 if str(mode) == "Detailed" else 800.0
+            converted_areas.append(face.Area)
+            return face
+
+        self.member._section_geometry = lambda _profile, mode="Detailed": str(mode)
+        self.member.section_geometry_to_face = face_for_mode
+        self.member._geometry_insertion_translation = lambda *_args: (0.0, 0.0)
+        try:
+            masses = []
+            volumes = []
+            for mode in ("Detailed", "Simplified"):
+                obj, proxy = self.create()
+                obj.SectionGeometryMode = mode
+                obj.AdjustmentGeometryMode = "PlaneCut"
+                obj.AdjustmentReference = (self.reference(normal=(1, 1, 0)), ["Face3"])
+                proxy.execute(obj)
+                masses.append(obj.TotalMass)
+                volumes.append(obj.Shape.Volume)
+            self.assertEqual(converted_areas[-2:], [1000.0, 800.0])
+            for mass, volume, area in zip(masses, volumes, converted_areas[-2:]):
+                self.assertAlmostEqual(mass, 13.0 * (volume / area) / 1000.0)
+        finally:
+            self.member._section_geometry = original_geometry
+            self.member.section_geometry_to_face = original_converter
+            self.member._geometry_insertion_translation = original_translation
+
     def test_fixed_plane_cut_local_normal_tracks_member_and_keeps_gap_independent(self):
         obj, proxy = self.create((0, 0, 0), (3000, 0, 0))
         obj.EndAdjustmentMode = "Fixed"; obj.AdjustmentGeometryMode = "PlaneCut"

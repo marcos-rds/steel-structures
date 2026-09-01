@@ -37,7 +37,7 @@ class MemberSourceAxisPreviewContracts(unittest.TestCase):
         for control in (
                 "category.currentTextChanged", "series.currentTextChanged",
                 "profile.currentIndexChanged", "insertion.currentIndexChanged",
-                "rotation.valueChanged", "colorChanged"):
+                "rotation.valueChanged", "colorChanged", "sectionGeometryModeChanged"):
             self.assertIn(control, connect)
 
     def test_link_toggle_updates_but_does_not_change_preview_axis(self):
@@ -53,11 +53,13 @@ class MemberSourceAxisPreviewContracts(unittest.TestCase):
 
     def test_preview_uses_shared_member_geometry_pipeline_and_offsets(self):
         for contract in (
-                "_section_face(profile)", "_insertion_translation(profile, insertion)",
+                "_section_face(profile, section_geometry_mode)",
+                "_insertion_translation(profile, insertion, section_geometry_mode)",
                 "_member_frame_rotation(direction)", "offset_x", "offset_y",
                 "PREVIEW_TRANSPARENCY = 65", "ShowInTree = False",
                 "Selectable = False"):
             self.assertIn(contract, self.preview)
+        self.assertIn("str(section_geometry_mode)", self.preview)
         self.assertIn("update_member_preview", self.column)
         self.assertIn("update_member_preview", self.member)
 

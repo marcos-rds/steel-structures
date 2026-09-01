@@ -6,7 +6,9 @@ from PySide import QtCore, QtGui, QtWidgets
 from .. import profile_catalog
 from ..member import ELEMENT_TYPES, INSERTION_OPTIONS
 from ..preferences import MemberCreationSettings
-from ..profiles import build_section_geometry
+from ..profiles import (
+    SectionGeometryMode, build_section_geometry, section_geometry_mode_has_effect,
+)
 from .member_controller import (
     CreationGeometryMode, MemberCreationOptions, compact_profile_designation,
     next_default_label,
@@ -197,6 +199,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
     """Profile-only controls; all point input remains owned by Draft."""
 
     colorChanged = QtCore.Signal()
+    sectionGeometryModeChanged = QtCore.Signal()
 
     def __init__(self, document, parent=None, element_types=None):
         super().__init__("Opções do perfil", parent)
@@ -242,6 +245,12 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
             QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed
         )
         self.profile_browser_button.clicked.connect(self._open_profile_browser)
+        self.generate_radii = QtWidgets.QCheckBox("Gerar raios")
+        self.generate_radii.setChecked(True)
+        self.generate_radii.setToolTip(
+            "Gera os raios e filetes reais do perfil na geometria 3D; desmarque para simplificar a Shape."
+        )
+        self.generate_radii.toggled.connect(self._geometry_mode_changed)
         self.insertion = QtWidgets.QComboBox()
         self.insertion.addItems(INSERTION_OPTIONS)
         self.insertion.setVisible(False)
@@ -297,6 +306,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
         )
         profile_layout.addWidget(self.profile_browser_button)
         selection_form.addRow("Perfil:", profile_row)
+        selection_form.addRow("", self.generate_radii)
         self.orientation_panel = _OrientationPanel(
             self.orientation_preview, self.insertion_selector,
             self.rotation, self.color_button
@@ -387,11 +397,33 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
         self.profile.blockSignals(False)
         self._refresh_insertion_options()
         self.refresh_automatic_name()
+        self._update_geometry_mode_availability()
         self._update_orientation_preview()
 
     def _profile_changed(self, _index=None):
         self._refresh_insertion_options()
+        self._update_geometry_mode_availability()
         self._update_orientation_preview()
+
+    @property
+    def section_geometry_mode(self):
+        checkbox = getattr(self, "generate_radii", None)
+        checked = True if checkbox is None else checkbox.isChecked()
+        return (SectionGeometryMode.DETAILED.value if checked
+                else SectionGeometryMode.SIMPLIFIED.value)
+
+    def _geometry_mode_changed(self, _checked):
+        self._update_orientation_preview()
+        self.sectionGeometryModeChanged.emit()
+
+    def _update_geometry_mode_availability(self):
+        try:
+            supported = section_geometry_mode_has_effect(
+                profile_catalog.get(self.profile_designation).definition
+            )
+        except (AttributeError, KeyError):
+            supported = False
+        self.generate_radii.setVisible(supported)
 
     def _select_insertion_reference(self, identifier):
         label = self.orientation_preview.reference_label(identifier)
@@ -400,7 +432,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
     def _update_orientation_preview(self):
         try:
             profile = profile_catalog.get(self.profile_designation)
-            geometry = build_section_geometry(profile.definition)
+            geometry = build_section_geometry(profile.definition, self.section_geometry_mode)
         except (AttributeError, KeyError, RuntimeError, TypeError, ValueError):
             geometry = None
         self.orientation_preview.set_geometry(
@@ -477,7 +509,8 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
             element_type=self.element_type.currentText(), insertion=self.insertion.currentText(),
             rotation=self.rotation.value(), color=self.rgb, display_name=name,
             axis_source=axis_source, link_axis=bool(link_axis),
-            geometry_mode=geometry_mode)
+            geometry_mode=geometry_mode,
+            section_geometry_mode=self.section_geometry_mode)
 
     def creation_succeeded(self, next_name):
         self._name_custom = False
@@ -486,7 +519,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
     def apply_creation_settings(self, settings):
         """Restore validated reusable values without persisting object names."""
         widgets = (self.element_type, self.category, self.series, self.profile,
-                   self.insertion, self.rotation)
+                   self.insertion, self.rotation, self.generate_radii)
         previous = [widget.blockSignals(True) for widget in widgets]
         try:
             self.element_type.setCurrentText(getattr(settings, "element_type", "Pilar"))
@@ -502,6 +535,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
                 self.profile.setCurrentIndex(index)
             self._refresh_insertion_options(settings.insertion)
             self.rotation.setValue(settings.rotation)
+            self.generate_radii.setChecked(getattr(settings, "generate_radii", True))
         finally:
             for widget, blocked in zip(widgets, previous):
                 widget.blockSignals(blocked)
@@ -511,6 +545,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
         self._name_custom = False
         self.refresh_automatic_name()
         self._update_orientation_preview()
+        self._update_geometry_mode_availability()
 
     def creation_settings(self):
         return MemberCreationSettings(
@@ -519,6 +554,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
             insertion=self.insertion.currentText(), rotation=float(self.rotation.value()),
             color=tuple(float(value) for value in self.rgb),
             element_type=self.element_type.currentText(),
+            generate_radii=self.generate_radii.isChecked(),
         )
 
     def state(self):
@@ -528,6 +564,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
             "category": self.category.currentText(), "series": self.series.currentText(),
             "profile": self.profile_designation, "insertion": self.insertion.currentText(),
             "rotation": self.rotation.value(), "color": QtGui.QColor(self._color),
+            "generate_radii": self.generate_radii.isChecked(),
             "expanded": self.isChecked(),
         }
 
@@ -542,6 +579,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
             self.profile.setCurrentIndex(index)
         self._refresh_insertion_options(state["insertion"])
         self.rotation.setValue(state["rotation"])
+        self.generate_radii.setChecked(state.get("generate_radii", True))
         self._color = QtGui.QColor(state["color"])
         self._update_color_button()
         self._name_custom = state["name_custom"]

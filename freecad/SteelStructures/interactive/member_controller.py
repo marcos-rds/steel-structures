@@ -39,6 +39,7 @@ class MemberCreationOptions:
     axis_source: object = None
     link_axis: bool = False
     geometry_mode: CreationGeometryMode = CreationGeometryMode.INTERACTIVE
+    section_geometry_mode: str = "Detailed"
 
 
 @dataclass(frozen=True)
@@ -122,6 +123,7 @@ class MemberController:
                 display_name=options.display_name,
                 axis_source=options.axis_source,
                 link_axis=options.link_axis,
+                section_geometry_mode=options.section_geometry_mode,
             )
             if source is not None:
                 previous_visibility = bool(source.ViewObject.Visibility)

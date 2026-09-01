@@ -58,34 +58,26 @@ def section_insertion_references(geometry: SectionGeometry2D):
         }
         values = tuple((identifier, label, points[identifier]) for identifier, label in _I_LABELS)
     elif key == ("channel_section", "tapered_flange"):
-        # Semantic U references come from its canonical right-opening contour.
-        rear_bottom = geometry.outer_path.segments[0].start
-        lower_tip = geometry.outer_path.segments[0].end
-        inner_web_bottom = geometry.outer_path.segments[5].start
-        upper_tip = geometry.outer_path.segments[10].start
-        rear_top = geometry.outer_path.segments[10].end
-        web_mid_x = (rear_bottom.x + inner_web_bottom.x) / 2.0
+        stations = dict(geometry.dimension_stations)
+        rear_x = stations["web_back_x"]
+        inner_x = stations["web_inner_x"]
+        tip_x = stations["flange_tip_x"]
+        web_mid_x = (rear_x + inner_x) / 2.0
         values = (
             ("centroid", "Centroide", geometry.origin),
             ("web_center", "Centro da alma", Point2D(web_mid_x, 0.0)),
-            ("web_back", "Face externa da alma", Point2D(rear_bottom.x, 0.0)),
-            ("rear_top", "Canto superior traseiro", rear_top),
-            ("rear_bottom", "Canto inferior traseiro", rear_bottom),
-            ("flange_top_tip", "Ponta superior da mesa", upper_tip),
-            ("flange_bottom_tip", "Ponta inferior da mesa", lower_tip),
+            ("web_back", "Face externa da alma", Point2D(rear_x, 0.0)),
+            ("rear_top", "Canto superior traseiro", Point2D(rear_x, bounds.max_y)),
+            ("rear_bottom", "Canto inferior traseiro", Point2D(rear_x, bounds.min_y)),
+            ("flange_top_tip", "Ponta superior da mesa", Point2D(tip_x, bounds.max_y)),
+            ("flange_bottom_tip", "Ponta inferior da mesa", Point2D(tip_x, bounds.min_y)),
         )
     elif key == ("cold_formed_channel", "stiffened_u"):
         stations = dict(geometry.dimension_stations)
-        upper_cap = geometry.outer_path.segments[-1]
-        lower_cap = geometry.outer_path.segments[9]
-        upper_tip = Point2D(
-            (upper_cap.start.x + upper_cap.end.x) / 2.0,
-            (upper_cap.start.y + upper_cap.end.y) / 2.0,
-        )
-        lower_tip = Point2D(
-            (lower_cap.start.x + lower_cap.end.x) / 2.0,
-            (lower_cap.start.y + lower_cap.end.y) / 2.0,
-        )
+        upper_tip = Point2D(stations["nominal_flange_tip_x"] - 0.5 * stations["thickness"],
+                            stations["upper_lip_tip_y"])
+        lower_tip = Point2D(stations["nominal_flange_tip_x"] - 0.5 * stations["thickness"],
+                            stations["lower_lip_tip_y"])
         outer_flange_mid_x = (
             stations["flange_web_tangent_x"]
             + stations["flange_lip_tangent_x"]

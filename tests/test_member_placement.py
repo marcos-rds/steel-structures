@@ -221,6 +221,7 @@ class MemberObject:
         self.AdjustedLength = 0.0
         self.OffsetX = Quantity(0); self.OffsetY = Quantity(0); self.Rotation = Quantity(0)
         self.Profile = "W 150 x 13,0"; self.Insertion = "Centroide"; self.MassPerMeter = 13.0
+        self.SectionGeometryMode = "Detailed"
         self.ElementType = "Membro"
         self.ProfileCategory = "Aço laminado"; self.DisplayName = "Member"
         self.TotalMass = 0.0; self.Placement = Placement()
@@ -236,7 +237,8 @@ class MemberObject:
                                "EndAdjustmentGap", "EndFixedReferenceOffset", "EndFixedPlaneNormal",
                                "StartPoint", "EndPoint", "StartExtension", "EndExtension",
                                "OffsetX", "OffsetY", "Rotation", "Profile", "Insertion",
-                               "MassPerMeter", "MemberLength", "TotalMass", "ElementType"]
+                               "MassPerMeter", "MemberLength", "TotalMass", "ElementType",
+                               "SectionGeometryMode"]
         self.ExpressionEngine = []
         self.Label = "Member"
         self.editor_modes = {}
@@ -445,6 +447,28 @@ class MemberPlacementTests(unittest.TestCase):
         self.assertEqual(obj.EndAdjustmentGeometryMode, "LengthLimit")
         for name in ("EffectiveStartPoint", "EffectiveEndPoint", "AdjustedLength"):
             self.assertEqual(obj.editor_modes[name], 1)
+
+    def test_section_geometry_mode_defaults_and_restores_without_changing_catalog_data(self):
+        obj = MemberObject((0, 0, 0), (0, 0, 100))
+        obj.PropertiesList.remove("SectionGeometryMode")
+        delattr(obj, "SectionGeometryMode")
+        profile_before = obj.Profile
+        mass_before = obj.MassPerMeter
+        previous = self.member.profile_catalog.property_designations
+        self.member.profile_catalog.property_designations = lambda *_args: [profile_before]
+        restored = self.proxy(); restored.__setstate__(None)
+        try:
+            restored.onDocumentRestored(obj)
+        finally:
+            self.member.profile_catalog.property_designations = previous
+        self.assertEqual(obj.SectionGeometryMode, "Detailed")
+        self.assertEqual(obj.Profile, profile_before)
+        self.assertEqual(obj.MassPerMeter, mass_before)
+        obj.SectionGeometryMode = "Simplified"
+        restored.execute(obj)
+        self.assertEqual(obj.SectionGeometryMode, "Simplified")
+        self.assertEqual(obj.Profile, profile_before)
+        self.assertEqual(obj.MassPerMeter, mass_before)
 
     def test_restore_preserves_existing_fixed_values(self):
         obj, proxy = self.create((0, 0, 0), (0, 0, 100))

@@ -114,7 +114,8 @@ class StructuralMemberDraftTool(gui_lines.Line):
                 self.profile_options.profile.currentIndexChanged,
                 self.profile_options.insertion.currentIndexChanged,
                 self.profile_options.rotation.valueChanged,
-                self.profile_options.colorChanged):
+                self.profile_options.colorChanged,
+                self.profile_options.sectionGeometryModeChanged):
             signal.connect(self._preview_options_changed)
 
     def _preview_options_changed(self, *_args):
@@ -135,6 +136,7 @@ class StructuralMemberDraftTool(gui_lines.Line):
                 self.profile_options.insertion.currentText(),
                 float(self.profile_options.rotation.value()),
                 self.profile_options.rgb,
+                section_geometry_mode=self.profile_options.section_geometry_mode,
             )
         except (KeyError, RuntimeError, ValueError):
             self.removeTemporaryObject()

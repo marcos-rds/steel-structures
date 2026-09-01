@@ -30,7 +30,9 @@ from .member_plane_cut import (
 )
 from .paths import OBJECT_ICON
 from .profiles.freecad_geometry import section_geometry_to_face
-from .profiles.geometry import build_parallel_flange_i_section, build_section_geometry
+from .profiles.geometry import (
+    SectionGeometryMode, build_parallel_flange_i_section, build_section_geometry,
+)
 from .profiles.insertion import insertion_translation as _geometry_insertion_translation
 from .profiles.insertion import section_insertion_references
 
@@ -104,18 +106,18 @@ def _i_section_face(profile: profile_catalog.Profile) -> Part.Face:
     return section_geometry_to_face(geometry)
 
 
-def _section_geometry(profile: profile_catalog.Profile):
+def _section_geometry(profile: profile_catalog.Profile, mode=SectionGeometryMode.DETAILED):
     """Resolve every constructible catalog profile through the typed core."""
     definition = getattr(profile, "definition", None)
     if definition is not None:
-        return build_section_geometry(definition)
+        return build_section_geometry(definition, mode)
     return build_parallel_flange_i_section(
         d=profile.d, bf=profile.bf, tw=profile.tw, tf=profile.tf
     )
 
 
-def _section_face(profile: profile_catalog.Profile) -> Part.Face:
-    return section_geometry_to_face(_section_geometry(profile))
+def _section_face(profile: profile_catalog.Profile, mode=SectionGeometryMode.DETAILED) -> Part.Face:
+    return section_geometry_to_face(_section_geometry(profile, mode))
 
 
 def insertion_options(profile: profile_catalog.Profile):
@@ -125,8 +127,9 @@ def insertion_options(profile: profile_catalog.Profile):
     return tuple(item.label for item in section_insertion_references(_section_geometry(profile)))
 
 
-def _insertion_translation(profile: profile_catalog.Profile, mode: str) -> Tuple[float, float]:
-    return _geometry_insertion_translation(_section_geometry(profile), mode)
+def _insertion_translation(profile: profile_catalog.Profile, insertion: str,
+                           geometry_mode=SectionGeometryMode.DETAILED) -> Tuple[float, float]:
+    return _geometry_insertion_translation(_section_geometry(profile, geometry_mode), insertion)
 
 
 def _member_frame_rotation(direction: App.Vector) -> App.Rotation:
@@ -276,6 +279,11 @@ class StructuralMemberProxy:
         created_category = _add_property(obj, "App::PropertyEnumeration", "ProfileCategory", "Categoria do perfil", group_section, "Categoria tecnológica do perfil.")
         created_series = _add_property(obj, "App::PropertyEnumeration", "ProfileSeries", "Série do perfil", group_section, "Série ou família comercial do perfil.")
         created_profile = _add_property(obj, "App::PropertyEnumeration", "Profile", "Perfil", group_section, "Perfil estrutural do catálogo.")
+        created_section_geometry_mode = _add_property(
+            obj, "App::PropertyEnumeration", "SectionGeometryMode", "Geometria da seção",
+            group_section,
+            "Detailed gera raios/filetes; Simplified usa cantos simplificados. As propriedades técnicas do perfil não são alteradas.",
+        )
         _add_property(obj, "App::PropertyString", "Manufacturer", "Fabricante", group_section, "Fabricante do perfil.")
         _add_property(obj, "App::PropertyString", "ProfileFamily", "Família", group_section, "Família técnica do perfil.")
         created_material = _add_property(obj, "App::PropertyEnumeration", "Material", "Material", group_section, "Material atribuído ao elemento.")
@@ -297,6 +305,8 @@ class StructuralMemberProxy:
         _set_enum(obj, "AxisDefinitionMode", ("Independent", "Linked"), "Independent" if created_axis_mode else None)
         _set_enum(obj, "ElementType", ELEMENT_TYPES, "Membro" if created_type else None)
         _set_enum(obj, "Material", MATERIALS, "ASTM A572 Grau 50" if created_material else None)
+        _set_enum(obj, "SectionGeometryMode", ("Detailed", "Simplified"),
+                  "Detailed" if created_section_geometry_mode else None)
         for prefix in ("Start", "End"):
             created = created_slots[prefix]
             _set_enum(obj, prefix + "AdjustmentMode", ("None", "Associative", "Fixed"), "None" if created["mode"] else None)
@@ -503,6 +513,7 @@ class StructuralMemberProxy:
         # Also upgrades legacy and single-end objects when they are recomputed.
         required_properties = {
             "ProfileCategory", "DisplayName", "Length",
+            "SectionGeometryMode",
             "StartAdjustmentMode", "StartAdjustmentGeometryMode",
             "StartAdjustmentReference", "StartAdjustmentGap",
             "StartFixedReferenceOffset", "StartFixedPlaneNormal",
@@ -626,8 +637,9 @@ class StructuralMemberProxy:
             fail()
             return
 
-        face = _section_face(profile)
-        tx, ty = _insertion_translation(profile, str(obj.Insertion))
+        geometry = _section_geometry(profile, str(obj.SectionGeometryMode))
+        face = section_geometry_to_face(geometry)
+        tx, ty = _geometry_insertion_translation(geometry, str(obj.Insertion))
         face.translate(App.Vector(tx + obj.OffsetX.Value, ty + obj.OffsetY.Value, 0.0))
 
         # Keep the shape local and drive position/orientation through the
@@ -841,6 +853,7 @@ def create_member(
     display_name: str | None = None,
     axis_source=None,
     link_axis: bool = False,
+    section_geometry_mode: str = "Detailed",
 ):
     obj = document.addObject("Part::FeaturePython", "StructuralMember")
     StructuralMemberProxy(obj)
@@ -858,6 +871,8 @@ def create_member(
     obj.ProfileCategory = profile.category
     obj.ProfileSeries = profile.series
     obj.Profile = profile_catalog.property_designation(profile.designation)
+    obj.SectionGeometryMode = section_geometry_mode if section_geometry_mode in (
+        "Detailed", "Simplified") else "Detailed"
     obj.ElementType = element_type if element_type in ELEMENT_TYPES else "Membro"
     valid_insertions = insertion_options(profile)
     obj.Insertion = insertion if insertion in valid_insertions else valid_insertions[0]

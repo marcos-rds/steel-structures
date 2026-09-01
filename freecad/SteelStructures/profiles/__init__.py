@@ -10,6 +10,7 @@ from .geometry import (
     Point2D,
     SectionBounds2D,
     SectionGeometry2D,
+    SectionGeometryMode,
     SectionGeometryError,
     SectionPath2D,
     UnsupportedSectionGeometryError,
@@ -19,6 +20,7 @@ from .geometry import (
     build_tapered_flange_i_section,
     build_tapered_flange_channel_section,
     build_section_geometry,
+    normalize_section_geometry_mode, section_geometry_mode_has_effect,
     geometry_is_released,
 )
 from .insertion import (
@@ -37,7 +39,7 @@ from .cold_formed import (
 )
 from .ue_section import (
     UeDerivedDimensions, UeNormativeProperties, build_ue_mean_path,
-    build_ue_section, nbr_6355_expected_internal_radius,
+    build_simplified_ue_section, build_ue_section, nbr_6355_expected_internal_radius,
     ue_derived_dimensions, ue_normative_properties,
 )
 from .models import (
@@ -67,7 +69,7 @@ __all__ = [
     "PhysicalProperties", "ProfileDefinition", "ProfileLibrary",
     "ProfileNotFoundError", "ProfileRef", "SectionBounds2D",
     "SectionPropertyOverride",
-    "SectionGeometry2D", "SectionGeometryError", "SectionPath2D",
+    "SectionGeometry2D", "SectionGeometryError", "SectionGeometryMode", "SectionPath2D",
     "SeriesDefinition", "UnsupportedSectionGeometryError",
     "build_equal_angle_section", "build_parallel_flange_i_section",
     "build_standard_tee_section",
@@ -85,6 +87,7 @@ __all__ = [
     "segment_segment_intersections",
     "physical_section_properties", "section_geometry_from_cold_formed",
     "UeDerivedDimensions", "UeNormativeProperties", "build_ue_mean_path",
-    "build_ue_section", "nbr_6355_expected_internal_radius",
+    "build_simplified_ue_section", "build_ue_section", "nbr_6355_expected_internal_radius",
+    "normalize_section_geometry_mode", "section_geometry_mode_has_effect",
     "ue_derived_dimensions", "ue_normative_properties",
 ]

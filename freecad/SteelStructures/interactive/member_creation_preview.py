@@ -30,7 +30,7 @@ def configure_preview_object(obj):
 
 def update_member_preview(obj, state, profile_designation, start, end,
                           insertion, rotation, color, offset_x=0.0,
-                          offset_y=0.0):
+                          offset_y=0.0, section_geometry_mode="Detailed"):
     """Update a temporary object through the same section/frame pipeline."""
     profile = profile_catalog.get(profile_designation)
     start = App.Vector(start)
@@ -42,12 +42,13 @@ def update_member_preview(obj, state, profile_designation, start, end,
     direction.normalize()
 
     shape_signature = (
-        profile_designation, length, insertion, float(offset_x), float(offset_y)
+        profile_designation, length, insertion, float(offset_x), float(offset_y),
+        str(section_geometry_mode),
     )
     shape_changed = shape_signature != state.shape_signature
     if shape_changed:
-        face = _section_face(profile)
-        tx, ty = _insertion_translation(profile, insertion)
+        face = _section_face(profile, section_geometry_mode)
+        tx, ty = _insertion_translation(profile, insertion, section_geometry_mode)
         face.translate(App.Vector(tx + float(offset_x), ty + float(offset_y), 0.0))
         obj.Shape = face.extrude(App.Vector(0.0, 0.0, length))
 

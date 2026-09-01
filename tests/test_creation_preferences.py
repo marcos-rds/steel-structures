@@ -146,6 +146,19 @@ class CreationPreferencesTests(unittest.TestCase):
                           value.element_type),
                          ("W 150 x 13,0", "Centroide", 0.0, "Membro"))
         self.assertEqual(value.color, self.preferences.DEFAULT_COLOR)
+        self.assertTrue(value.generate_radii)
+
+    def test_generate_radii_is_shared_between_member_and_column(self):
+        self.preferences.save_member_creation_settings(self.member(generate_radii=False))
+        self.assertFalse(self.preferences.load_member_creation_settings().generate_radii)
+        self.assertFalse(self.preferences.load_column_creation_settings().generate_radii)
+        self.preferences.save_column_creation_settings(self.column(generate_radii=True))
+        self.assertTrue(self.preferences.load_member_creation_settings().generate_radii)
+        self.assertTrue(self.preferences.load_column_creation_settings().generate_radii)
+        self.assertEqual(
+            self.database.groups[self.preferences.SECTION_MODELING_PREFERENCES]["GenerateRadii"],
+            True,
+        )
 
     def test_first_column_run_uses_exact_defaults(self):
         value = self.preferences.load_column_creation_settings()

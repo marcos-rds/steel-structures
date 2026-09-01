@@ -15,6 +15,7 @@ from .member import INSERTION_OPTIONS
 PREFERENCES_ROOT = "User parameter:BaseApp/Preferences/Mod/SteelStructures"
 MEMBER_PREFERENCES = f"{PREFERENCES_ROOT}/CreateMember"
 COLUMN_PREFERENCES = f"{PREFERENCES_ROOT}/CreateColumn"
+SECTION_MODELING_PREFERENCES = f"{PREFERENCES_ROOT}/SectionModeling"
 GRID_PREFERENCES = f"{PREFERENCES_ROOT}/CreateGrid"
 DEFAULT_COLOR = (184.0 / 255.0, 184.0 / 255.0, 194.0 / 255.0)
 DEFAULT_GRID_LINE_COLOR = (127.0 / 255.0,) * 3
@@ -69,6 +70,7 @@ class MemberCreationSettings:
     rotation: float
     color: tuple[float, float, float]
     element_type: str
+    generate_radii: bool = True
 
 
 @dataclass(frozen=True)
@@ -81,6 +83,7 @@ class ColumnCreationSettings:
     color: tuple[float, float, float]
     height: float
     continue_creating: bool
+    generate_radii: bool = True
 
 
 @dataclass(frozen=True)
@@ -174,6 +177,17 @@ def _shared_settings(group):
     return profile, insertion, rotation, _color(group)
 
 
+def _load_generate_radii():
+    try:
+        return bool(App.ParamGet(SECTION_MODELING_PREFERENCES).GetBool("GenerateRadii", True))
+    except (AttributeError, RuntimeError, TypeError, ValueError):
+        return True
+
+
+def _save_generate_radii(value):
+    App.ParamGet(SECTION_MODELING_PREFERENCES).SetBool("GenerateRadii", bool(value))
+
+
 def load_member_creation_settings():
     try:
         group = App.ParamGet(MEMBER_PREFERENCES)
@@ -188,7 +202,7 @@ def load_member_creation_settings():
         element_type = "Membro"
     return MemberCreationSettings(
         profile.category, profile.series, profile.designation, insertion,
-        rotation, color, element_type,
+        rotation, color, element_type, _load_generate_radii(),
     )
 
 
@@ -207,7 +221,7 @@ def load_column_creation_settings():
         height, continue_creating = DEFAULT_COLUMN_HEIGHT, DEFAULT_CONTINUE
     return ColumnCreationSettings(
         profile.category, profile.series, profile.designation, insertion,
-        rotation, color, height, continue_creating,
+        rotation, color, height, continue_creating, _load_generate_radii(),
     )
 
 
@@ -266,6 +280,7 @@ def save_member_creation_settings(settings):
         _save_shared(group, settings)
         element_type = settings.element_type if settings.element_type in MEMBER_ELEMENT_TYPES else "Membro"
         group.SetString("ElementType", element_type)
+        _save_generate_radii(getattr(settings, "generate_radii", True))
     except (AttributeError, RuntimeError, TypeError, ValueError, OverflowError):
         return False
     return True
@@ -280,6 +295,7 @@ def save_column_creation_settings(settings):
         )
         group.SetFloat("Height", height)
         group.SetBool("ContinueCreating", bool(settings.continue_creating))
+        _save_generate_radii(getattr(settings, "generate_radii", True))
     except (AttributeError, RuntimeError, TypeError, ValueError, OverflowError):
         return False
     return True
@@ -323,6 +339,7 @@ def save_grid_appearance_settings(settings):
 
 __all__ = [
     "COLUMN_PREFERENCES", "GRID_PREFERENCES", "MEMBER_PREFERENCES", "PREFERENCES_ROOT",
+    "SECTION_MODELING_PREFERENCES",
     "ColumnCreationSettings", "GridAppearanceSettings", "MemberCreationSettings",
     "default_grid_appearance", "load_column_creation_settings",
     "load_grid_appearance_settings", "load_member_creation_settings",

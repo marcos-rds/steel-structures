@@ -184,6 +184,7 @@ class StructuralColumnDraftTool(gui_lines.Line):
                 self.obj, self._preview_state, options.profile_designation,
                 start, end, options.insertion.currentText(),
                 float(options.rotation.value()), options.rgb,
+                section_geometry_mode=options.section_geometry_mode,
             )
         except (KeyError, RuntimeError, ValueError):
             self.obj.ViewObject.Visibility = False

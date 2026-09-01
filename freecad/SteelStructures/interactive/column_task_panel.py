@@ -52,6 +52,7 @@ class ColumnTaskPanel(QtWidgets.QWidget):
             self.profile_options.insertion.currentIndexChanged.connect(on_preview_changed)
             self.profile_options.rotation.valueChanged.connect(on_preview_changed)
             self.profile_options.colorChanged.connect(on_preview_changed)
+            self.profile_options.sectionGeometryModeChanged.connect(on_preview_changed)
 
     @property
     def height_value(self):
@@ -90,6 +91,7 @@ class ColumnTaskPanel(QtWidgets.QWidget):
             designation=profile.designation, insertion=profile.insertion,
             rotation=profile.rotation, color=profile.color,
             height=self.height_value, continue_creating=bool(continue_creating),
+            generate_radii=profile.generate_radii,
         )
 
 

@@ -84,7 +84,7 @@ class ColumnCommandContractTests(unittest.TestCase):
 
     def test_preview_uses_real_profile_insertion_rotation_and_global_z(self):
         for statement in (
-            "profile_catalog.get", "_section_face(profile)",
+            "profile_catalog.get", "_section_face(profile, section_geometry_mode)",
             "_insertion_translation", "face.extrude(App.Vector(0.0, 0.0, length))",
             "App.Rotation(App.Vector(0.0, 0.0, 1.0)",
         ):
