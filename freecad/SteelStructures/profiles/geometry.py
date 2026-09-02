@@ -44,6 +44,8 @@ def section_geometry_mode_has_effect(profile: ProfileDefinition) -> bool:
         ("i_section", "tapered_flange"),
         ("channel_section", "tapered_flange"),
         ("cold_formed_channel", "stiffened_u"),
+        ("hollow_section", "square"),
+        ("hollow_section", "rectangular"),
     }
 
 
@@ -691,7 +693,13 @@ def build_section_geometry(
             "geometria temporariamente indisponível: inconsistência entre fontes técnicas Gerdau"
         )
     mode = normalize_section_geometry_mode(mode)
+    if (profile.geometry_type, profile.geometry_variant) == (
+        "hollow_section", "rectangular"
+    ):
+        from .hollow_sections import normalize_hollow_profile_definition
+        profile = normalize_hollow_profile_definition(profile)
     key = (profile.geometry_type, profile.geometry_variant)
+    dimensions_mode = False
     if key == ("i_section", "parallel_flange"):
         names = ("d", "bf", "tw", "tf")
         builder = build_parallel_flange_i_section
@@ -720,6 +728,20 @@ def build_section_geometry(
         names = ("bw", "bf", "D", "t", "ri")
         builder = (build_simplified_ue_section
                    if mode is SectionGeometryMode.SIMPLIFIED else build_ue_section)
+    elif key == ("hollow_section", "square"):
+        from .hollow_sections import build_square_hollow_section
+        names = ("b", "t")
+        builder = build_square_hollow_section
+        dimensions_mode = True
+    elif key == ("hollow_section", "rectangular"):
+        from .hollow_sections import build_rhs_hollow_section
+        names = ("b", "h", "t")
+        builder = build_rhs_hollow_section
+        dimensions_mode = True
+    elif key == ("hollow_section", "circular"):
+        from .hollow_sections import build_circular_hollow_section
+        names = ("d", "t")
+        builder = build_circular_hollow_section
     else:
         raise UnsupportedSectionGeometryError(
             f"geometria de seção ainda não suportada: {key[0]!r} / {key[1]!r}"
@@ -732,6 +754,8 @@ def build_section_geometry(
             dimensions["centroid_x"] = profile.centroid["x"]
     except KeyError as exc:
         raise SectionGeometryError(f"dimensão ausente: {exc.args[0]}") from exc
+    if dimensions_mode:
+        dimensions["mode"] = mode
     return builder(**dimensions)
 
 

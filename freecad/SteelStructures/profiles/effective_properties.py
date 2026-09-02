@@ -19,6 +19,68 @@ class GeometricSectionProperties:
     iy: float
 
 
+@dataclass(frozen=True)
+class CalculatedSectionProperties:
+    """Mode-independent dimensional section properties in mm units.
+
+    X-X is horizontal and Y-Y vertical. ``basis`` records the mathematical
+    convention without making a product-certification claim.
+    """
+
+    area: float
+    ix: float
+    iy: float
+    wx: float
+    wy: float
+    rx: float
+    ry: float
+    centroid_x: float = 0.0
+    centroid_y: float = 0.0
+    basis: str = "Steel Structures calculation convention"
+
+
+def hollow_section_properties(*, family, h=None, b=None, d=None, t):
+    """Calculate hollow-section properties from dimensions, never from a BRep.
+
+    SHS/RHS currently use an explicitly labelled sharp-corner approximation;
+    they do not claim EN 10219-2 properties. CHS uses exact annulus expressions.
+    Commercial mass remains wholly independent.
+    """
+    family, t = str(family).upper(), float(t)
+    if family not in {"SHS", "RHS", "CHS"}:
+        raise ValueError("family deve ser SHS, RHS ou CHS")
+    if not math.isfinite(t):
+        raise ValueError("espessura deve ser finita")
+    if family == "CHS":
+        d = float(d)
+        if not math.isfinite(d) or t <= 0.0 or d <= 2.0 * t:
+            raise ValueError("CHS requer D > 2*t > 0")
+        inner = d - 2.0 * t
+        area = math.pi * (d ** 2 - inner ** 2) / 4.0
+        ix = iy = math.pi * (d ** 4 - inner ** 4) / 64.0
+        wx = wy = ix / (d / 2.0)
+    elif family in {"SHS", "RHS"}:
+        h, b = float(h), float(b)
+        if not math.isfinite(h) or not math.isfinite(b):
+            raise ValueError("H e B devem ser finitos")
+        if family == "RHS":
+            h, b = max(h, b), min(h, b)
+        if t <= 0.0 or min(h, b) <= 2.0 * t:
+            raise ValueError("SHS/RHS requerem H e B maiores que 2*t")
+        hi, bi = h - 2.0 * t, b - 2.0 * t
+        area = h * b - hi * bi
+        ix = (b * h ** 3 - bi * hi ** 3) / 12.0
+        iy = (h * b ** 3 - hi * bi ** 3) / 12.0
+        wx, wy = ix / (h / 2.0), iy / (b / 2.0)
+    return CalculatedSectionProperties(
+        area, ix, iy, wx, wy, math.sqrt(ix / area), math.sqrt(iy / area),
+        basis=("Steel Structures sharp-corner dimensional approximation; "
+               "not EN 10219-2 calculated properties"
+               if family != "CHS" else
+               "Steel Structures exact circular annulus expressions"),
+    )
+
+
 def _segment_state(segment, parameter):
     if isinstance(segment, LineSegment2D):
         dx = segment.end.x - segment.start.x
@@ -128,6 +190,7 @@ def resolve_effective_section_properties(profile: ProfileDefinition):
 
 
 __all__ = [
-    "GeometricSectionProperties", "resolve_effective_section_properties",
+    "CalculatedSectionProperties", "GeometricSectionProperties",
+    "hollow_section_properties", "resolve_effective_section_properties",
     "section_geometric_properties",
 ]

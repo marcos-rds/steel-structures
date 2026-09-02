@@ -62,18 +62,27 @@ def section_geometry_to_face(geometry: SectionGeometry2D):
     """Convert a pure section into one planar Part.Face in local Z=0."""
     if not isinstance(geometry, SectionGeometry2D):
         raise FreeCADSectionGeometryError("geometry deve ser SectionGeometry2D")
-    if geometry.inner_paths:
-        raise FreeCADSectionGeometryError(
-            "contornos internos ainda não são suportados pelo adaptador FreeCAD"
-        )
-    wire = section_path_to_wire(geometry.outer_path)
+    wires = [section_path_to_wire(geometry.outer_path)]
+    for path in geometry.inner_paths:
+        inner_wire = section_path_to_wire(path)
+        reverse = getattr(inner_wire, "reverse", None)
+        if (path.signed_area * geometry.outer_path.signed_area > 0.0
+                and callable(reverse)):
+            reverse()
+        wires.append(inner_wire)
     try:
-        face = Part.Face(wire)
+        face = Part.Face(wires[0] if len(wires) == 1 else wires)
     except Exception as exc:
         raise FreeCADSectionGeometryError(f"não foi possível criar Face: {exc}") from exc
     is_null = getattr(face, "isNull", None)
     if callable(is_null) and is_null():
         raise FreeCADSectionGeometryError("Part.Face resultante é nula")
+    is_valid = getattr(face, "isValid", None)
+    if callable(is_valid) and not is_valid():
+        raise FreeCADSectionGeometryError("Part.Face resultante é inválida")
+    area = getattr(face, "Area", None)
+    if area is not None and float(area) <= 1e-9:
+        raise FreeCADSectionGeometryError("Part.Face resultante deve possuir área positiva")
     return face
 
 

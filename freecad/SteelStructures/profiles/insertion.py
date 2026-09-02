@@ -115,6 +115,27 @@ def section_insertion_references(geometry: SectionGeometry2D):
             ("top_left", "Canto superior esquerdo", Point2D(bounds.min_x, bounds.max_y)),
             ("top_right", "Canto superior direito", Point2D(bounds.max_x, bounds.max_y)),
         )
+    elif key in (("hollow_section", "square"), ("hollow_section", "rectangular")):
+        x0, y0 = geometry.origin.x, geometry.origin.y
+        points = {
+            "centroid": geometry.origin,
+            "left": Point2D(bounds.min_x, y0), "right": Point2D(bounds.max_x, y0),
+            "top": Point2D(x0, bounds.max_y), "bottom": Point2D(x0, bounds.min_y),
+            "top_left": Point2D(bounds.min_x, bounds.max_y),
+            "top_right": Point2D(bounds.max_x, bounds.max_y),
+            "bottom_left": Point2D(bounds.min_x, bounds.min_y),
+            "bottom_right": Point2D(bounds.max_x, bounds.min_y),
+        }
+        values = tuple((identifier, label, points[identifier]) for identifier, label in _I_LABELS)
+    elif key == ("hollow_section", "circular"):
+        x0, y0 = geometry.origin.x, geometry.origin.y
+        values = (
+            ("centroid", "Centroide", geometry.origin),
+            ("left", "Face esquerda", Point2D(bounds.min_x, y0)),
+            ("right", "Face direita", Point2D(bounds.max_x, y0)),
+            ("top", "Face superior", Point2D(x0, bounds.max_y)),
+            ("bottom", "Face inferior", Point2D(x0, bounds.min_y)),
+        )
     else:
         values = (("centroid", "Centroide", geometry.origin),)
     return tuple(InsertionReference(*value) for value in values)

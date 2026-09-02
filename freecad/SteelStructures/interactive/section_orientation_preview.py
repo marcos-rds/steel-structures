@@ -116,25 +116,19 @@ class SectionOrientationPreview(QtWidgets.QWidget):
 
     def _schematic_path(self, target, scale):
         path = QtGui.QPainterPath()
-        first_x, first_y = self._screen_point(
-            self._schematic.segments[0].start, target, scale
-        )
-        path.moveTo(first_x, first_y)
-        for segment in self._schematic.segments:
-            end_x, end_y = self._screen_point(segment.end, target, scale)
-            if isinstance(segment, SchematicCubic2D):
-                control1_x, control1_y = self._screen_point(
-                    segment.control1, target, scale
-                )
-                control2_x, control2_y = self._screen_point(
-                    segment.control2, target, scale
-                )
-                path.cubicTo(
-                    control1_x, control1_y, control2_x, control2_y, end_x, end_y
-                )
-            else:
-                path.lineTo(end_x, end_y)
-        path.closeSubpath()
+        path.setFillRule(QtCore.Qt.OddEvenFill)
+        for segments in (self._schematic.segments,) + self._schematic.inner_segments:
+            first_x, first_y = self._screen_point(segments[0].start, target, scale)
+            path.moveTo(first_x, first_y)
+            for segment in segments:
+                end_x, end_y = self._screen_point(segment.end, target, scale)
+                if isinstance(segment, SchematicCubic2D):
+                    control1_x, control1_y = self._screen_point(segment.control1, target, scale)
+                    control2_x, control2_y = self._screen_point(segment.control2, target, scale)
+                    path.cubicTo(control1_x, control1_y, control2_x, control2_y, end_x, end_y)
+                else:
+                    path.lineTo(end_x, end_y)
+            path.closeSubpath()
         return path
 
     def paintEvent(self, _event):

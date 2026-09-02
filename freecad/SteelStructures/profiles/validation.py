@@ -55,7 +55,7 @@ SECTION_PROPERTY_QUANTITIES = {
     "slenderness_web": "dimensionless",
 }
 
-AVAILABILITY_STATUSES = {"standard", "made_to_order"}
+AVAILABILITY_STATUSES = {"standard", "made_to_order", "development_fixture"}
 
 
 class CatalogError(Exception):
@@ -235,6 +235,7 @@ def validate_catalog_payload(payload, path: Path):
     profiles = []
     profile_ids = set()
     designations_by_series = set()
+    canonical_rhs_dimensions = set()
     for index, raw in enumerate(_list(payload.get("profiles"), path, catalog_id, "profiles")):
         raw = _mapping(raw, path, catalog_id, f"profiles[{index}]")
         profile_id = _id(raw.get("id"), path, catalog_id, f"profiles[{index}].id")
@@ -251,6 +252,8 @@ def validate_catalog_payload(payload, path: Path):
             raise _error(path, catalog_id, f"designação duplicada na série {series_id}: {designation!r}")
         designations_by_series.add(designation_key)
         geometry_type = _string(raw.get("geometry_type"), path, catalog_id, f"profiles[{index}].geometry_type")
+        if geometry_type != series_definition.geometry_type:
+            raise _error(path, catalog_id, f"perfil {profile_id}: geometry_type diverge da série")
         geometry_raw = _mapping(raw.get("geometry"), path, catalog_id, f"profiles[{index}].geometry")
         geometry = {}
         if geometry_type in {"i_section", "channel_section", "tee_section"}:
@@ -338,6 +341,35 @@ def validate_catalog_payload(payload, path: Path):
                 )
             if geometry["t"] >= geometry["b"]:
                 raise _error(path, catalog_id, f"perfil {profile_id}: t deve ser menor que b")
+        elif geometry_type == "hollow_section":
+            variant = series_definition.geometry_variant
+            expected_family = {"square": "SHS", "rectangular": "RHS", "circular": "CHS"}
+            if variant not in expected_family or series_definition.family.upper() != expected_family[variant]:
+                raise _error(path, catalog_id, f"perfil {profile_id}: família/variante tubular incompatível")
+            keys = ("d", "t") if variant == "circular" else (("b", "t") if variant == "square" else ("h", "b", "t"))
+            if set(geometry_raw) != set(keys):
+                raise _error(path, catalog_id, f"perfil {profile_id}: dimensões esperadas: {', '.join(keys)}")
+            for parameter in keys:
+                geometry[parameter] = convert_to_canonical(
+                    _number(geometry_raw.get(parameter), path, catalog_id,
+                            f"profiles[{index}].geometry.{parameter}", True),
+                    "length", units["length"],
+                )
+            t = geometry["t"]
+            if variant == "circular" and geometry["d"] <= 2.0 * t:
+                raise _error(path, catalog_id, f"perfil {profile_id}: CHS exige d > 2*t")
+            if variant == "square" and geometry["b"] <= 4.0 * t:
+                raise _error(path, catalog_id, f"perfil {profile_id}: SHS exige b > 4*t")
+            if variant == "rectangular":
+                h, b = geometry["h"], geometry["b"]
+                key = (max(h, b), min(h, b), t)
+                if key in canonical_rhs_dimensions:
+                    raise _error(path, catalog_id, f"perfil {profile_id}: dimensões RHS duplicadas após normalização")
+                canonical_rhs_dimensions.add(key)
+                if h <= b:
+                    raise _error(path, catalog_id, f"perfil {profile_id}: RHS exige H > B")
+                if b <= 4.0 * t:
+                    raise _error(path, catalog_id, f"perfil {profile_id}: RHS exige B > 4*t")
         else:
             raise _error(path, catalog_id, f"geometry_type não suportado: {geometry_type!r}")
 

@@ -10,7 +10,7 @@ from ..profiles import (
     SectionGeometry2D, insertion_reference,
     section_insertion_references,
 )
-from ..profiles.preview_geometry import section_outline_points
+from ..profiles.preview_geometry import SchematicCubic2D, preview_segments_for_path
 
 
 DIMENSIONS_MODE = "dimensions"
@@ -150,12 +150,21 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
             raise ValueError("modo de preview inválido")
         self.scene().clear()
         path = QtGui.QPainterPath()
-        outline_points = section_outline_points(geometry)
-        first = outline_points[0]
-        path.moveTo(first.x, -first.y)
-        for point in outline_points[1:]:
-            path.lineTo(point.x, -point.y)
-        path.closeSubpath()
+        path.setFillRule(QtCore.Qt.OddEvenFill)
+        for contour in (geometry.outer_path,) + geometry.inner_paths:
+            segments = preview_segments_for_path(contour)
+            first = segments[0].start
+            path.moveTo(first.x, -first.y)
+            for segment in segments:
+                if isinstance(segment, SchematicCubic2D):
+                    path.cubicTo(
+                        segment.control1.x, -segment.control1.y,
+                        segment.control2.x, -segment.control2.y,
+                        segment.end.x, -segment.end.y,
+                    )
+                else:
+                    path.lineTo(segment.end.x, -segment.end.y)
+            path.closeSubpath()
 
         outline = QtGui.QPen(QtGui.QColor(28, 28, 28))
         outline.setCosmetic(True)

@@ -64,6 +64,7 @@ class SchematicSection2D:
     references: tuple[InsertionReference, ...]
     segments: tuple[SchematicLine2D | SchematicCubic2D, ...] = ()
     center: Point2D = Point2D(0.0, 0.0)
+    inner_segments: tuple[tuple[SchematicLine2D | SchematicCubic2D, ...], ...] = ()
 
 
 def _line_segments(outline):
@@ -71,6 +72,36 @@ def _line_segments(outline):
         SchematicLine2D(point, outline[(index + 1) % len(outline)])
         for index, point in enumerate(outline)
     )
+
+
+def preview_segments_for_path(path, scale=1.0):
+    """Convert line/arc geometry to smooth line/cubic preview primitives."""
+    result = []
+    for segment in path.segments:
+        if not isinstance(segment, ArcSegment2D):
+            result.append(SchematicLine2D(
+                Point2D(segment.start.x / scale, segment.start.y / scale),
+                Point2D(segment.end.x / scale, segment.end.y / scale),
+            ))
+            continue
+        count = max(1, int(math.ceil(abs(segment.sweep) / (math.pi / 2.0))))
+        delta = segment.sweep / count
+        previous_end = Point2D(segment.start.x / scale, segment.start.y / scale)
+        for index in range(count):
+            a0 = segment.start_angle + index * delta
+            a1 = a0 + delta
+            radius = segment.radius / scale
+            center = Point2D(segment.center.x / scale, segment.center.y / scale)
+            start = previous_end
+            end = (Point2D(segment.end.x / scale, segment.end.y / scale)
+                   if index == count - 1 else
+                   Point2D(center.x + radius * math.cos(a1), center.y + radius * math.sin(a1)))
+            k = 4.0 / 3.0 * math.tan(delta / 4.0)
+            control1 = Point2D(start.x - k * radius * math.sin(a0), start.y + k * radius * math.cos(a0))
+            control2 = Point2D(end.x + k * radius * math.sin(a1), end.y - k * radius * math.cos(a1))
+            result.append(SchematicCubic2D(start, control1, control2, end))
+            previous_end = end
+    return tuple(result)
 
 
 def _point(x, y):
@@ -272,6 +303,21 @@ def schematic_section_for_geometry(geometry):
     """Build a family diagram while retaining real insertion ids and labels."""
     key = (geometry.geometry_type, geometry.geometry_variant)
     definition = _SCHEMATICS.get(key)
+    if key[0] == "hollow_section":
+        scale = max(geometry.bounds.width, geometry.bounds.height) / 2.0
+        def normalized_path(path):
+            return preview_segments_for_path(path, scale)
+        outer_segments = normalized_path(geometry.outer_path)
+        inner_segments = tuple(normalized_path(path) for path in geometry.inner_paths)
+        real_references = section_insertion_references(geometry)
+        references = tuple(InsertionReference(
+            reference.id, reference.label,
+            Point2D(reference.point.x / scale, reference.point.y / scale),
+        ) for reference in real_references)
+        outline = tuple(segment.start for segment in outer_segments)
+        return SchematicSection2D(
+            key, outline, references, outer_segments, Point2D(0.0, 0.0), inner_segments,
+        )
     if definition is None:
         return None
     outline, positions, segments = definition
@@ -285,15 +331,26 @@ def schematic_section_for_geometry(geometry):
     return SchematicSection2D(key, outline, references, segments)
 
 
-def section_outline_points(geometry):
-    """Return the canonical outline as points, sampling only curved segments."""
-    points = [geometry.outer_path.segments[0].start]
-    for segment in geometry.outer_path.segments:
+def section_path_points(path):
+    """Return one canonical path as points, sampling only curved segments."""
+    points = [path.segments[0].start]
+    for segment in path.segments:
         if isinstance(segment, ArcSegment2D):
             points.extend(segment.sampled_points())
         else:
             points.append(segment.end)
     return tuple(points)
+
+
+def section_outline_points(geometry):
+    return section_path_points(geometry.outer_path)
+
+
+def section_contour_points(geometry):
+    """Return outer and inner contours for fill-rule-aware preview renderers."""
+    return (section_path_points(geometry.outer_path),) + tuple(
+        section_path_points(path) for path in geometry.inner_paths
+    )
 
 
 def transform_preview_point(point, insertion_point, rotation_degrees):
@@ -354,9 +411,10 @@ def nearest_reference(references, insertion_point, rotation_degrees,
 
 __all__ = [
     "background_needs_dark_outline_halo", "nearest_reference",
-    "outline_presentation_reference",
+    "outline_presentation_reference", "preview_segments_for_path",
     "preview_screen_point", "profile_presentation_radius",
-    "schematic_section_for_geometry", "section_outline_points",
+    "schematic_section_for_geometry", "section_contour_points", "section_outline_points",
+    "section_path_points",
     "SchematicCubic2D", "SchematicLine2D", "SchematicSection2D",
     "transform_preview_point",
 ]

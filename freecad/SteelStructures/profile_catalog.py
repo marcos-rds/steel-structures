@@ -21,6 +21,7 @@ KNOWN_CATEGORIES = ["Aço Laminado"]
 SUPPORTED_CREATION_SERIES = {
     "w", "hp", "i", "u", "t", "equal-angle-inch", "equal-angle-metric",
     "ue-nbr-6355",
+    "shs", "rhs", "chs",
 }
 
 

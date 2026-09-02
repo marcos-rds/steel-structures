@@ -62,6 +62,9 @@ def format_engineering_value(value: float, scale: float, unit: str, decimals=Non
 
 
 def profile_dimension_rows(profile: ProfileDefinition) -> tuple[PresentationRow, ...]:
+    if (profile.geometry_type, profile.geometry_variant) == ("hollow_section", "rectangular"):
+        from .hollow_sections import normalize_hollow_profile_definition
+        profile = normalize_hollow_profile_definition(profile)
     rows = []
     for key, value in profile.geometry.items():
         if key not in _DIMENSION_LABELS:
@@ -75,6 +78,9 @@ def profile_dimension_rows(profile: ProfileDefinition) -> tuple[PresentationRow,
 
 def profile_preview_dimension_rows(profile: ProfileDefinition) -> tuple[PresentationRow, ...]:
     """Return only the principal dimensions annotated by the supported preview."""
+    if (profile.geometry_type, profile.geometry_variant) == ("hollow_section", "rectangular"):
+        from .hollow_sections import normalize_hollow_profile_definition
+        profile = normalize_hollow_profile_definition(profile)
     key = (profile.geometry_type, profile.geometry_variant)
     keys_by_geometry = {
         ("i_section", "parallel_flange"): ("d", "bf", "tw", "tf"),
@@ -83,6 +89,9 @@ def profile_preview_dimension_rows(profile: ProfileDefinition) -> tuple[Presenta
         ("channel_section", "tapered_flange"): ("d", "bf", "tw", "tf"),
         ("tee_section", "standard_tee"): ("d", "bf", "tw", "tf"),
         ("cold_formed_channel", "stiffened_u"): ("bw", "bf", "D", "t", "ri"),
+        ("hollow_section", "square"): ("b", "t"),
+        ("hollow_section", "rectangular"): ("h", "b", "t"),
+        ("hollow_section", "circular"): ("d", "t"),
     }
     if key not in keys_by_geometry:
         return ()
@@ -127,11 +136,15 @@ def profile_property_groups(profile: ProfileDefinition) -> tuple[PresentationGro
             "Superfície", format_engineering_value(physical.surface_area_per_length_m2_m, 1.0, "m²/m", 2)
         ))
     groups = [PresentationGroup("Físicas", tuple(physical_rows))]
-    for title, keys in (
-        ("Eixo X-X", ("ix", "wx", "zx", "rx")),
-        ("Eixo Y-Y", ("iy", "wy", "zy", "ry")),
-        ("Torção / estabilidade", ("rt", "it", "cw", "x0", "r0", "slenderness_flange", "slenderness_web")),
-    ):
+    property_groups = (
+        (("Propriedades geométricas", ("ix", "iy", "wx", "wy", "rx", "ry")),)
+        if profile.geometry_type == "hollow_section" else
+        (("Eixo X-X", ("ix", "wx", "zx", "rx")),
+         ("Eixo Y-Y", ("iy", "wy", "zy", "ry")))
+    ) + (("Torção / estabilidade", (
+        "rt", "it", "cw", "x0", "r0", "slenderness_flange", "slenderness_web"
+    )),)
+    for title, keys in property_groups:
         rows = _property_rows(profile, keys)
         if rows:
             groups.append(PresentationGroup(title, rows))
@@ -154,10 +167,19 @@ def profile_property_groups(profile: ProfileDefinition) -> tuple[PresentationGro
                 format_engineering_value(profile.centroid["x"], 0.1, "cm"),
                 "Valor derivado pela simetria da cantoneira de abas iguais",
             ))
+        elif "y" in profile.centroid:
+            centroid.append(PresentationRow(
+                "y do centroide",
+                format_engineering_value(profile.centroid["y"], 0.1, "cm"),
+            ))
     rz_rows = _property_rows(profile, ("rz_min",))
     centroid.extend(rz_rows)
     if centroid:
-        groups.append(PresentationGroup("Centroide / propriedades adicionais", tuple(centroid)))
+        groups.append(PresentationGroup(
+            "Centroide" if profile.geometry_type == "hollow_section"
+            else "Centroide / propriedades adicionais",
+            tuple(centroid),
+        ))
     return tuple(group for group in groups if group.rows)
 
 

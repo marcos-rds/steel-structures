@@ -217,10 +217,11 @@ class ProfileBrowserModelTests(unittest.TestCase):
     def setUp(self):
         self.model = ProfileBrowserModel(self.library)
 
-    def test_catalog_tree_source_has_two_categories_and_rolled_steel_is_unchanged(self):
-        self.assertEqual(len(self.library.list_categories()), 2)
+    def test_catalog_tree_source_has_tubular_category_and_rolled_steel_is_unchanged(self):
+        self.assertEqual(len(self.library.list_categories()), 3)
         self.assertEqual(len(self.library.list_series("rolled-steel")), 7)
         self.assertEqual(len(self.model.set_filter("rolled-steel")), 218)
+        self.assertEqual(len(self.model.set_filter("tubular")), 4)
 
     def test_series_filter_preserves_catalog_order(self):
         profiles = self.model.set_filter("rolled-steel", "w")
@@ -279,6 +280,8 @@ class ProfileBrowserModelTests(unittest.TestCase):
         self.assertIn("geometry.outer_path.segments", source)
         self.assertNotIn("profile.geometry", source)
         self.assertIn("QColor(216, 219, 223)", source)
+        self.assertIn("preview_segments_for_path", source)
+        self.assertIn("path.cubicTo(", source)
 
     def test_real_dimension_renderer_executes_with_section_bounds_properties(self):
         module = _load_preview_runtime_module()
