@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Mapping
 
@@ -91,6 +91,15 @@ class SectionPropertyOverride:
 
 
 @dataclass(frozen=True)
+class PropertyProvenance:
+    """Origin of one effective property, independent of catalog provenance."""
+
+    source_type: str
+    calculation_convention: str | None = None
+    note: str | None = None
+
+
+@dataclass(frozen=True)
 class ProfileDefinition:
     ref: ProfileRef
     designation: str
@@ -118,3 +127,6 @@ class ProfileDefinition:
     # a StructuralMember placement offset or a bounding-box center.
     centroid: Mapping[str, float]
     catalog: CatalogMetadata
+    property_provenance: Mapping[str, PropertyProvenance] = field(
+        default_factory=immutable_mapping
+    )

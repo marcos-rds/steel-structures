@@ -7,7 +7,9 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
-from .effective_properties import resolve_effective_section_properties
+from .effective_properties import (
+    calculate_hollow_profile_properties, resolve_effective_section_properties,
+)
 from .models import ProfileRef
 from .validation import CatalogValidationError, ProfileNotFoundError, validate_catalog_payload
 
@@ -62,7 +64,9 @@ class ProfileLibrary:
             metadata, categories, series, profiles = validate_catalog_payload(payload, path)
             try:
                 profiles = tuple(
-                    resolve_effective_section_properties(profile) for profile in profiles
+                    resolve_effective_section_properties(
+                        calculate_hollow_profile_properties(profile)
+                    ) for profile in profiles
                 )
             except (TypeError, ValueError) as exc:
                 raise CatalogValidationError(

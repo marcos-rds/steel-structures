@@ -296,7 +296,7 @@ class StructuralMemberProxy:
         _add_property(obj, "App::PropertyLength", "MemberLength", "Comprimento", group_quantities, "Comprimento geométrico calculado entre os pontos inicial e final, sem extensões.")
         _add_property(obj, "App::PropertyFloat", "MassPerMeter", "Massa linear (kg/m)", group_quantities, "Massa linear informada no catálogo.")
         _add_property(obj, "App::PropertyFloat", "TotalMass", "Massa total (kg)", group_quantities, "Massa linear multiplicada pelo comprimento.")
-        _add_property(obj, "App::PropertyFloat", "CatalogArea", "Área do catálogo (cm²)", group_quantities, "Área geométrica informada no catálogo.")
+        _add_property(obj, "App::PropertyFloat", "CatalogArea", "Área técnica da seção (cm²)", group_quantities, "Área técnica efetiva; pode ser publicada ou calculada conforme o contrato do perfil e não é a área da BRep.")
         _add_property(obj, "App::PropertyString", "CatalogSource", "Fonte do catálogo", group_quantities, "Documento de origem dos dados.")
 
         # Enumeration options are assigned only after all dependent properties

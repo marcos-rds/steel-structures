@@ -11,10 +11,10 @@
     "source": {
       "source_name": "Fixtures geométricos de desenvolvimento do Steel Structures",
       "source_revision": "Etapa A",
-      "notes": "Dados exclusivamente sintéticos para validação CAD. Não representam catálogo comercial, fabricante ou norma de produto. Área e massa são aproximações nominais auxiliares."
+      "notes": "Dados exclusivamente sintéticos para validação CAD. Não representam catálogo comercial, fabricante ou norma de produto. A massa é sintética; a área e as propriedades geométricas são calculadas pela Steel Structures."
     },
     "standard_references": [],
-    "material_notes": "Fixtures sintéticos; massa calculada com densidade auxiliar de 7850 kg/m³, sem alegação comercial."
+    "material_notes": "Fixtures sintéticos; massa legada de validação, independente da área técnica calculada e sem alegação comercial."
   },
   "units": {
     "length": "mm",
@@ -34,25 +34,25 @@
       "id": "shs-100x100x4.00-validation", "designation": "SHS 100x100x4,00", "aliases": ["SHS 100×100×4,00"],
       "catalog_markers": ["fixture sintético"], "availability_status": "development_fixture", "geometry_status": "released",
       "series_id": "shs", "geometry_type": "hollow_section", "geometry": {"b": 100.0, "t": 4.0},
-      "physical_properties": {"area": 1536.0, "mass_per_length": 12.0576}, "section_properties": {}, "centroid": {}
+      "physical_properties": {"mass_per_length": 12.0576}, "section_properties": {}, "centroid": {}
     },
     {
       "id": "rhs-150x100x4.75-validation", "designation": "RHS 150x100x4,75", "aliases": ["RHS 150×100×4,75"],
       "catalog_markers": ["fixture sintético"], "availability_status": "development_fixture", "geometry_status": "released",
       "series_id": "rhs", "geometry_type": "hollow_section", "geometry": {"h": 150.0, "b": 100.0, "t": 4.75},
-      "physical_properties": {"area": 2284.75, "mass_per_length": 17.9352875}, "section_properties": {}, "centroid": {}
+      "physical_properties": {"mass_per_length": 17.9352875}, "section_properties": {}, "centroid": {}
     },
     {
       "id": "rhs-203.20x76.20x16-validation", "designation": "RHS 203,20x76,20x16", "aliases": ["RHS 203,20×76,20×16"],
       "catalog_markers": ["fixture sintético", "radius validation"], "availability_status": "development_fixture", "geometry_status": "released",
       "series_id": "rhs", "geometry_type": "hollow_section", "geometry": {"h": 203.2, "b": 76.2, "t": 16.0},
-      "physical_properties": {"area": 7894.4, "mass_per_length": 61.97004}, "section_properties": {}, "centroid": {}
+      "physical_properties": {"mass_per_length": 61.97004}, "section_properties": {}, "centroid": {}
     },
     {
       "id": "chs-88.90x3.00-validation", "designation": "CHS 88,90x3,00", "aliases": ["CHS 88,90×3,00"],
       "catalog_markers": ["fixture sintético"], "availability_status": "development_fixture", "geometry_status": "released",
       "series_id": "chs", "geometry_type": "hollow_section", "geometry": {"d": 88.9, "t": 3.0},
-      "physical_properties": {"area": 809.902586, "mass_per_length": 6.3577353}, "section_properties": {}, "centroid": {}
+      "physical_properties": {"mass_per_length": 6.3577353}, "section_properties": {}, "centroid": {}
     }
   ]
 }

@@ -129,7 +129,9 @@ def profile_property_groups(profile: ProfileDefinition) -> tuple[PresentationGro
         physical_rows.append(PresentationRow(
             "Área", format_engineering_value(
                 physical.area_mm2, 0.01, "cm²", 2 if is_ue else 1
-            )
+            ),
+            ("Área técnica calculada; independente da representação CAD"
+             if profile.geometry_type == "hollow_section" else None),
         ))
     if physical.surface_area_per_length_m2_m is not None:
         physical_rows.append(PresentationRow(
@@ -208,6 +210,21 @@ def profile_source_groups(profile: ProfileDefinition) -> tuple[PresentationGroup
         source.notes,
     ) if value)
     key = (profile.geometry_type, profile.geometry_variant)
+    if profile.geometry_type == "hollow_section" and profile.property_provenance:
+        provenance = profile.property_provenance.get("area")
+        calculated_rows = (
+            PresentationRow("Tipo das propriedades", "Calculadas pela Steel Structures"),
+            PresentationRow(
+                "Convenção de cálculo",
+                provenance.calculation_convention if provenance else "Calculada",
+                provenance.note if provenance else None,
+            ),
+            PresentationRow(
+                "Escopo", "Propriedades geométricas; não certificação do produto"
+            ),
+        )
+    else:
+        calculated_rows = ()
     if key == ("cold_formed_channel", "stiffened_u"):
         return (
             PresentationGroup("Fonte", (
@@ -325,7 +342,7 @@ def profile_source_groups(profile: ProfileDefinition) -> tuple[PresentationGroup
             ),
         ))
 
-    groups = [PresentationGroup("Fonte", tuple(source_rows))]
+    groups = [PresentationGroup("Fonte", tuple(source_rows) + calculated_rows)]
     if geometry_rows:
         groups.append(PresentationGroup("Geometria", tuple(geometry_rows)))
     if technical_rows:

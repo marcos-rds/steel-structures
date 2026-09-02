@@ -7,7 +7,10 @@ import math
 from dataclasses import dataclass, replace
 
 from .geometry import ArcSegment2D, LineSegment2D, build_section_geometry
-from .models import ProfileDefinition, immutable_mapping
+from .models import ProfileDefinition, PropertyProvenance, immutable_mapping
+
+
+HOLLOW_CALCULATION_CONVENTION = "EN 10219-2:2019 Annex A dimensional convention"
 
 
 @dataclass(frozen=True)
@@ -39,11 +42,24 @@ class CalculatedSectionProperties:
     basis: str = "Steel Structures calculation convention"
 
 
+def rectangular_hollow_calculation_radii(t):
+    """Return nominal calculation radii from EN 10219-2:2019 Annex A.
+
+    These radii belong to the technical-section model, not the CAD BRep.
+    """
+    t = float(t)
+    if not math.isfinite(t) or t <= 0.0:
+        raise ValueError("espessura deve ser finita e positiva")
+    factor = 2.0 if t <= 6.0 else (2.5 if t <= 10.0 else 3.0)
+    outer = factor * t
+    return outer, outer - t
+
+
 def hollow_section_properties(*, family, h=None, b=None, d=None, t):
     """Calculate hollow-section properties from dimensions, never from a BRep.
 
-    SHS/RHS currently use an explicitly labelled sharp-corner approximation;
-    they do not claim EN 10219-2 properties. CHS uses exact annulus expressions.
+    SHS/RHS use the nominal calculation-radius convention documented by
+    EN 10219-2:2019 Annex A. CHS uses exact annulus expressions.
     Commercial mass remains wholly independent.
     """
     family, t = str(family).upper(), float(t)
@@ -68,16 +84,74 @@ def hollow_section_properties(*, family, h=None, b=None, d=None, t):
         if t <= 0.0 or min(h, b) <= 2.0 * t:
             raise ValueError("SHS/RHS requerem H e B maiores que 2*t")
         hi, bi = h - 2.0 * t, b - 2.0 * t
-        area = h * b - hi * bi
-        ix = (b * h ** 3 - bi * hi ** 3) / 12.0
-        iy = (h * b ** 3 - hi * bi ** 3) / 12.0
+        ro, ri = rectangular_hollow_calculation_radii(t)
+        # EN 10219-2 Annex A expresses the corner contribution algebraically.
+        # It is not constructed as (and must not be constrained like) the CAD
+        # rounded-rectangle BRep; this matters for thick, narrow RHS sections.
+        # For example, RHS 203.2x76.2x16 has ro_calc=48 > B/2.  The expression
+        # remains a mathematical calculation convention: it does not describe
+        # a realizable rounded-rectangle contour, CAD radius or manufacturing
+        # radius.
+        c = (10.0 - 3.0 * math.pi) / (12.0 - 3.0 * math.pi)
+        q = 1.0 / 3.0 - math.pi / 16.0 - 1.0 / (3.0 * (12.0 - 3.0 * math.pi))
+        ag, axi = (1.0 - math.pi / 4.0) * ro ** 2, (1.0 - math.pi / 4.0) * ri ** 2
+        ig, ixi = q * ro ** 4, q * ri ** 4
+        area = 2.0 * t * (b + h - 2.0 * t) - (4.0 - math.pi) * (ro ** 2 - ri ** 2)
+        ix = (
+            b * h ** 3 / 12.0 - bi * hi ** 3 / 12.0
+            - 4.0 * (ig + ag * (h / 2.0 - c * ro) ** 2)
+            + 4.0 * (ixi + axi * (hi / 2.0 - c * ri) ** 2)
+        )
+        iy = (
+            h * b ** 3 / 12.0 - hi * bi ** 3 / 12.0
+            - 4.0 * (ig + ag * (b / 2.0 - c * ro) ** 2)
+            + 4.0 * (ixi + axi * (bi / 2.0 - c * ri) ** 2)
+        )
         wx, wy = ix / (h / 2.0), iy / (b / 2.0)
+    values = (area, ix, iy, wx, wy)
+    if not all(math.isfinite(value) and value > 0.0 for value in values):
+        raise ValueError("propriedades tubulares calculadas devem ser finitas e positivas")
     return CalculatedSectionProperties(
         area, ix, iy, wx, wy, math.sqrt(ix / area), math.sqrt(iy / area),
-        basis=("Steel Structures sharp-corner dimensional approximation; "
-               "not EN 10219-2 calculated properties"
+        basis=(HOLLOW_CALCULATION_CONVENTION +
+               "; calculation convention only, not product certification"
                if family != "CHS" else
                "Steel Structures exact circular annulus expressions"),
+    )
+
+
+def calculate_hollow_profile_properties(profile: ProfileDefinition):
+    """Replace hollow fixture/catalog technical values at the library boundary."""
+    if profile.geometry_type != "hollow_section":
+        return profile
+    dimensions = profile.geometry
+    family = profile.family.upper()
+    if family not in {"SHS", "RHS", "CHS"}:
+        family = {"square": "SHS", "rectangular": "RHS", "circular": "CHS"}.get(
+            profile.geometry_variant, family
+        )
+    kwargs = {"family": family, "t": dimensions["t"]}
+    if family == "CHS":
+        kwargs["d"] = dimensions["d"]
+    elif family == "SHS":
+        kwargs.update(h=dimensions["b"], b=dimensions["b"])
+    else:
+        kwargs.update(h=dimensions["h"], b=dimensions["b"])
+    calculated = hollow_section_properties(**kwargs)
+    names = ("ix", "iy", "wx", "wy", "rx", "ry")
+    properties = immutable_mapping({name: getattr(calculated, name) for name in names})
+    provenance = immutable_mapping({
+        name: PropertyProvenance(
+            "calculated", calculated.basis,
+            "Calculated by Steel Structures; not a manufacturer-published value.",
+        )
+        for name in ("area",) + names
+    })
+    physical = replace(profile.physical_properties, area_mm2=calculated.area)
+    return replace(
+        profile, physical_properties=physical, section_properties=properties,
+        centroid=immutable_mapping({"x": calculated.centroid_x, "y": calculated.centroid_y}),
+        property_provenance=provenance,
     )
 
 
@@ -191,6 +265,8 @@ def resolve_effective_section_properties(profile: ProfileDefinition):
 
 __all__ = [
     "CalculatedSectionProperties", "GeometricSectionProperties",
-    "hollow_section_properties", "resolve_effective_section_properties",
+    "HOLLOW_CALCULATION_CONVENTION", "calculate_hollow_profile_properties",
+    "hollow_section_properties", "rectangular_hollow_calculation_radii",
+    "resolve_effective_section_properties",
     "section_geometric_properties",
 ]

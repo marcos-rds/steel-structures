@@ -29,7 +29,9 @@ from .insertion import (
 )
 from .effective_properties import (
     CalculatedSectionProperties, GeometricSectionProperties,
-    hollow_section_properties, resolve_effective_section_properties,
+    HOLLOW_CALCULATION_CONVENTION, calculate_hollow_profile_properties,
+    hollow_section_properties, rectangular_hollow_calculation_radii,
+    resolve_effective_section_properties,
     section_geometric_properties,
 )
 from .cold_formed import (
@@ -57,6 +59,7 @@ from .models import (
     ManufacturerDefinition,
     IssuerDefinition,
     PhysicalProperties,
+    PropertyProvenance,
     ProfileDefinition,
     ProfileRef,
     SectionPropertyOverride,
@@ -74,7 +77,7 @@ __all__ = [
     "CatalogValidationError", "CategoryDefinition", "ArcSegment2D", "LineSegment2D",
     "ManufacturerDefinition", "IssuerDefinition", "PathSegment2D", "Point2D",
     "GeometryTemporarilyUnavailableError", "geometry_is_released",
-    "PhysicalProperties", "ProfileDefinition", "ProfileLibrary",
+    "PhysicalProperties", "PropertyProvenance", "ProfileDefinition", "ProfileLibrary",
     "ProfileNotFoundError", "ProfileRef", "SectionBounds2D",
     "SectionPropertyOverride",
     "SectionGeometry2D", "SectionGeometryError", "SectionGeometryMode", "SectionPath2D",
@@ -88,7 +91,9 @@ __all__ = [
     "section_insertion_references",
     "canonicalize_designation", "convert_to_canonical", "normalize_search_text",
     "CalculatedSectionProperties", "GeometricSectionProperties",
-    "hollow_section_properties", "resolve_effective_section_properties",
+    "HOLLOW_CALCULATION_CONVENTION", "calculate_hollow_profile_properties",
+    "hollow_section_properties", "rectangular_hollow_calculation_radii",
+    "resolve_effective_section_properties",
     "section_geometric_properties",
     "ColdFormedPath2D", "PhysicalSectionProperties2D",
     "SegmentIntersections2D", "angle_on_arc", "arc_arc_intersections",

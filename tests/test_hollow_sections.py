@@ -100,8 +100,8 @@ class HollowSectionPureGeometryTests(unittest.TestCase):
     def test_mode_independent_dimensional_property_contract_and_axes(self):
         rhs = hollow_section_properties(family="RHS", h=150, b=100, t=4.75)
         self.assertGreater(rhs.ix, rhs.iy)
-        self.assertIn("sharp-corner", rhs.basis)
-        self.assertNotIn("based on EN", rhs.basis)
+        self.assertIn("EN 10219-2:2019 Annex A", rhs.basis)
+        self.assertIn("not product certification", rhs.basis)
         self.assertEqual(rhs.centroid_x, 0.0)
         self.assertEqual(rhs.centroid_y, 0.0)
         chs = hollow_section_properties(family="CHS", d=88.9, t=3.0)
@@ -229,6 +229,94 @@ class HollowSectionTypedIntegrationTests(unittest.TestCase):
                 self.assertEqual(profile.physical_properties.area_mm2, 1000.0)
 
 
+class HollowTechnicalPropertyTests(unittest.TestCase):
+    """Regression values evaluated from the documented Annex-A equations."""
+
+    EXPECTED = (
+        (dict(family="SHS", h=100, b=100, t=4),
+         (1494.79644737231, 2263516.8621122013, 2263516.8621122013)),
+        (dict(family="SHS", h=200, b=200, t=12),
+         (8405.94671058465, 47302212.78710835, 47302212.78710835)),
+        (dict(family="RHS", h=150, b=100, t=4.75),
+         (2226.646552739859, 6889168.763949921, 3681577.795022629)),
+        (dict(family="RHS", h=200, b=80, t=6.3),
+         (3232.9592496839155, 15027852.008026935, 3543262.2325846506)),
+        (dict(family="RHS", h=203.2, b=76.2, t=16),
+         (6818.0385965949345, 23742844.82284037, 4845697.365885922)),
+        (dict(family="CHS", d=88.9, t=3),
+         (809.5884268300898, 747635.6844524506, 747635.6844524506)),
+        (dict(family="CHS", d=100, t=20),
+         (5026.548245743669, 4272566.008882118, 4272566.008882118)),
+    )
+
+    def test_reference_values_invariants_and_axes(self):
+        for arguments, expected in self.EXPECTED:
+            with self.subTest(arguments=arguments):
+                result = hollow_section_properties(**arguments)
+                self.assertAlmostEqual(result.area, expected[0], places=7)
+                self.assertAlmostEqual(result.ix, expected[1], places=6)
+                self.assertAlmostEqual(result.iy, expected[2], places=6)
+                for value in (result.area, result.ix, result.iy, result.wx,
+                              result.wy, result.rx, result.ry):
+                    self.assertGreater(value, 0.0)
+                self.assertAlmostEqual(result.rx, math.sqrt(result.ix / result.area))
+                self.assertAlmostEqual(result.ry, math.sqrt(result.iy / result.area))
+                if arguments["family"] in ("SHS", "CHS"):
+                    self.assertAlmostEqual(result.ix, result.iy)
+                    self.assertAlmostEqual(result.wx, result.wy)
+                elif arguments["h"] > arguments["b"]:
+                    self.assertGreater(result.ix, result.iy)
+
+    def test_calculation_radius_range_boundaries(self):
+        from freecad.SteelStructures.profiles.effective_properties import (
+            rectangular_hollow_calculation_radii,
+        )
+        self.assertEqual(rectangular_hollow_calculation_radii(6), (12, 6))
+        ro, ri = rectangular_hollow_calculation_radii(6.00001)
+        self.assertAlmostEqual(ro, 15.000025)
+        self.assertAlmostEqual(ri, 9.000015)
+        self.assertEqual(rectangular_hollow_calculation_radii(10), (25, 15))
+        ro, ri = rectangular_hollow_calculation_radii(10.00001)
+        self.assertAlmostEqual(ro, 30.00003)
+        self.assertAlmostEqual(ri, 20.00002)
+
+    def test_extreme_calculation_is_not_constrained_by_cad_radius(self):
+        from freecad.SteelStructures.profiles.effective_properties import (
+            rectangular_hollow_calculation_radii,
+        )
+        result = hollow_section_properties(family="RHS", h=203.2, b=76.2, t=16)
+        cad = nominal_hollow_section_radii(16, 76.2)
+        calculation = rectangular_hollow_calculation_radii(16)
+        self.assertEqual((cad.cad_outer_corner_radius, cad.cad_inner_corner_radius), (32, 16))
+        self.assertEqual(calculation, (48, 32))
+        self.assertGreater(calculation[0], 76.2 / 2.0)
+        self.assertIn("EN 10219-2", result.basis)
+        # The normative algebra is intentionally evaluated without pretending
+        # that ro_calc is a realizable CAD/manufacturing rounded rectangle.
+        self.assertAlmostEqual(result.area, 6818.0385965949345)
+
+    def test_installed_fixtures_are_calculated_on_every_reload(self):
+        from pathlib import Path
+        from freecad.SteelStructures.profiles.catalog import ProfileLibrary
+        root = Path(__file__).parents[1] / "freecad" / "SteelStructures" / "catalogs"
+        library = ProfileLibrary(root).reload()
+        hollows = library.list_profiles(category_id="tubular")
+        self.assertEqual(len(hollows), 4)
+        for profile in hollows:
+            self.assertIsNotNone(profile.physical_properties.area_mm2)
+            self.assertEqual(set(profile.section_properties), {
+                "ix", "iy", "wx", "wy", "rx", "ry",
+            })
+            self.assertEqual(profile.centroid, {"x": 0.0, "y": 0.0})
+            self.assertEqual(profile.reported_section_properties, {})
+            self.assertEqual(profile.property_provenance["area"].source_type, "calculated")
+            mass = profile.physical_properties.mass_per_length_kg_m
+            library.reload()
+            reloaded = library.get(profile.ref)
+            self.assertEqual(reloaded.physical_properties.mass_per_length_kg_m, mass)
+            self.assertEqual(reloaded.section_properties, profile.section_properties)
+
+
 class HollowStructuralMemberIntegrationTests(unittest.TestCase):
     """Exercise the real member proxy with a test-only typed hollow profile."""
 
@@ -310,6 +398,52 @@ class HollowStructuralMemberIntegrationTests(unittest.TestCase):
             (results[0].Placement.Base.x, results[0].Placement.Base.y, results[0].Placement.Base.z),
             (100, 200, 300),
         )
+
+    def test_same_member_keeps_technical_properties_through_mode_and_rotation(self):
+        from freecad.SteelStructures.profiles.effective_properties import (
+            calculate_hollow_profile_properties,
+        )
+        from tests.test_member_placement import Quantity
+
+        technical = calculate_hollow_profile_properties(self.definition)
+        old_profile = self.profile
+        self.profile = types.SimpleNamespace(
+            definition=technical,
+            mass_per_m=technical.physical_properties.mass_per_length_kg_m,
+            area_cm2=technical.physical_properties.area_mm2 / 100.0,
+            manufacturer="Fixture", family="RHS", source="fixture de teste",
+            designation="RHS fixture", category="Tubulares", series="RHS",
+        )
+        obj, proxy = self.object()
+        # These persistent catalog fields are populated during object creation;
+        # execute/recompute must preserve them while changing representation.
+        obj.MassPerMeter = self.profile.mass_per_m
+        obj.CatalogArea = self.profile.area_cm2
+        expected = (
+            technical.physical_properties.area_mm2,
+            *(technical.section_properties[name]
+              for name in ("ix", "iy", "wx", "wy", "rx", "ry")),
+            technical.physical_properties.mass_per_length_kg_m,
+            self.profile.area_cm2,
+        )
+        observed = []
+        try:
+            for mode, angle in (
+                ("Detailed", 0), ("Simplified", 90), ("Detailed", 180)
+            ):
+                obj.SectionGeometryMode = mode
+                obj.Rotation = Quantity(angle)
+                self.execute(obj, proxy)
+                observed.append((
+                    technical.physical_properties.area_mm2,
+                    *(technical.section_properties[name]
+                      for name in ("ix", "iy", "wx", "wy", "rx", "ry")),
+                    obj.MassPerMeter,
+                    obj.CatalogArea,
+                ))
+        finally:
+            self.profile = old_profile
+        self.assertEqual(observed, [expected, expected, expected])
 
     def test_length_limit_and_gap_use_nominal_axis_independently_of_section_mode(self):
         from tests.test_member_placement import Quantity
