@@ -1,0 +1,39 @@
+{
+  "source_catalog": "Tabela Técnica de Produtos Tuper 2024",
+  "source_revision": "2024",
+  "source_pdf_sha256": "89e6b3e838fedc8a842a01d9cf84a4b2ab48002e81ff70637253792e357a3cd5",
+  "corrections": [
+    {
+      "id": "chs-printed-page-30-stale-weight-body",
+      "source_catalog": "Tabela Técnica de Produtos Tuper 2024",
+      "source_revision": "2024",
+      "source_pdf_sha256": "89e6b3e838fedc8a842a01d9cf84a4b2ab48002e81ff70637253792e357a3cd5",
+      "family": "chs",
+      "printed_page": 30,
+      "kind": "stale_copied_weight_body",
+      "selector": {"family": "chs", "page": 30},
+      "expected_matches": 108,
+      "matched_records_sha256": "36470a7158a3b7b967d442668e62cf3dfe8fe7ef06c8453e0a4a6953e2369574",
+      "action": "exclude_records",
+      "raw_value_context": "Cabeçalho Ø26,00–Ø31,75 com corpo de pesos repetido da página anterior (Ø21,30–Ø25,40).",
+      "normalized_correction": "Excluir da interpretação normalizada os 108 registros do corpo obsoleto; preservar integralmente raw_records.",
+      "reason_evidence": "A página seguinte publica a série coerente; Tuper 2022 e a fórmula oficial confirmam Ø26,00×0,75 com p=2,802 kg/6 m."
+    },
+    {
+      "id": "shs-printed-page-58-first-header-dimension",
+      "source_catalog": "Tabela Técnica de Produtos Tuper 2024",
+      "source_revision": "2024",
+      "source_pdf_sha256": "89e6b3e838fedc8a842a01d9cf84a4b2ab48002e81ff70637253792e357a3cd5",
+      "family": "shs",
+      "printed_page": 58,
+      "kind": "header_dimension_correction",
+      "selector": {"family": "shs", "page": 58, "h_mm": 75.0, "b_mm": 75.0},
+      "expected_matches": 10,
+      "matched_records_sha256": "c565a0111809f042d7dbaaf388839d3c20bb44d1697e5c8ee6158386dfd57c25",
+      "action": "replace_dimensions",
+      "raw_value_context": "Cabeçalho impresso 75×75 repetido na primeira coluna; dez pesos correspondem à bitola 76,20×76,20.",
+      "normalized_correction": {"h_mm": 76.2, "b_mm": 76.2, "source_l1_mm": 76.2, "source_l2_mm": 76.2},
+      "reason_evidence": "Catálogo Tuper anterior apresenta lado a lado 75×75 e 76,20×76,20 com as mesmas séries de pesos publicadas em 2024."
+    }
+  ]
+}

@@ -139,7 +139,7 @@ class HollowSectionTypedIntegrationTests(unittest.TestCase):
             },
         )
         dimensions = {row.label: row.value for row in profile_preview_dimension_rows(profile)}
-        self.assertEqual(dimensions, {"h": "150 mm", "b": "100 mm", "t": "4,75 mm"})
+        self.assertEqual(dimensions, {"H": "150 mm", "B": "100 mm", "t": "4,75 mm"})
         groups = {group.title: {row.label: row.value for row in group.rows}
                   for group in profile_property_groups(profile)}
         self.assertEqual(groups["Físicas"]["Área"], "10,0 cm²")
@@ -295,14 +295,21 @@ class HollowTechnicalPropertyTests(unittest.TestCase):
         # that ro_calc is a realizable CAD/manufacturing rounded rectangle.
         self.assertAlmostEqual(result.area, 6818.0385965949345)
 
-    def test_installed_fixtures_are_calculated_on_every_reload(self):
+    def test_installed_commercial_profiles_are_calculated_on_every_reload(self):
         from pathlib import Path
         from freecad.SteelStructures.profiles.catalog import ProfileLibrary
         root = Path(__file__).parents[1] / "freecad" / "SteelStructures" / "catalogs"
         library = ProfileLibrary(root).reload()
         hollows = library.list_profiles(category_id="tubular")
-        self.assertEqual(len(hollows), 4)
-        for profile in hollows:
+        self.assertEqual(len(hollows), 2999)
+        sample_ids = {
+            "shs-100x100x4-25", "rhs-150x100x4-75",
+            "rhs-203-2x76-2x16", "chs-88-9x3",
+        }
+        samples = tuple(profile for profile in hollows if profile.ref.profile_id in sample_ids)
+        self.assertEqual(len(samples), 4)
+        expected = {}
+        for profile in samples:
             self.assertIsNotNone(profile.physical_properties.area_mm2)
             self.assertEqual(set(profile.section_properties), {
                 "ix", "iy", "wx", "wy", "rx", "ry",
@@ -310,11 +317,15 @@ class HollowTechnicalPropertyTests(unittest.TestCase):
             self.assertEqual(profile.centroid, {"x": 0.0, "y": 0.0})
             self.assertEqual(profile.reported_section_properties, {})
             self.assertEqual(profile.property_provenance["area"].source_type, "calculated")
-            mass = profile.physical_properties.mass_per_length_kg_m
-            library.reload()
-            reloaded = library.get(profile.ref)
+            expected[profile.ref] = (
+                profile.physical_properties.mass_per_length_kg_m,
+                profile.section_properties,
+            )
+        library.reload()
+        for ref, (mass, properties) in expected.items():
+            reloaded = library.get(ref)
             self.assertEqual(reloaded.physical_properties.mass_per_length_kg_m, mass)
-            self.assertEqual(reloaded.section_properties, profile.section_properties)
+            self.assertEqual(reloaded.section_properties, properties)
 
 
 class HollowStructuralMemberIntegrationTests(unittest.TestCase):

@@ -43,6 +43,16 @@ class IssuerDefinition:
 
 
 @dataclass(frozen=True)
+class SupplyConditionDefinition:
+    """Catalog-level glossary entry; never an inferred per-profile attribute."""
+
+    code: str
+    description: str
+    availability: str
+    source_page: int | None = None
+
+
+@dataclass(frozen=True)
 class CatalogMetadata:
     id: str
     name: str
@@ -53,6 +63,7 @@ class CatalogMetadata:
     standard_references: tuple[str, ...] = ()
     material_notes: str | None = None
     issuer: IssuerDefinition | None = None
+    supply_condition_definitions: tuple[SupplyConditionDefinition, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -100,6 +111,19 @@ class PropertyProvenance:
 
 
 @dataclass(frozen=True)
+class ProfileSourceMetadata:
+    """Traceable source fields that are not technical section properties."""
+
+    source_page: int | None = None
+    source_weight_p_kg_per_6m: float | None = None
+    source_weight_basis_mm: float | None = None
+    source_designation: str | None = None
+    source_inches: str | None = None
+    source_dimensions: Mapping[str, float] = field(default_factory=immutable_mapping)
+    availability_note: str | None = None
+
+
+@dataclass(frozen=True)
 class ProfileDefinition:
     ref: ProfileRef
     designation: str
@@ -130,3 +154,4 @@ class ProfileDefinition:
     property_provenance: Mapping[str, PropertyProvenance] = field(
         default_factory=immutable_mapping
     )
+    source_metadata: ProfileSourceMetadata | None = None

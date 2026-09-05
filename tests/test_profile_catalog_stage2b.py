@@ -44,12 +44,12 @@ class Stage2BCatalogTests(unittest.TestCase):
         }
         self.assertEqual(catalog_counts, {
             "abnt-nbr-6355-2012-a3": 85,
+            "arcelormittal-tuper-hollow-2024": 2999,
             "gerdau-construcao-metalica-2023-01": 218,
-            "steel-structures-hollow-validation": 4,
         })
         all_profiles = self.library.list_profiles()
-        self.assertEqual(len(all_profiles), 307)
-        self.assertEqual(len({item.ref for item in all_profiles}), 307)
+        self.assertEqual(len(all_profiles), 3302)
+        self.assertEqual(len({item.ref for item in all_profiles}), 3302)
         self.assertEqual(len(tuple(item for item in self.library.list_categories()
                                    if item.catalog_id == CATALOG_ID)), 1)
         self.assertEqual(len(tuple(item for item in self.library.list_series()
@@ -59,13 +59,17 @@ class Stage2BCatalogTests(unittest.TestCase):
         self.assertEqual({sid: len(self.library.list_profiles(series_id=sid)) for sid in expected}, expected)
         tubular = tuple(
             item for item in all_profiles
-            if item.ref.catalog_id == "steel-structures-hollow-validation"
+            if item.ref.catalog_id == "arcelormittal-tuper-hollow-2024"
         )
+        self.assertEqual(len(tubular), 2999)
         self.assertEqual(
-            {item.designation for item in tubular},
-            {"SHS 100x100x4,00", "RHS 150x100x4,75",
-             "RHS 203,20x76,20x16", "CHS 88,90x3,00"},
+            {series: sum(item.series_id == series for item in tubular)
+             for series in ("shs", "rhs", "chs")},
+            {"shs": 678, "rhs": 1190, "chs": 1131},
         )
+        self.assertTrue({
+            "RHS 150x100x4,75", "RHS 203,20x76,20x16", "CHS 88,90x3",
+        }.issubset({item.designation for item in tubular}))
 
     def test_creation_combo_bridge_round_trips_all_constructible_profile_refs(self):
         for designation, expected_series in (

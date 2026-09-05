@@ -17,8 +17,10 @@ from .models import (
     PhysicalProperties,
     ProfileDefinition,
     ProfileRef,
+    ProfileSourceMetadata,
     SectionPropertyOverride,
     SeriesDefinition,
+    SupplyConditionDefinition,
     immutable_mapping,
 )
 
@@ -55,7 +57,9 @@ SECTION_PROPERTY_QUANTITIES = {
     "slenderness_web": "dimensionless",
 }
 
-AVAILABILITY_STATUSES = {"standard", "made_to_order", "development_fixture"}
+AVAILABILITY_STATUSES = {
+    "standard", "made_to_order", "consultation", "development_fixture",
+}
 
 
 class CatalogError(Exception):
@@ -186,6 +190,38 @@ def validate_catalog_payload(payload, path: Path):
         notes=_string(source_raw.get("notes"), path, catalog_id, "source.notes", True),
     )
     units = _validate_units(payload.get("units"), path, catalog_id)
+    supply_conditions = []
+    supply_codes = set()
+    for index, value in enumerate(_list(
+        raw_catalog.get("supply_condition_definitions", []), path, catalog_id,
+        "catalog.supply_condition_definitions",
+    )):
+        value = _mapping(
+            value, path, catalog_id,
+            f"catalog.supply_condition_definitions[{index}]",
+        )
+        code = _string(value.get("code"), path, catalog_id, f"supply condition {index}.code")
+        if code in supply_codes:
+            raise _error(path, catalog_id, f"código de condição de fornecimento duplicado: {code}")
+        supply_codes.add(code)
+        availability = _string(
+            value.get("availability"), path, catalog_id,
+            f"supply condition {code}.availability",
+        )
+        if availability not in {"normal", "special_consultation"}:
+            raise _error(path, catalog_id, f"condição de fornecimento {code}: disponibilidade inválida")
+        source_page = value.get("source_page")
+        if isinstance(source_page, bool) or not isinstance(source_page, int) or source_page <= 0:
+            raise _error(path, catalog_id, f"condição de fornecimento {code}: source_page inválida")
+        supply_conditions.append(SupplyConditionDefinition(
+            code=code,
+            description=_string(
+                value.get("description"), path, catalog_id,
+                f"supply condition {code}.description",
+            ),
+            availability=availability,
+            source_page=source_page,
+        ))
     metadata = CatalogMetadata(
         id=catalog_id,
         name=_string(raw_catalog.get("name"), path, catalog_id, "catalog.name"),
@@ -199,6 +235,7 @@ def validate_catalog_payload(payload, path: Path):
         ),
         material_notes=_string(raw_catalog.get("material_notes"), path, catalog_id, "catalog.material_notes", True),
         issuer=issuer,
+        supply_condition_definitions=tuple(supply_conditions),
     )
 
     categories = []
@@ -467,6 +504,49 @@ def validate_catalog_payload(payload, path: Path):
         )
         if geometry_status not in {"released", "pending_technical_review"}:
             raise _error(path, catalog_id, f"perfil {profile_id}: geometry_status inválido: {geometry_status!r}")
+        source_metadata_raw = raw.get("source_metadata")
+        source_metadata = None
+        if source_metadata_raw is not None:
+            source_metadata_raw = _mapping(
+                source_metadata_raw, path, catalog_id,
+                f"profiles[{index}].source_metadata",
+            )
+            source_dimensions_raw = _mapping(
+                source_metadata_raw.get("source_dimensions", {}), path, catalog_id,
+                f"profiles[{index}].source_metadata.source_dimensions",
+            )
+            source_dimensions = {
+                _string(name, path, catalog_id, "source dimension name"):
+                _number(value, path, catalog_id, f"source_dimensions.{name}", True)
+                for name, value in source_dimensions_raw.items()
+            }
+            source_page = source_metadata_raw.get("source_page")
+            if isinstance(source_page, bool) or not isinstance(source_page, int) or source_page <= 0:
+                raise _error(path, catalog_id, f"perfil {profile_id}: source_page deve ser inteiro positivo")
+            source_metadata = ProfileSourceMetadata(
+                source_page=source_page,
+                source_weight_p_kg_per_6m=_number(
+                    source_metadata_raw.get("source_weight_p_kg_per_6m"), path, catalog_id,
+                    f"profiles[{index}].source_metadata.source_weight_p_kg_per_6m", True,
+                ),
+                source_weight_basis_mm=_number(
+                    source_metadata_raw.get("source_weight_basis_mm"), path, catalog_id,
+                    f"profiles[{index}].source_metadata.source_weight_basis_mm", True,
+                ),
+                source_designation=_string(
+                    source_metadata_raw.get("source_designation"), path, catalog_id,
+                    f"profiles[{index}].source_metadata.source_designation",
+                ),
+                source_inches=_string(
+                    source_metadata_raw.get("source_inches"), path, catalog_id,
+                    f"profiles[{index}].source_metadata.source_inches", True,
+                ),
+                source_dimensions=immutable_mapping(source_dimensions),
+                availability_note=_string(
+                    source_metadata_raw.get("availability_note"), path, catalog_id,
+                    f"profiles[{index}].source_metadata.availability_note", True,
+                ),
+            )
         profiles.append(ProfileDefinition(
             ref=ProfileRef(catalog_id, profile_id),
             designation=designation,
@@ -490,5 +570,6 @@ def validate_catalog_payload(payload, path: Path):
             centroid_from_top_flange_face=centroid_from_top_flange_face,
             centroid=immutable_mapping(centroid),
             catalog=metadata,
+            source_metadata=source_metadata,
         ))
     return metadata, tuple(categories), tuple(series), tuple(profiles)

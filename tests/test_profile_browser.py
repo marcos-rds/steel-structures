@@ -221,7 +221,7 @@ class ProfileBrowserModelTests(unittest.TestCase):
         self.assertEqual(len(self.library.list_categories()), 3)
         self.assertEqual(len(self.library.list_series("rolled-steel")), 7)
         self.assertEqual(len(self.model.set_filter("rolled-steel")), 218)
-        self.assertEqual(len(self.model.set_filter("tubular")), 4)
+        self.assertEqual(len(self.model.set_filter("tubular")), 2999)
 
     def test_series_filter_preserves_catalog_order(self):
         profiles = self.model.set_filter("rolled-steel", "w")
@@ -837,6 +837,160 @@ class ProfileBrowserModelTests(unittest.TestCase):
                         apparent_offset,
                         module.D_OFFSET_PIXELS + module.D_MAX_COMPENSATION_PIXELS,
                     )
+
+    def test_hollow_renderer_uses_nominal_family_dimensions_without_radius_labels(self):
+        module = _load_preview_runtime_module()
+        cases = (
+            ("SHS 75x75x2", {"B", "t"}, {"b", "t"}),
+            ("RHS 150x100x4,75", {"H", "B", "t"}, {"h", "b", "t"}),
+            ("RHS 203,20x76,20x16", {"H", "B", "t"}, {"h", "b", "t"}),
+            ("CHS 26x0,75", {"ØD", "t"}, {"Ø", "t"}),
+            ("CHS 88,90x3", {"ØD", "t"}, {"Ø", "t"}),
+        )
+        for query, catalog_symbols, display_symbols in cases:
+            with self.subTest(query=query):
+                profile = self.library.search(query)[0]
+                geometry = build_section_geometry(profile)
+                dimensions = {
+                    row.label: row.value
+                    for row in profile_preview_dimension_rows(profile)
+                }
+                self.assertEqual(set(dimensions), catalog_symbols)
+                scene = _FakeScene()
+                renderer = object.__new__(module.SectionPreviewView)
+                renderer.scene = lambda: scene
+                renderer._add_dimensions(geometry, dimensions)
+                rendered = {item.html for item in scene.text_items}
+                for symbol in display_symbols:
+                    expected = f"<b>Ø</b>" if symbol == "Ø" else f"<b>({symbol})</b>"
+                    self.assertTrue(any(expected in html for html in rendered))
+                if geometry.geometry_variant == "circular":
+                    self.assertFalse(any("(Ød)" in html for html in rendered))
+                self.assertFalse(any("(ro)" in html or "(ri)" in html for html in rendered))
+                self.assertEqual(len(scene.text_items), len(display_symbols))
+                self.assertGreaterEqual(len(scene.lines), 1 + 3 * (len(display_symbols) - 1))
+
+    def test_hollow_fit_is_continuous_and_independent_of_absolute_catalog_size(self):
+        module = _load_preview_runtime_module()
+        small = build_section_geometry(self.library.search("SHS 15,87x15,87x0,75")[0]).bounds
+        large = build_section_geometry(self.library.search("SHS 254x254x5,6")[0]).bounds
+        small_units = module._fit_units_per_pixel(small, 500, 240)
+        large_units = module._fit_units_per_pixel(large, 500, 240)
+        self.assertAlmostEqual(small.height / small_units, large.height / large_units)
+        self.assertAlmostEqual(large_units / small_units, large.height / small.height)
+        self.assertLess(small_units, 0.75)
+
+    def test_hollow_scene_envelope_is_section_centred_and_ignores_text_bounds(self):
+        module = _load_preview_runtime_module()
+        normalized_envelopes = []
+        for query in ("SHS 15,87x15,87x0,75", "SHS 254x254x5,6"):
+            bounds = build_section_geometry(self.library.search(query)[0]).bounds
+            units = module._fit_units_per_pixel(bounds, 500, 240)
+            left, top, width, height = module._hollow_section_envelope(bounds, units)
+            section_center = (
+                (bounds.min_x + bounds.max_x) / 2.0,
+                (-bounds.max_y - bounds.min_y) / 2.0,
+            )
+            envelope_center = (left + width / 2.0, top + height / 2.0)
+            self.assertAlmostEqual(envelope_center[0], section_center[0])
+            self.assertAlmostEqual(envelope_center[1], section_center[1])
+            normalized_envelopes.append((width / units, height / units))
+        self.assertAlmostEqual(normalized_envelopes[0][0], normalized_envelopes[1][0])
+        self.assertAlmostEqual(normalized_envelopes[0][1], normalized_envelopes[1][1])
+
+    def test_hollow_scene_envelope_reserves_annotation_space_in_screen_units(self):
+        module = _load_preview_runtime_module()
+        for query in ("RHS 60x30x1,25", "RHS 203,20x76,20x16", "CHS 26x0,75"):
+            bounds = build_section_geometry(self.library.search(query)[0]).bounds
+            units = module._fit_units_per_pixel(bounds, 500, 240)
+            left, top, width, height = module._hollow_section_envelope(bounds, units)
+            self.assertAlmostEqual((bounds.min_x - left) / units,
+                                   module.HOLLOW_HORIZONTAL_RESERVE_PIXELS)
+            self.assertAlmostEqual((-bounds.max_y - top) / units,
+                                   module.HOLLOW_VERTICAL_RESERVE_PIXELS)
+            self.assertAlmostEqual((left + width - bounds.max_x) / units,
+                                   module.HOLLOW_HORIZONTAL_RESERVE_PIXELS)
+            self.assertAlmostEqual((top + height + bounds.min_y) / units,
+                                   module.HOLLOW_VERTICAL_RESERVE_PIXELS)
+
+    def test_hollow_screen_space_offsets_and_leader_are_size_invariant(self):
+        module = _load_preview_runtime_module()
+        for query in (
+                "SHS 15,87x15,87x0,75", "SHS 254x254x5,6",
+                "RHS 60x30x1,25", "RHS 203,20x76,20x16",
+                "CHS 26x0,75", "CHS 88,90x3"):
+            with self.subTest(query=query):
+                profile = self.library.search(query)[0]
+                geometry = build_section_geometry(profile)
+                dimensions = {row.label: row.value for row in profile_preview_dimension_rows(profile)}
+                scene = _FakeScene()
+                renderer = object.__new__(module.SectionPreviewView)
+                renderer.scene = lambda: scene
+                units = renderer._hollow_units_per_pixel(geometry.bounds)
+                renderer._add_dimensions(geometry, dimensions)
+                leader = scene.lines[-1]
+                leader_dx = abs(leader[2] - leader[0]) / units
+                leader_dy = abs(leader[3] - leader[1]) / units
+                expected_dx = (module.CHS_T_LEADER_X_PIXELS
+                               if geometry.geometry_variant == "circular"
+                               else module.HOLLOW_T_LEADER_X_PIXELS)
+                expected_dy = (module.CHS_T_LEADER_Y_PIXELS
+                               if geometry.geometry_variant == "circular"
+                               else module.HOLLOW_T_LEADER_Y_PIXELS)
+                self.assertAlmostEqual(leader_dx, expected_dx)
+                self.assertAlmostEqual(leader_dy, expected_dy)
+                for coordinate in leader[:4]:
+                    self.assertTrue(float("-inf") < coordinate < float("inf"))
+
+    def test_chs_thickness_leader_targets_wall_midpoint_in_lower_right_quadrant(self):
+        module = _load_preview_runtime_module()
+        for query in ("CHS 26x0,75", "CHS 33,70x3,75", "CHS 88,90x3", "CHS 165,10x9,5"):
+            with self.subTest(query=query):
+                profile = self.library.search(query)[0]
+                geometry = build_section_geometry(profile)
+                dimensions = {row.label: row.value for row in profile_preview_dimension_rows(profile)}
+                scene = _FakeScene()
+                renderer = object.__new__(module.SectionPreviewView)
+                renderer.scene = lambda: scene
+                renderer._add_dimensions(geometry, dimensions)
+                target_x, target_y = scene.lines[-1][:2]
+                stations = dict(geometry.dimension_stations)
+                expected_radius = (
+                    stations["diameter"] + stations["inner_diameter"]
+                ) / 4.0
+                self.assertGreater(target_x, 0.0)
+                self.assertGreater(target_y, 0.0)
+                self.assertAlmostEqual(
+                    (target_x ** 2 + target_y ** 2) ** 0.5, expected_radius,
+                )
+
+    def test_rhs_hollow_fit_preserves_geometric_aspect_ratio(self):
+        module = _load_preview_runtime_module()
+        for query in ("RHS 60x30x1,25", "RHS 150x100x4,75", "RHS 203,20x76,20x16"):
+            geometry = build_section_geometry(self.library.search(query)[0])
+            units = module._fit_units_per_pixel(geometry.bounds, 500, 240)
+            screen_width = geometry.bounds.width / units
+            screen_height = geometry.bounds.height / units
+            self.assertAlmostEqual(
+                screen_height / screen_width,
+                geometry.bounds.height / geometry.bounds.width,
+            )
+
+    def test_rhs_dimension_contract_keeps_h_vertical_and_b_horizontal(self):
+        module = _load_preview_runtime_module()
+        profile = self.library.search("RHS 150x100x4,75")[0]
+        geometry = build_section_geometry(profile)
+        dimensions = {row.label: row.value for row in profile_preview_dimension_rows(profile)}
+        self.assertEqual(dimensions["H"], "150 mm")
+        self.assertEqual(dimensions["B"], "100 mm")
+        scene = _FakeScene()
+        renderer = object.__new__(module.SectionPreviewView)
+        renderer.scene = lambda: scene
+        renderer._add_dimensions(geometry, dimensions)
+        b_label = next(item for item in scene.text_items if "(b)" in item.html)
+        h_label = next(item for item in scene.text_items if "(h)" in item.html)
+        self.assertLess(b_label.position[1], -geometry.bounds.max_y)
+        self.assertLess(h_label.position[0], geometry.bounds.min_x)
 
     def test_properties_renderer_draws_axes_centroid_and_scale_independent_labels(self):
         module = _load_preview_runtime_module()

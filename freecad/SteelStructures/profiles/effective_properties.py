@@ -147,6 +147,18 @@ def calculate_hollow_profile_properties(profile: ProfileDefinition):
         )
         for name in ("area",) + names
     })
+    if (
+        profile.source_metadata is not None
+        and profile.source_metadata.source_weight_p_kg_per_6m is not None
+        and profile.physical_properties.mass_per_length_kg_m is not None
+    ):
+        provenance = immutable_mapping({
+            **provenance,
+            "mass_per_length": PropertyProvenance(
+                "derived", "published weight p divided by 6 m",
+                "p is manufacturer-published; mass per metre is calculated as p/6.",
+            ),
+        })
     physical = replace(profile.physical_properties, area_mm2=calculated.area)
     return replace(
         profile, physical_properties=physical, section_properties=properties,

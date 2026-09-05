@@ -95,8 +95,12 @@ def profile_preview_dimension_rows(profile: ProfileDefinition) -> tuple[Presenta
     }
     if key not in keys_by_geometry:
         return ()
+    hollow_labels = {"b": "B", "h": "H", "d": "ØD", "t": "t"}
     return tuple(
-        PresentationRow(key, format_engineering_value(profile.geometry[key], 1.0, "mm"))
+        PresentationRow(
+            hollow_labels.get(key, key) if profile.geometry_type == "hollow_section" else key,
+            format_engineering_value(profile.geometry[key], 1.0, "mm"),
+        )
         for key in keys_by_geometry[key] if key in profile.geometry
     )
 
@@ -257,6 +261,32 @@ def profile_source_groups(profile: ProfileDefinition) -> tuple[PresentationGroup
         ))
     if profile.availability_status == "made_to_order":
         source_rows.append(PresentationRow("Disponibilidade", "Sob encomenda"))
+    elif profile.availability_status == "consultation":
+        source_rows.append(PresentationRow("Disponibilidade", "Sob consulta"))
+    if profile.source_metadata is not None:
+        metadata = profile.source_metadata
+        source_rows.append(PresentationRow("Página da fonte", str(metadata.source_page)))
+        if metadata.source_weight_p_kg_per_6m is not None:
+            source_rows.append(PresentationRow(
+                "Peso publicado p (barra de 6 m)",
+                format_engineering_value(metadata.source_weight_p_kg_per_6m, 1.0, "kg/6 m", 3),
+                "Massa linear do perfil calculada como p/6",
+            ))
+        if metadata.source_designation:
+            source_rows.append(PresentationRow("Designação na fonte", metadata.source_designation))
+        if metadata.source_inches:
+            source_rows.append(PresentationRow("Designação em polegadas", metadata.source_inches))
+    if profile.catalog.supply_condition_definitions:
+        for condition in profile.catalog.supply_condition_definitions:
+            availability = (
+                "condição normal" if condition.availability == "normal"
+                else "condição especial sob consulta"
+            )
+            source_rows.append(PresentationRow(
+                f"Condição geral {condition.code}",
+                f"{condition.description} — {availability}",
+                f"Glossário geral do catálogo, página {condition.source_page}; não atribuído automaticamente a este perfil.",
+            ))
     if profile.geometry_type == "i_section" and profile.geometry_variant == "parallel_flange":
         if profile.catalog.standard_references:
             source_rows.append(PresentationRow(

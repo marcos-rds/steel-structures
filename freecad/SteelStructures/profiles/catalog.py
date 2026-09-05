@@ -51,10 +51,7 @@ class ProfileLibrary:
     def reload(self):
         """Discard all indices, re-read every JSON file and validate again."""
         self._clear()
-        # Development fixtures are intentionally isolated from sourced catalogs,
-        # but are part of the installed library and therefore survive restarts.
         paths = sorted(self.catalogs_dir.glob("*.json"), key=lambda path: path.name)
-        paths.extend(sorted((self.catalogs_dir / "dev").glob("*.json"), key=lambda path: path.name))
         for path in paths:
             try:
                 with path.open("r", encoding="utf-8") as handle:

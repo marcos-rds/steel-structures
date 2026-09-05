@@ -62,8 +62,10 @@ from .models import (
     PropertyProvenance,
     ProfileDefinition,
     ProfileRef,
+    ProfileSourceMetadata,
     SectionPropertyOverride,
     SeriesDefinition,
+    SupplyConditionDefinition,
 )
 from .validation import (
     CatalogError,
@@ -78,10 +80,10 @@ __all__ = [
     "ManufacturerDefinition", "IssuerDefinition", "PathSegment2D", "Point2D",
     "GeometryTemporarilyUnavailableError", "geometry_is_released",
     "PhysicalProperties", "PropertyProvenance", "ProfileDefinition", "ProfileLibrary",
-    "ProfileNotFoundError", "ProfileRef", "SectionBounds2D",
+    "ProfileNotFoundError", "ProfileRef", "ProfileSourceMetadata", "SectionBounds2D",
     "SectionPropertyOverride",
     "SectionGeometry2D", "SectionGeometryError", "SectionGeometryMode", "SectionPath2D",
-    "SeriesDefinition", "UnsupportedSectionGeometryError",
+    "SeriesDefinition", "SupplyConditionDefinition", "UnsupportedSectionGeometryError",
     "build_equal_angle_section", "build_parallel_flange_i_section",
     "build_standard_tee_section",
     "build_tapered_flange_i_section",

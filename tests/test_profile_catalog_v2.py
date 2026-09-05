@@ -20,7 +20,7 @@ from freecad.SteelStructures.profiles.validation import validate_catalog_payload
 
 
 CATALOG_PATH = CATALOGS_DIR / "gerdau_construcao_metalica_2023_01.json"
-HOLLOW_DEV_PATH = CATALOGS_DIR / "dev" / "hollow_sections_validation.json"
+HOLLOW_CATALOG_PATH = CATALOGS_DIR / "tuper_hollow_2024.json"
 EXPECTED_IDS = (
     "w-150x13.0", "w-150x18.0", "w-150x24.0",
     "w-200x15.0", "w-200x19.3", "w-200x22.5", "w-200x26.6", "w-200x31.3",
@@ -115,15 +115,21 @@ class SchemaValidationTests(unittest.TestCase):
         self.assertIn("banana", message)
 
     def test_hollow_validation_rejects_invalid_dimensions_and_canonical_rhs_duplicate(self):
-        base = json.loads(HOLLOW_DEV_PATH.read_text(encoding="utf-8"))
+        base = json.loads(HOLLOW_CATALOG_PATH.read_text(encoding="utf-8"))
+        by_family = {
+            family: next(index for index, item in enumerate(base["profiles"])
+                         if item["series_id"] == family)
+            for family in ("shs", "rhs", "chs")
+        }
         cases = []
-        shs = copy.deepcopy(base); shs["profiles"][0]["geometry"]["b"] = 16.0; cases.append(shs)
-        rhs = copy.deepcopy(base); rhs["profiles"][1]["geometry"].update(h=100.0, b=150.0); cases.append(rhs)
-        chs = copy.deepcopy(base); chs["profiles"][3]["geometry"]["d"] = 6.0; cases.append(chs)
+        shs = copy.deepcopy(base); shs["profiles"][by_family["shs"]]["geometry"]["b"] = 2.0; cases.append(shs)
+        rhs = copy.deepcopy(base); rhs["profiles"][by_family["rhs"]]["geometry"].update(h=20.0, b=30.0); cases.append(rhs)
+        chs = copy.deepcopy(base); chs["profiles"][by_family["chs"]]["geometry"]["d"] = 1.0; cases.append(chs)
         duplicate = copy.deepcopy(base)
-        clone = copy.deepcopy(duplicate["profiles"][1])
+        clone = copy.deepcopy(duplicate["profiles"][by_family["rhs"]])
         clone.update(id="rhs-reversed-duplicate", designation="RHS duplicate")
-        clone["geometry"].update(h=100.0, b=150.0)
+        original_h, original_b = clone["geometry"]["h"], clone["geometry"]["b"]
+        clone["geometry"].update(h=original_b, b=original_h)
         duplicate["profiles"].append(clone); cases.append(duplicate)
         for value in cases:
             with self.subTest(value=value["profiles"][-1]["id"]):
@@ -309,11 +315,8 @@ class MultiCatalogAndReloadTests(unittest.TestCase):
             self.assertEqual(library.list_profiles()[0].designation, "Changed")
             self.assertEqual(tuple(p.ref.profile_id for p in library.list_profiles()), tuple(p["id"] for p in value["profiles"]))
 
-    def test_installed_development_catalog_is_discovered_after_new_instance_and_reload(self):
-        expected = {
-            "SHS 100x100x4,00", "RHS 150x100x4,75",
-            "RHS 203,20x76,20x16", "CHS 88,90x3,00",
-        }
+    def test_installed_commercial_catalog_is_discovered_after_new_instance_and_reload(self):
+        expected = {"shs": 678, "rhs": 1190, "chs": 1131}
         first = ProfileLibrary(CATALOGS_DIR)
         second = ProfileLibrary(CATALOGS_DIR)
         for library in (first, second.reload()):
@@ -324,13 +327,11 @@ class MultiCatalogAndReloadTests(unittest.TestCase):
                 {"SHS — Tubo quadrado", "RHS — Tubo retangular", "CHS — Tubo redondo"},
             )
             self.assertEqual(
-                {item.designation for item in library.list_profiles(category_id="tubular")},
+                {series: len(library.list_profiles(series_id=series)) for series in expected},
                 expected,
             )
-            self.assertTrue(all(
-                item.availability_status == "development_fixture"
-                for item in library.list_profiles(category_id="tubular")
-            ))
+            self.assertTrue(all(item.availability_status in {"standard", "consultation"}
+                                for item in library.list_profiles(category_id="tubular")))
 
 
 class LegacyFacadeTests(unittest.TestCase):
@@ -353,7 +354,7 @@ class LegacyFacadeTests(unittest.TestCase):
         self.assertEqual(len(profile_catalog.designations("Aço Laminado", "Perfis I")), 8)
         self.assertEqual(len(profile_catalog.designations("Aço Laminado", "Perfis U")), 9)
         self.assertEqual(len(profile_catalog.designations("Aço Laminado", "Perfis T")), 10)
-        self.assertEqual(len(profile_catalog.profiles()), 304)
+        self.assertEqual(len(profile_catalog.profiles()), 3299)
         self.assertEqual(len(profile_catalog.designations("Aço Laminado", "Cantoneiras - Polegadas")), 50)
         self.assertEqual(len(profile_catalog.designations("Aço Laminado", "Cantoneiras - Métricas")), 30)
         self.assertEqual(profile_catalog.get('U 3" x 6,10').family, "u")
