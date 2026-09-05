@@ -1,0 +1,220 @@
+{
+  "schema_version": 2,
+  "catalog": {
+    "id": "steelstructures-solid-sections-validation",
+    "name": "Steel Structures — fixture de desenvolvimento",
+    "catalog_version": "development-a",
+    "manufacturer": null,
+    "issuer": {
+      "id": "steelstructures",
+      "name": "Steel Structures"
+    },
+    "source": {
+      "source_name": "fixture de desenvolvimento",
+      "source_type": "development_fixture",
+      "source_revision": "Etapa A",
+      "notes": "Dados sintéticos para validação funcional. Massa calculada com densidade de referência de 7850 kg/m³. Não representa oferta comercial ou tabela normativa."
+    },
+    "standard_references": []
+  },
+  "units": {
+    "length": "mm",
+    "mass_per_length": "kg/m",
+    "area": "mm2"
+  },
+  "categories": [
+    {
+      "id": "solid-steel",
+      "name": "Aço Maciço"
+    }
+  ],
+  "series": [
+    {
+      "id": "round-bar",
+      "category_id": "solid-steel",
+      "name": "Barra Redonda",
+      "family": "ROUND_BAR",
+      "geometry_type": "solid_section",
+      "geometry_variant": "circular",
+      "geometry_notes": "Seção nominal ideal maciça, sem raios opcionais. Fixture de desenvolvimento."
+    },
+    {
+      "id": "square-bar",
+      "category_id": "solid-steel",
+      "name": "Barra Quadrada",
+      "family": "SQUARE_BAR",
+      "geometry_type": "solid_section",
+      "geometry_variant": "square",
+      "geometry_notes": "Seção nominal ideal maciça, sem raios opcionais. Fixture de desenvolvimento."
+    },
+    {
+      "id": "flat-bar",
+      "category_id": "solid-steel",
+      "name": "Barra Chata",
+      "family": "FLAT_BAR",
+      "geometry_type": "solid_section",
+      "geometry_variant": "rectangular",
+      "geometry_notes": "Seção nominal ideal maciça, sem raios opcionais. Fixture de desenvolvimento."
+    }
+  ],
+  "profiles": [
+    {
+      "id": "round-bar-20",
+      "series_id": "round-bar",
+      "designation": "Barra Redonda Ø20",
+      "equivalent_designation": null,
+      "aliases": [
+        "Barra Redonda 20"
+      ],
+      "catalog_markers": [
+        "fixture de desenvolvimento"
+      ],
+      "availability_status": "development_fixture",
+      "geometry_type": "solid_section",
+      "geometry": {
+        "d": 20
+      },
+      "physical_properties": {},
+      "section_properties": {},
+      "centroid": {},
+      "source_metadata": {
+        "mass_type": "calculated_fixture",
+        "density_kg_m3": 7850,
+        "source_designation": "Barra Redonda Ø20",
+        "availability_note": "Steel Structures — fixture de desenvolvimento"
+      }
+    },
+    {
+      "id": "round-bar-50",
+      "series_id": "round-bar",
+      "designation": "Barra Redonda Ø50",
+      "equivalent_designation": null,
+      "aliases": [
+        "Barra Redonda 50"
+      ],
+      "catalog_markers": [
+        "fixture de desenvolvimento"
+      ],
+      "availability_status": "development_fixture",
+      "geometry_type": "solid_section",
+      "geometry": {
+        "d": 50
+      },
+      "physical_properties": {},
+      "section_properties": {},
+      "centroid": {},
+      "source_metadata": {
+        "mass_type": "calculated_fixture",
+        "density_kg_m3": 7850,
+        "source_designation": "Barra Redonda Ø50",
+        "availability_note": "Steel Structures — fixture de desenvolvimento"
+      }
+    },
+    {
+      "id": "square-bar-20",
+      "series_id": "square-bar",
+      "designation": "Barra Quadrada 20x20",
+      "equivalent_designation": null,
+      "aliases": [
+        "Barra Quadrada 20"
+      ],
+      "catalog_markers": [
+        "fixture de desenvolvimento"
+      ],
+      "availability_status": "development_fixture",
+      "geometry_type": "solid_section",
+      "geometry": {
+        "b": 20
+      },
+      "physical_properties": {},
+      "section_properties": {},
+      "centroid": {},
+      "source_metadata": {
+        "mass_type": "calculated_fixture",
+        "density_kg_m3": 7850,
+        "source_designation": "Barra Quadrada 20x20",
+        "availability_note": "Steel Structures — fixture de desenvolvimento"
+      }
+    },
+    {
+      "id": "square-bar-50",
+      "series_id": "square-bar",
+      "designation": "Barra Quadrada 50x50",
+      "equivalent_designation": null,
+      "aliases": [
+        "Barra Quadrada 50"
+      ],
+      "catalog_markers": [
+        "fixture de desenvolvimento"
+      ],
+      "availability_status": "development_fixture",
+      "geometry_type": "solid_section",
+      "geometry": {
+        "b": 50
+      },
+      "physical_properties": {},
+      "section_properties": {},
+      "centroid": {},
+      "source_metadata": {
+        "mass_type": "calculated_fixture",
+        "density_kg_m3": 7850,
+        "source_designation": "Barra Quadrada 50x50",
+        "availability_note": "Steel Structures — fixture de desenvolvimento"
+      }
+    },
+    {
+      "id": "flat-bar-50x6-35",
+      "series_id": "flat-bar",
+      "designation": "Barra Chata 50x6,35",
+      "equivalent_designation": null,
+      "aliases": [
+        "Barra Chata 50×6,35"
+      ],
+      "catalog_markers": [
+        "fixture de desenvolvimento"
+      ],
+      "availability_status": "development_fixture",
+      "geometry_type": "solid_section",
+      "geometry": {
+        "b": 50,
+        "t": 6.35
+      },
+      "physical_properties": {},
+      "section_properties": {},
+      "centroid": {},
+      "source_metadata": {
+        "mass_type": "calculated_fixture",
+        "density_kg_m3": 7850,
+        "source_designation": "Barra Chata 50x6,35",
+        "availability_note": "Steel Structures — fixture de desenvolvimento"
+      }
+    },
+    {
+      "id": "flat-bar-100x10",
+      "series_id": "flat-bar",
+      "designation": "Barra Chata 100x10",
+      "equivalent_designation": null,
+      "aliases": [
+        "Barra Chata 100×10"
+      ],
+      "catalog_markers": [
+        "fixture de desenvolvimento"
+      ],
+      "availability_status": "development_fixture",
+      "geometry_type": "solid_section",
+      "geometry": {
+        "b": 100,
+        "t": 10
+      },
+      "physical_properties": {},
+      "section_properties": {},
+      "centroid": {},
+      "source_metadata": {
+        "mass_type": "calculated_fixture",
+        "density_kg_m3": 7850,
+        "source_designation": "Barra Chata 100x10",
+        "availability_note": "Steel Structures — fixture de desenvolvimento"
+      }
+    }
+  ]
+}

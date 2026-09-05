@@ -7,11 +7,12 @@ import math
 from dataclasses import dataclass, replace
 
 from .geometry import (
-    ArcSegment2D, LineSegment2D, Point2D, SectionBounds2D,
-    SectionGeometry2D, SectionGeometryError, SectionGeometryMode, SectionPath2D,
+    Point2D, SectionBounds2D,
+    SectionGeometry2D, SectionGeometryError, SectionGeometryMode,
     normalize_section_geometry_mode,
 )
 from .models import ProfileDefinition, immutable_mapping
+from .section_paths import circle_path as _circle_path, rectangle_path as _rectangle_path
 
 
 @dataclass(frozen=True)
@@ -98,57 +99,6 @@ def nominal_hollow_section_radii(thickness: float, minimum_dimension: float) -> 
             "convenção CAD ro=2*t não é realizável nas dimensões externas"
         )
     return HollowSectionRadii(outer_shape, inner_shape)
-
-
-def _rectangle_path(width: float, height: float, radius: float = 0.0) -> SectionPath2D:
-    hw, hh, r = width / 2.0, height / 2.0, float(radius)
-    if r < 0.0 or r > min(hw, hh):
-        raise SectionGeometryError("raio retangular incompatível com as dimensões")
-    if r == 0.0:
-        points = (
-            Point2D(-hw, -hh), Point2D(hw, -hh),
-            Point2D(hw, hh), Point2D(-hw, hh),
-        )
-        return SectionPath2D(tuple(
-            LineSegment2D(point, points[(index + 1) % 4])
-            for index, point in enumerate(points)
-        ), True)
-    points = (
-        Point2D(-hw + r, -hh), Point2D(hw - r, -hh),
-        Point2D(hw, -hh + r), Point2D(hw, hh - r),
-        Point2D(hw - r, hh), Point2D(-hw + r, hh),
-        Point2D(-hw, hh - r), Point2D(-hw, -hh + r),
-    )
-    centers = (
-        Point2D(hw - r, -hh + r), Point2D(hw - r, hh - r),
-        Point2D(-hw + r, hh - r), Point2D(-hw + r, -hh + r),
-    )
-    candidates = (
-        (LineSegment2D, points[0], points[1], None),
-        (ArcSegment2D, points[1], points[2], centers[0]),
-        (LineSegment2D, points[2], points[3], None),
-        (ArcSegment2D, points[3], points[4], centers[1]),
-        (LineSegment2D, points[4], points[5], None),
-        (ArcSegment2D, points[5], points[6], centers[2]),
-        (LineSegment2D, points[6], points[7], None),
-        (ArcSegment2D, points[7], points[0], centers[3]),
-    )
-    segments = tuple(
-        segment_type(start, end) if center is None else segment_type(start, end, center)
-        for segment_type, start, end, center in candidates
-        if start != end
-    )
-    return SectionPath2D(segments, True)
-
-
-def _circle_path(radius: float) -> SectionPath2D:
-    if radius <= 0.0:
-        raise SectionGeometryError("raio circular deve ser positivo")
-    center = Point2D(0.0, 0.0)
-    right, left = Point2D(radius, 0.0), Point2D(-radius, 0.0)
-    return SectionPath2D((
-        ArcSegment2D(right, left, center), ArcSegment2D(left, right, center),
-    ), True)
 
 
 def build_rectangular_hollow_section(

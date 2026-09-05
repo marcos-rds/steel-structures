@@ -728,6 +728,17 @@ def build_section_geometry(
         names = ("bw", "bf", "D", "t", "ri")
         builder = (build_simplified_ue_section
                    if mode is SectionGeometryMode.SIMPLIFIED else build_ue_section)
+    elif key[0] == "solid_section":
+        from .solid_sections import (
+            SOLID_SECTION_PARAMETERS, build_flat_bar, build_round_bar, build_square_bar,
+        )
+        builders = {"circular": build_round_bar, "square": build_square_bar,
+                    "rectangular": build_flat_bar}
+        if key[1] not in builders:
+            raise UnsupportedSectionGeometryError(f"variante maciça não suportada: {key[1]!r}")
+        names = SOLID_SECTION_PARAMETERS[key[1]]
+        builder = builders[key[1]]
+        dimensions_mode = True
     elif key == ("hollow_section", "square"):
         from .hollow_sections import build_square_hollow_section
         names = ("b", "t")

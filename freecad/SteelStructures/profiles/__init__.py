@@ -67,6 +67,8 @@ from .models import (
     SeriesDefinition,
     SupplyConditionDefinition,
 )
+from .solid_sections import build_round_bar, build_square_bar, build_flat_bar
+from .effective_properties import solid_section_properties, calculate_solid_profile_properties
 from .validation import (
     CatalogError,
     CatalogValidationError,
@@ -75,6 +77,8 @@ from .validation import (
 )
 
 __all__ = [
+    "build_round_bar", "build_square_bar", "build_flat_bar",
+    "solid_section_properties", "calculate_solid_profile_properties",
     "CatalogError", "CatalogMetadata", "CatalogSource",
     "CatalogValidationError", "CategoryDefinition", "ArcSegment2D", "LineSegment2D",
     "ManufacturerDefinition", "IssuerDefinition", "PathSegment2D", "Point2D",

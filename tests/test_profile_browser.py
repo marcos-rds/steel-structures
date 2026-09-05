@@ -218,10 +218,11 @@ class ProfileBrowserModelTests(unittest.TestCase):
         self.model = ProfileBrowserModel(self.library)
 
     def test_catalog_tree_source_has_tubular_category_and_rolled_steel_is_unchanged(self):
-        self.assertEqual(len(self.library.list_categories()), 3)
+        self.assertEqual(len(self.library.list_categories()), 4)
         self.assertEqual(len(self.library.list_series("rolled-steel")), 7)
         self.assertEqual(len(self.model.set_filter("rolled-steel")), 218)
         self.assertEqual(len(self.model.set_filter("tubular")), 2999)
+        self.assertEqual(len(self.model.set_filter("solid-steel")), 6)
 
     def test_series_filter_preserves_catalog_order(self):
         profiles = self.model.set_filter("rolled-steel", "w")

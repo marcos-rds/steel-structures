@@ -303,7 +303,7 @@ def schematic_section_for_geometry(geometry):
     """Build a family diagram while retaining real insertion ids and labels."""
     key = (geometry.geometry_type, geometry.geometry_variant)
     definition = _SCHEMATICS.get(key)
-    if key[0] == "hollow_section":
+    if key[0] in ("hollow_section", "solid_section"):
         scale = max(geometry.bounds.width, geometry.bounds.height) / 2.0
         def normalized_path(path):
             return preview_segments_for_path(path, scale)

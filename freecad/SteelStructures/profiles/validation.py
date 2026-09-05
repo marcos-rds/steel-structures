@@ -188,6 +188,7 @@ def validate_catalog_payload(payload, path: Path):
         source_url=_string(source_raw.get("source_url"), path, catalog_id, "source.source_url", True),
         source_date=_string(source_raw.get("source_date"), path, catalog_id, "source.source_date", True),
         notes=_string(source_raw.get("notes"), path, catalog_id, "source.notes", True),
+        source_type=_string(source_raw.get("source_type"), path, catalog_id, "source.source_type", True),
     )
     units = _validate_units(payload.get("units"), path, catalog_id)
     supply_conditions = []
@@ -378,6 +379,23 @@ def validate_catalog_payload(payload, path: Path):
                 )
             if geometry["t"] >= geometry["b"]:
                 raise _error(path, catalog_id, f"perfil {profile_id}: t deve ser menor que b")
+        elif geometry_type == "solid_section":
+            from .solid_sections import (
+                SOLID_SECTION_FAMILIES, SOLID_SECTION_PARAMETERS, solid_section_dimensions,
+            )
+            variant = series_definition.geometry_variant
+            if (variant not in SOLID_SECTION_FAMILIES
+                    or series_definition.family != SOLID_SECTION_FAMILIES[variant]):
+                raise _error(path, catalog_id, f"perfil {profile_id}: família/variante maciça incompatível")
+            keys = SOLID_SECTION_PARAMETERS[variant]
+            if set(geometry_raw) != set(keys):
+                raise _error(path, catalog_id, f"perfil {profile_id}: dimensões esperadas: {', '.join(keys)}")
+            geometry = {name: _number(geometry_raw[name], path, catalog_id,
+                                     f"geometry.{name}", True) for name in keys}
+            try:
+                solid_section_dimensions(variant, geometry)
+            except ValueError as exc:
+                raise _error(path, catalog_id, f"perfil {profile_id}: {exc}") from exc
         elif geometry_type == "hollow_section":
             variant = series_definition.geometry_variant
             expected_family = {"square": "SHS", "rectangular": "RHS", "circular": "CHS"}
@@ -521,21 +539,58 @@ def validate_catalog_payload(payload, path: Path):
                 for name, value in source_dimensions_raw.items()
             }
             source_page = source_metadata_raw.get("source_page")
-            if isinstance(source_page, bool) or not isinstance(source_page, int) or source_page <= 0:
+            if source_page is not None and (
+                isinstance(source_page, bool) or not isinstance(source_page, int) or source_page <= 0
+            ):
                 raise _error(path, catalog_id, f"perfil {profile_id}: source_page deve ser inteiro positivo")
+            def optional_number(name):
+                value = source_metadata_raw.get(name)
+                return None if value is None else _number(
+                    value, path, catalog_id, f"source_metadata.{name}", True,
+                )
+            weight = optional_number("source_weight_p_kg_per_6m")
+            basis = optional_number("source_weight_basis_mm")
+            published_mass = optional_number("source_mass_per_length_kg_m")
+            density = optional_number("density_kg_m3")
+            mass_type = _string(source_metadata_raw.get("mass_type"), path, catalog_id,
+                                "source_metadata.mass_type", True)
+            if mass_type not in {None, "published", "derived", "calculated_fixture"}:
+                raise _error(path, catalog_id, f"perfil {profile_id}: mass_type inválido")
+            if (weight is None) != (basis is None) or (basis is not None and basis != 6000):
+                raise _error(path, catalog_id, f"perfil {profile_id}: peso por 6 m requer peso e base 6000 mm")
+            if weight is not None:
+                if mass_type not in {None, "derived"} or published_mass is not None:
+                    raise _error(path, catalog_id, f"perfil {profile_id}: origens de massa incompatíveis")
+                if physical.mass_per_length_kg_m is None or not math.isclose(
+                    physical.mass_per_length_kg_m, weight / 6.0, rel_tol=1e-12,
+                ):
+                    raise _error(path, catalog_id, f"perfil {profile_id}: massa deve ser p/6")
+            if mass_type == "derived" and weight is None:
+                raise _error(path, catalog_id, f"perfil {profile_id}: massa derivada requer peso de origem")
+            if published_mass is not None and (
+                mass_type not in {None, "published"}
+                or (physical.mass_per_length_kg_m is not None and not math.isclose(
+                    published_mass, physical.mass_per_length_kg_m, rel_tol=1e-12))
+            ):
+                raise _error(path, catalog_id, f"perfil {profile_id}: massa publicada conflitante")
+            if mass_type == "calculated_fixture":
+                if (source.source_type != "development_fixture"
+                        or availability != "development_fixture" or density is None
+                        or published_mass is not None or weight is not None
+                        or geometry_type != "solid_section"):
+                    raise _error(path, catalog_id, f"perfil {profile_id}: massa de fixture exige origem dev, seção maciça e densidade")
+            elif density is not None:
+                raise _error(path, catalog_id, f"perfil {profile_id}: densidade de cálculo exige calculated_fixture")
             source_metadata = ProfileSourceMetadata(
                 source_page=source_page,
-                source_weight_p_kg_per_6m=_number(
-                    source_metadata_raw.get("source_weight_p_kg_per_6m"), path, catalog_id,
-                    f"profiles[{index}].source_metadata.source_weight_p_kg_per_6m", True,
-                ),
-                source_weight_basis_mm=_number(
-                    source_metadata_raw.get("source_weight_basis_mm"), path, catalog_id,
-                    f"profiles[{index}].source_metadata.source_weight_basis_mm", True,
-                ),
+                source_weight_p_kg_per_6m=weight,
+                source_weight_basis_mm=basis,
+                mass_type=mass_type,
+                source_mass_per_length_kg_m=published_mass,
+                density_kg_m3=density,
                 source_designation=_string(
                     source_metadata_raw.get("source_designation"), path, catalog_id,
-                    f"profiles[{index}].source_metadata.source_designation",
+                    f"profiles[{index}].source_metadata.source_designation", True,
                 ),
                 source_inches=_string(
                     source_metadata_raw.get("source_inches"), path, catalog_id,

@@ -26,6 +26,7 @@ class CatalogSource:
     source_url: str | None = None
     source_date: str | None = None
     notes: str | None = None
+    source_type: str | None = None
 
 
 @dataclass(frozen=True)
@@ -121,6 +122,9 @@ class ProfileSourceMetadata:
     source_inches: str | None = None
     source_dimensions: Mapping[str, float] = field(default_factory=immutable_mapping)
     availability_note: str | None = None
+    mass_type: str | None = None
+    source_mass_per_length_kg_m: float | None = None
+    density_kg_m3: float | None = None
 
 
 @dataclass(frozen=True)

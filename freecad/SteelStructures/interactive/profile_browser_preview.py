@@ -222,13 +222,14 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
 
         visual_bounds = self.scene().itemsBoundingRect()
         dimension_key = (geometry.geometry_type, geometry.geometry_variant)
-        if dimension_key[0] == "hollow_section":
+        if dimension_key[0] in ("hollow_section", "solid_section"):
             scene_units_per_pixel = self._hollow_units_per_pixel(geometry.bounds)
         else:
             scene_units_per_pixel = self._scene_units_per_pixel(geometry.bounds)
         margin_x = CANVAS_MARGIN_PIXELS * scene_units_per_pixel
         margin_y = CANVAS_MARGIN_PIXELS * scene_units_per_pixel
-        if mode == DIMENSIONS_MODE and dimension_key[0] == "hollow_section":
+        if (mode == DIMENSIONS_MODE
+                and dimension_key[0] in ("hollow_section", "solid_section")):
             rect = _hollow_section_envelope(
                 geometry.bounds, scene_units_per_pixel,
             )
@@ -267,7 +268,7 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
         return max(bounds.width / (width * 0.58), bounds.height / (height * 0.66), 0.75)
 
     def _hollow_units_per_pixel(self, bounds):
-        """Fit every hollow independently; catalog previews do not share a scale."""
+        """Fit each closed section independently, without an absolute-size floor."""
         viewport_getter = getattr(self, "viewport", None)
         viewport = viewport_getter() if callable(viewport_getter) else None
         width = float(viewport.width()) if viewport is not None else 500.0
@@ -300,6 +301,28 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
                 ("hollow_section", "rectangular"),
                 ("hollow_section", "circular")):
             self._add_hollow_dimensions(geometry, dimensions)
+        elif key[0] == "solid_section":
+            self._add_solid_dimensions(geometry, dimensions)
+
+    def _add_solid_dimensions(self, geometry, dimensions):
+        """Dimension solid bars in their canonical width/thickness orientation."""
+        pen = self._annotation_pen()
+        bounds = geometry.bounds
+        left, right = bounds.min_x, bounds.max_x
+        top, bottom = -bounds.max_y, -bounds.min_y
+        units = self._hollow_units_per_pixel(bounds)
+        clearance = GEOMETRY_CLEARANCE_PIXELS * units
+        circular = geometry.geometry_variant == "circular"
+        self._add_hollow_width_dimension(
+            "Ø" if circular else "b", left, right, top,
+            (CHS_WIDTH_OFFSET_PIXELS if circular else HOLLOW_WIDTH_OFFSET_PIXELS) * units,
+            clearance, units, dimensions["ØD" if circular else "B"], pen,
+            parenthesize=not circular,
+        )
+        if geometry.geometry_variant == "rectangular":
+            self._add_angle_t_dimension(
+                right, top, bottom, clearance, units, dimensions["t"], pen,
+            )
 
     def _add_hollow_dimensions(self, geometry, dimensions):
         """Annotate nominal hollow dimensions without deriving values from contours."""
@@ -825,7 +848,11 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
 
     def _add_axes(self, geometry):
         bounds = geometry.bounds
-        extension = _clamp(max(bounds.width, bounds.height) * 0.10, 18.0, 48.0)
+        extension = (
+            18.0 * self._hollow_units_per_pixel(bounds)
+            if geometry.geometry_type == "solid_section" else
+            _clamp(max(bounds.width, bounds.height) * 0.10, 18.0, 48.0)
+        )
         x_pen = QtGui.QPen(QtGui.QColor(205, 45, 45))
         y_pen = QtGui.QPen(QtGui.QColor(38, 145, 72))
         for pen in (x_pen, y_pen):

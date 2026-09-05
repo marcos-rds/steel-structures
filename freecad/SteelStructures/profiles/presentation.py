@@ -62,6 +62,15 @@ def format_engineering_value(value: float, scale: float, unit: str, decimals=Non
 
 
 def profile_dimension_rows(profile: ProfileDefinition) -> tuple[PresentationRow, ...]:
+    if profile.geometry_type == "solid_section":
+        labels = {
+            "circular": (("d", "Diâmetro (D)"),),
+            "square": (("b", "Lado (B)"),),
+            "rectangular": (("b", "Largura (B)"), ("t", "Espessura (t)")),
+        }
+        return tuple(PresentationRow(
+            label, format_engineering_value(profile.geometry[key], 1.0, "mm")
+        ) for key, label in labels[profile.geometry_variant])
     if (profile.geometry_type, profile.geometry_variant) == ("hollow_section", "rectangular"):
         from .hollow_sections import normalize_hollow_profile_definition
         profile = normalize_hollow_profile_definition(profile)
@@ -92,13 +101,17 @@ def profile_preview_dimension_rows(profile: ProfileDefinition) -> tuple[Presenta
         ("hollow_section", "square"): ("b", "t"),
         ("hollow_section", "rectangular"): ("h", "b", "t"),
         ("hollow_section", "circular"): ("d", "t"),
+        ("solid_section", "circular"): ("d",),
+        ("solid_section", "square"): ("b",),
+        ("solid_section", "rectangular"): ("b", "t"),
     }
     if key not in keys_by_geometry:
         return ()
     hollow_labels = {"b": "B", "h": "H", "d": "ØD", "t": "t"}
     return tuple(
         PresentationRow(
-            hollow_labels.get(key, key) if profile.geometry_type == "hollow_section" else key,
+            hollow_labels.get(key, key)
+            if profile.geometry_type in ("hollow_section", "solid_section") else key,
             format_engineering_value(profile.geometry[key], 1.0, "mm"),
         )
         for key in keys_by_geometry[key] if key in profile.geometry
@@ -122,17 +135,22 @@ def profile_property_groups(profile: ProfileDefinition) -> tuple[PresentationGro
     is_ue = (profile.geometry_type, profile.geometry_variant) == (
         "cold_formed_channel", "stiffened_u"
     )
+    is_solid = profile.geometry_type == "solid_section"
     physical_rows = []
     if physical.mass_per_length_kg_m is not None:
         physical_rows.append(PresentationRow(
             "Massa linear", format_engineering_value(
-                physical.mass_per_length_kg_m, 1.0, "kg/m", 2 if is_ue else 1
-            )
+                physical.mass_per_length_kg_m, 1.0, "kg/m",
+                3 if is_solid else (2 if is_ue else 1),
+            ),
+            ("Massa calculada para fixture de desenvolvimento"
+             if is_solid and getattr(profile.catalog.source, "source_type", None)
+             == "development_fixture" else None),
         ))
     if physical.area_mm2 is not None:
         physical_rows.append(PresentationRow(
             "Área", format_engineering_value(
-                physical.area_mm2, 0.01, "cm²", 2 if is_ue else 1
+                physical.area_mm2, 0.01, "cm²", 2 if is_ue or is_solid else 1
             ),
             ("Área técnica calculada; independente da representação CAD"
              if profile.geometry_type == "hollow_section" else None),
@@ -214,6 +232,28 @@ def profile_source_groups(profile: ProfileDefinition) -> tuple[PresentationGroup
         source.notes,
     ) if value)
     key = (profile.geometry_type, profile.geometry_variant)
+    if getattr(source, "source_type", None) == "development_fixture":
+        metadata = profile.source_metadata
+        density = getattr(metadata, "density_kg_m3", None)
+        mass_rows = (
+            PresentationRow("Massa linear", "Calculada para a fixture"),
+        )
+        if density is not None:
+            mass_rows += (PresentationRow(
+                "Densidade adotada", format_engineering_value(density, 1.0, "kg/m³"),
+            ),)
+        return (
+            PresentationGroup("Fonte", (
+                PresentationRow(
+                    "Origem", "Steel Structures — fixture de desenvolvimento", source_tooltip,
+                ),
+                PresentationRow("Escopo", "Dados sintéticos para validação funcional"),
+            ) + mass_rows),
+            PresentationGroup("Geometria", (
+                PresentationRow("Definição", "Seção maciça nominal ideal", profile.geometry_notes),
+                PresentationRow("Propriedades", "Calculadas pela Steel Structures nos eixos locais"),
+            )),
+        )
     if profile.geometry_type == "hollow_section" and profile.property_provenance:
         provenance = profile.property_provenance.get("area")
         calculated_rows = (
@@ -265,7 +305,8 @@ def profile_source_groups(profile: ProfileDefinition) -> tuple[PresentationGroup
         source_rows.append(PresentationRow("Disponibilidade", "Sob consulta"))
     if profile.source_metadata is not None:
         metadata = profile.source_metadata
-        source_rows.append(PresentationRow("Página da fonte", str(metadata.source_page)))
+        if metadata.source_page is not None:
+            source_rows.append(PresentationRow("Página da fonte", str(metadata.source_page)))
         if metadata.source_weight_p_kg_per_6m is not None:
             source_rows.append(PresentationRow(
                 "Peso publicado p (barra de 6 m)",

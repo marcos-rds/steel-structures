@@ -28,6 +28,10 @@ TUPER_HOLLOW_SNAPSHOT = (
     PROJECT_ROOT / "freecad" / "SteelStructures" / "catalog_sources"
     / "tuper_hollow_2024_extracted.json"
 )
+SOLID_DEVELOPMENT_CATALOG = (
+    PROJECT_ROOT / "freecad" / "SteelStructures" / "catalogs" / "dev"
+    / "solid_sections_validation.json"
+)
 
 ESSENTIAL_FILES = (
     "package.xml",
@@ -47,6 +51,9 @@ ESSENTIAL_FILES = (
     "freecad/SteelStructures/profiles/models.py",
     "freecad/SteelStructures/profiles/catalog.py",
     "freecad/SteelStructures/profiles/validation.py",
+    "freecad/SteelStructures/profiles/solid_sections.py",
+    "freecad/SteelStructures/profiles/section_paths.py",
+    "freecad/SteelStructures/catalogs/dev/solid_sections_validation.json",
     "freecad/SteelStructures/catalogs/gerdau_construcao_metalica_2023_01.json",
     "freecad/SteelStructures/catalogs/tuper_hollow_2024.json",
     "freecad/SteelStructures/catalog_sources/tuper_hollow_2024_extracted.json",
@@ -273,6 +280,32 @@ def run_checks() -> list[str]:
     except (json.JSONDecodeError, OSError, ValueError) as exc:
         errors.append(f"catálogo Tuper inválido: {exc}")
 
+    try:
+        solid_payload = json.loads(SOLID_DEVELOPMENT_CATALOG.read_text(encoding="utf-8"))
+        solid_catalog = solid_payload["catalog"]
+        solid_profiles = solid_payload["profiles"]
+        if (solid_payload.get("schema_version") != 2
+                or solid_catalog["source"].get("source_type") != "development_fixture"
+                or solid_catalog.get("manufacturer") is not None
+                or solid_catalog.get("standard_references")):
+            errors.append("fixtures maciças: origem deve ser de desenvolvimento, sem fabricante/norma")
+        expected_solid_ids = {
+            "round-bar-20", "round-bar-50", "square-bar-20", "square-bar-50",
+            "flat-bar-50x6-35", "flat-bar-100x10",
+        }
+        if (len(solid_profiles) != 6
+                or {item["id"] for item in solid_profiles} != expected_solid_ids):
+            errors.append("fixtures maciças: esperado seis perfis de validação")
+        for item in solid_profiles:
+            source = item.get("source_metadata", {})
+            if (item.get("geometry_type") != "solid_section"
+                    or item.get("availability_status") != "development_fixture"
+                    or source.get("mass_type") != "calculated_fixture"
+                    or source.get("density_kg_m3") != 7850):
+                errors.append(f"fixture maciça {item['id']}: origem/massa sintética inválida")
+    except (json.JSONDecodeError, OSError, ValueError, KeyError, TypeError) as exc:
+        errors.append(f"fixtures maciças inválidas: {exc}")
+
     for path in sorted(PROJECT_ROOT.rglob("*.py")):
         try:
             source = path.read_text(encoding="utf-8")
@@ -295,6 +328,7 @@ def main() -> int:
     print("OK: catálogo Gerdau 01/23 é JSON válido e contém 218 perfis em 7 séries.")
     print("OK: designações são únicas e todos os perfis possuem campos e valores válidos.")
     print("OK: catálogo Tuper 2024 contém 2.999 perfis tubulares rastreáveis em 3 séries.")
+    print("OK: Aço Maciço contém seis fixtures de desenvolvimento com massa sintética explícita.")
     print("OK: todos os arquivos Python compilam sintaticamente.")
     print("OK: todos os arquivos essenciais existem.")
     return 0

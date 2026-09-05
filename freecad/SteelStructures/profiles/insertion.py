@@ -115,7 +115,8 @@ def section_insertion_references(geometry: SectionGeometry2D):
             ("top_left", "Canto superior esquerdo", Point2D(bounds.min_x, bounds.max_y)),
             ("top_right", "Canto superior direito", Point2D(bounds.max_x, bounds.max_y)),
         )
-    elif key in (("hollow_section", "square"), ("hollow_section", "rectangular")):
+    elif key in (("hollow_section", "square"), ("hollow_section", "rectangular"),
+                 ("solid_section", "square"), ("solid_section", "rectangular")):
         x0, y0 = geometry.origin.x, geometry.origin.y
         points = {
             "centroid": geometry.origin,
@@ -127,7 +128,7 @@ def section_insertion_references(geometry: SectionGeometry2D):
             "bottom_right": Point2D(bounds.max_x, bounds.min_y),
         }
         values = tuple((identifier, label, points[identifier]) for identifier, label in _I_LABELS)
-    elif key == ("hollow_section", "circular"):
+    elif key in (("hollow_section", "circular"), ("solid_section", "circular")):
         x0, y0 = geometry.origin.x, geometry.origin.y
         values = (
             ("centroid", "Centroide", geometry.origin),
@@ -143,6 +144,10 @@ def section_insertion_references(geometry: SectionGeometry2D):
 
 def insertion_reference(geometry: SectionGeometry2D, value: str):
     """Resolve a stable id or current label, falling back to the centroid."""
+    if geometry.geometry_type == "solid_section" and value in {
+        "outer_top_left", "outer_top_right", "outer_bottom_left", "outer_bottom_right",
+    }:
+        value = value.removeprefix("outer_")
     references = section_insertion_references(geometry)
     return next(
         (item for item in references if value in (item.id, item.label)), references[0]

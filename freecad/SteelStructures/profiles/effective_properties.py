@@ -120,6 +120,26 @@ def hollow_section_properties(*, family, h=None, b=None, d=None, t):
     )
 
 
+def resolve_profile_mass(profile: ProfileDefinition):
+    """Resolve explicit published kg/m for any family, retaining provenance."""
+    source = profile.source_metadata
+    if source is None:
+        return profile
+    mass = source.source_mass_per_length_kg_m
+    if mass is None:
+        mass = profile.physical_properties.mass_per_length_kg_m
+    if mass is None or (source.mass_type != "published"
+                        and source.source_mass_per_length_kg_m is None):
+        return profile
+    return replace(
+        profile, physical_properties=replace(profile.physical_properties, mass_per_length_kg_m=mass),
+        property_provenance=immutable_mapping({
+            **profile.property_provenance,
+            "mass_per_length": PropertyProvenance("published", None, "Massa linear publicada em kg/m."),
+        }),
+    )
+
+
 def calculate_hollow_profile_properties(profile: ProfileDefinition):
     """Replace hollow fixture/catalog technical values at the library boundary."""
     if profile.geometry_type != "hollow_section":
@@ -140,13 +160,13 @@ def calculate_hollow_profile_properties(profile: ProfileDefinition):
     calculated = hollow_section_properties(**kwargs)
     names = ("ix", "iy", "wx", "wy", "rx", "ry")
     properties = immutable_mapping({name: getattr(calculated, name) for name in names})
-    provenance = immutable_mapping({
+    provenance = immutable_mapping({**profile.property_provenance, **{
         name: PropertyProvenance(
             "calculated", calculated.basis,
             "Calculated by Steel Structures; not a manufacturer-published value.",
         )
         for name in ("area",) + names
-    })
+    }})
     if (
         profile.source_metadata is not None
         and profile.source_metadata.source_weight_p_kg_per_6m is not None
@@ -164,6 +184,63 @@ def calculate_hollow_profile_properties(profile: ProfileDefinition):
         profile, physical_properties=physical, section_properties=properties,
         centroid=immutable_mapping({"x": calculated.centroid_x, "y": calculated.centroid_y}),
         property_provenance=provenance,
+    )
+
+
+def solid_section_properties(*, variant, **dimensions):
+    """Exact ideal solid-section properties in local mm axes (X horizontal)."""
+    from .solid_sections import solid_section_dimensions
+    width, height = solid_section_dimensions(variant, dimensions)
+    if variant == "circular":
+        area = math.pi * width ** 2 / 4.0
+        ix = iy = math.pi * width ** 4 / 64.0
+    else:
+        area = width * height
+        ix, iy = width * height ** 3 / 12.0, height * width ** 3 / 12.0
+    wx, wy = 2.0 * ix / height, 2.0 * iy / width
+    values = (area, ix, iy, wx, wy)
+    if not all(math.isfinite(value) and value > 0 for value in values):
+        raise ValueError("propriedades maciças devem ser finitas e positivas")
+    return CalculatedSectionProperties(
+        area, ix, iy, wx, wy, math.sqrt(ix / area), math.sqrt(iy / area),
+        basis="Steel Structures exact nominal solid-section expressions; local X horizontal, Y vertical",
+    )
+
+
+def calculate_solid_profile_properties(profile: ProfileDefinition):
+    """Resolve technical area/properties and explicitly synthetic fixture mass."""
+    if profile.geometry_type != "solid_section":
+        return profile
+    calculated = solid_section_properties(variant=profile.geometry_variant, **profile.geometry)
+    names = ("ix", "iy", "wx", "wy", "rx", "ry")
+    provenance = dict(profile.property_provenance)
+    provenance.update({name: PropertyProvenance(
+        "calculated", calculated.basis, "Geometria nominal ideal; calculada pela Steel Structures.",
+    ) for name in ("area",) + names})
+    mass = profile.physical_properties.mass_per_length_kg_m
+    source = profile.source_metadata
+    if source is not None and source.mass_type == "calculated_fixture":
+        if (profile.catalog.source.source_type != "development_fixture"
+                or profile.availability_status != "development_fixture"
+                or source.density_kg_m3 is None):
+            raise ValueError("massa de fixture requer origem de desenvolvimento e densidade explícita")
+        expected_mass = calculated.area * source.density_kg_m3 * 1e-6
+        if mass is not None and not math.isclose(mass, expected_mass, rel_tol=1e-12):
+            raise ValueError("massa de fixture diverge de área nominal × densidade")
+        mass = expected_mass
+        provenance["mass_per_length"] = PropertyProvenance(
+            "calculated_fixture", f"A * {source.density_kg_m3:g} kg/m³ * 1e-6",
+            "Massa sintética de desenvolvimento; não é dado comercial.",
+        )
+    if mass is None or not math.isfinite(mass) or mass <= 0:
+        raise ValueError("seção maciça requer massa publicada ou massa de fixture explícita")
+    return replace(
+        profile,
+        physical_properties=replace(profile.physical_properties, area_mm2=calculated.area,
+                                    mass_per_length_kg_m=mass),
+        section_properties=immutable_mapping({name: getattr(calculated, name) for name in names}),
+        centroid=immutable_mapping({"x": 0.0, "y": 0.0}),
+        property_provenance=immutable_mapping(provenance),
     )
 
 
@@ -223,7 +300,14 @@ def _path_integrals(path):
                     -(y ** 3) * dx / 3.0,
                     (x ** 3) * dy / 3.0,
                 )[index]
-            return _adaptive_simpson(value)
+            # Semicircle moment integrands can alias at Simpson's initial
+            # samples and falsely appear converged. Seed angular intervals
+            # before adapting; straight segments retain the existing path.
+            parts = (max(1, math.ceil(abs(segment.sweep) / (math.pi / 4)))
+                     if isinstance(segment, ArcSegment2D) else 1)
+            return sum(_adaptive_simpson(
+                lambda parameter, offset=offset: value((offset + parameter) / parts) / parts
+            ) for offset in range(parts))
         for index in range(5):
             totals[index] += integrate(index)
     return tuple(totals)
@@ -276,6 +360,7 @@ def resolve_effective_section_properties(profile: ProfileDefinition):
 
 
 __all__ = [
+    "solid_section_properties", "calculate_solid_profile_properties",
     "CalculatedSectionProperties", "GeometricSectionProperties",
     "HOLLOW_CALCULATION_CONVENTION", "calculate_hollow_profile_properties",
     "hollow_section_properties", "rectangular_hollow_calculation_radii",

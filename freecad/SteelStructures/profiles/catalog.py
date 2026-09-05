@@ -8,7 +8,8 @@ from collections import defaultdict
 from pathlib import Path
 
 from .effective_properties import (
-    calculate_hollow_profile_properties, resolve_effective_section_properties,
+    calculate_hollow_profile_properties, calculate_solid_profile_properties,
+    resolve_effective_section_properties, resolve_profile_mass,
 )
 from .models import ProfileRef
 from .validation import CatalogValidationError, ProfileNotFoundError, validate_catalog_payload
@@ -51,7 +52,10 @@ class ProfileLibrary:
     def reload(self):
         """Discard all indices, re-read every JSON file and validate again."""
         self._clear()
+        # Append permanent development catalogs without reordering existing
+        # categories or recursively picking up audit/snapshot JSON files.
         paths = sorted(self.catalogs_dir.glob("*.json"), key=lambda path: path.name)
+        paths += sorted((self.catalogs_dir / "dev").glob("*.json"), key=lambda path: path.name)
         for path in paths:
             try:
                 with path.open("r", encoding="utf-8") as handle:
@@ -62,7 +66,9 @@ class ProfileLibrary:
             try:
                 profiles = tuple(
                     resolve_effective_section_properties(
-                        calculate_hollow_profile_properties(profile)
+                        calculate_solid_profile_properties(
+                            calculate_hollow_profile_properties(resolve_profile_mass(profile))
+                        )
                     ) for profile in profiles
                 )
             except (TypeError, ValueError) as exc:
