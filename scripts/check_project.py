@@ -54,6 +54,10 @@ ESSENTIAL_FILES = (
     "freecad/SteelStructures/profiles/solid_sections.py",
     "freecad/SteelStructures/profiles/section_paths.py",
     "freecad/SteelStructures/catalogs/dev/solid_sections_validation.json",
+    "freecad/SteelStructures/catalogs/abnt_nbr_16683_2018_solid.json",
+    "freecad/SteelStructures/catalog_sources/abnt_nbr_16683_2018_solid_extracted.json",
+    "scripts/generate_nbr16683_solid_catalog.py",
+    "scripts/extract_nbr16683_solid_snapshot.py",
     "freecad/SteelStructures/catalogs/gerdau_construcao_metalica_2023_01.json",
     "freecad/SteelStructures/catalogs/tuper_hollow_2024.json",
     "freecad/SteelStructures/catalog_sources/tuper_hollow_2024_extracted.json",
@@ -306,6 +310,20 @@ def run_checks() -> list[str]:
     except (json.JSONDecodeError, OSError, ValueError, KeyError, TypeError) as exc:
         errors.append(f"fixtures maciças inválidas: {exc}")
 
+    try:
+        if str(PROJECT_ROOT) not in sys.path:
+            sys.path.insert(0, str(PROJECT_ROOT))
+        from scripts.generate_nbr16683_solid_catalog import SNAPSHOT, OUTPUT, render_catalog
+        normative_snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+        if render_catalog(normative_snapshot) != OUTPUT.read_bytes():
+            errors.append("catálogo ABNT NBR 16683 diverge do snapshot/gerador auditados")
+        from freecad.SteelStructures.profiles import ProfileLibrary
+        public_profiles = ProfileLibrary(CATALOG.parent).list_profiles()
+        if any(p.availability_status == "development_fixture" for p in public_profiles):
+            errors.append("fixtures de desenvolvimento expostas no catálogo público")
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        errors.append(f"catálogo ABNT NBR 16683 inválido: {exc}")
+
     for path in sorted(PROJECT_ROOT.rglob("*.py")):
         try:
             source = path.read_text(encoding="utf-8")
@@ -328,7 +346,7 @@ def main() -> int:
     print("OK: catálogo Gerdau 01/23 é JSON válido e contém 218 perfis em 7 séries.")
     print("OK: designações são únicas e todos os perfis possuem campos e valores válidos.")
     print("OK: catálogo Tuper 2024 contém 2.999 perfis tubulares rastreáveis em 3 séries.")
-    print("OK: Aço Maciço contém seis fixtures de desenvolvimento com massa sintética explícita.")
+    print("OK: ABNT NBR 16683 contém 164 perfis normativos; fixtures isoladas da seleção pública.")
     print("OK: todos os arquivos Python compilam sintaticamente.")
     print("OK: todos os arquivos essenciais existem.")
     return 0

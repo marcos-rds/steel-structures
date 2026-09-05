@@ -52,10 +52,9 @@ class ProfileLibrary:
     def reload(self):
         """Discard all indices, re-read every JSON file and validate again."""
         self._clear()
-        # Append permanent development catalogs without reordering existing
-        # categories or recursively picking up audit/snapshot JSON files.
+        # Only public catalogs in this directory. Development/compatibility
+        # data requires an explicit library pointed at its own directory.
         paths = sorted(self.catalogs_dir.glob("*.json"), key=lambda path: path.name)
-        paths += sorted((self.catalogs_dir / "dev").glob("*.json"), key=lambda path: path.name)
         for path in paths:
             try:
                 with path.open("r", encoding="utf-8") as handle:

@@ -131,11 +131,16 @@ def resolve_profile_mass(profile: ProfileDefinition):
     if mass is None or (source.mass_type != "published"
                         and source.source_mass_per_length_kg_m is None):
         return profile
+    basis = None
+    note = "Massa linear publicada em kg/m."
+    if source.mass_basis == "normative_table":
+        basis = f"{profile.catalog.source.source_name}, tabela {source.source_table}, p. {source.source_page}"
+        note = "Massa nominal orientativa publicada na norma; preservada sem recalcular pela geometria CAD."
     return replace(
         profile, physical_properties=replace(profile.physical_properties, mass_per_length_kg_m=mass),
         property_provenance=immutable_mapping({
             **profile.property_provenance,
-            "mass_per_length": PropertyProvenance("published", None, "Massa linear publicada em kg/m."),
+            "mass_per_length": PropertyProvenance("published", basis, note),
         }),
     )
 

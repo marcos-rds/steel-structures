@@ -145,7 +145,10 @@ def profile_property_groups(profile: ProfileDefinition) -> tuple[PresentationGro
             ),
             ("Massa calculada para fixture de desenvolvimento"
              if is_solid and getattr(profile.catalog.source, "source_type", None)
-             == "development_fixture" else None),
+             == "development_fixture" else
+             "Massa nominal orientativa publicada na norma; preservada sem recalcular"
+             if is_solid and profile.source_metadata is not None
+             and profile.source_metadata.mass_basis == "normative_table" else None),
         ))
     if physical.area_mm2 is not None:
         physical_rows.append(PresentationRow(
@@ -153,7 +156,7 @@ def profile_property_groups(profile: ProfileDefinition) -> tuple[PresentationGro
                 physical.area_mm2, 0.01, "cm²", 2 if is_ue or is_solid else 1
             ),
             ("Área técnica calculada; independente da representação CAD"
-             if profile.geometry_type == "hollow_section" else None),
+             if profile.geometry_type in ("hollow_section", "solid_section") else None),
         ))
     if physical.surface_area_per_length_m2_m is not None:
         physical_rows.append(PresentationRow(
@@ -252,6 +255,34 @@ def profile_source_groups(profile: ProfileDefinition) -> tuple[PresentationGroup
             PresentationGroup("Geometria", (
                 PresentationRow("Definição", "Seção maciça nominal ideal", profile.geometry_notes),
                 PresentationRow("Propriedades", "Calculadas pela Steel Structures nos eixos locais"),
+            )),
+        )
+    if profile.geometry_type == "solid_section" and source.source_type == "normative":
+        metadata = profile.source_metadata
+        fields = (
+            ("Organismo", profile.catalog.issuer.name if profile.catalog.issuer else None),
+            ("Norma", source.source_name), ("Revisão", source.source_revision),
+            ("Região", "Brasil" if profile.catalog.region == "BR" else profile.catalog.country),
+            ("Tabela", getattr(metadata, "source_table", None)),
+            ("Página da fonte", getattr(metadata, "source_page", None)),
+            ("Referência na fonte", getattr(metadata, "source_designation", None)),
+        )
+        rows = [PresentationRow(label, str(value), source_tooltip)
+                for label, value in fields if value is not None]
+        if metadata is not None and metadata.mass_basis == "normative_table":
+            rows.append(PresentationRow("Massa linear", "Nominal orientativa, publicada na tabela"))
+        if metadata is not None and metadata.source_inches:
+            rows.append(PresentationRow("Designação em polegadas", metadata.source_inches))
+        if source.density_kg_m3 is not None:
+            rows.append(PresentationRow("Densidade informada na fonte",
+                        format_engineering_value(source.density_kg_m3, 1.0, "kg/m³")))
+        if metadata is not None and metadata.availability_note:
+            rows.append(PresentationRow("Nota", metadata.availability_note))
+        return (
+            PresentationGroup("Fonte", tuple(rows)),
+            PresentationGroup("Geometria", (
+                PresentationRow("Definição", "Seção maciça nominal ideal", profile.geometry_notes),
+                PresentationRow("Propriedades", "A/I/W/r calculados pela Steel Structures nos eixos locais"),
             )),
         )
     if profile.geometry_type == "hollow_section" and profile.property_provenance:

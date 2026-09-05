@@ -1,0 +1,2315 @@
+{
+  "schema_version": 1,
+  "source": {
+    "standard": "ABNT NBR 16683:2018",
+    "title": "Barras laminadas de aço, chatas, redondas, quadradas e sextavadas, para uso estrutural — Dimensões e tolerâncias",
+    "publisher": "ABNT",
+    "publication_kind": "user_supplied_primary_publication",
+    "sha256": "dfda6bd8d496dfaf435503d0145fa0ac6d5bb47515c06975bba4bb54fbccddbd",
+    "edition_date": "2018-11-29",
+    "corrected_date": "2020-04-23",
+    "errata": [
+      {
+        "number": 1,
+        "date": "2020-04-23",
+        "reference": "Prefácio, p. v"
+      }
+    ],
+    "isbn": "978-85-07-07801-2",
+    "pdf_page_count": 25,
+    "numbered_page_count": 19,
+    "table_pages": {
+      "A.1": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "A.2": [
+        10,
+        11
+      ],
+      "A.3": [
+        12
+      ]
+    },
+    "density_kg_m3": 7850,
+    "density_printed": "7,85 g/cm³",
+    "mass_rule_reference": "4.3.3 e nota, p. 2",
+    "mass_rule": "Massas nominais orientativas, não usadas como critério de reprovação. A nota informa cálculo com densidade de 7,85 g/cm³. Este snapshot conserva a massa publicada sem recalculá-la.",
+    "scope": "Barras laminadas a quente para uso estrutural e geral. Exclui barras nervuradas para concreto, produtos cortados de chapas ou bobinas, produtos para processos de aplicação mecânica e barras laminadas a frio.",
+    "scope_reference": "1.1 a 1.5, p. 1",
+    "current_status_verified": false,
+    "status_note": "Edição e correção conferidas no exemplar fornecido. A vigência atual não foi confirmada no catálogo online da ABNT."
+  },
+  "summary": {
+    "round-bar": 53,
+    "square-bar": 19,
+    "flat-bar": 92
+  },
+  "audit": {
+    "raw_records_sha256": "0a6b9823c9983f844212a5b180a7e186a88dd74292eb462d84279765567d4b35",
+    "raw_records_sha256_basis": "UTF-8 JSON of records; ensure_ascii=False; sort_keys=True; separators=(',', ':')",
+    "source_corrections_applied": [],
+    "duplicate_nominal_geometry_count": 0,
+    "visual_review": "Cabeçalhos, linhas de dados, continuações e notas das Tabelas A.1, A.2 e A.3 conferidos nas sete páginas renderizadas do exemplar.",
+    "observations_are_official_errata": false,
+    "observations": [
+      {
+        "table": "A.1",
+        "page": 8,
+        "pdf_page": 14,
+        "row": 19,
+        "kind": "reference_dimension_conflict",
+        "note": "A linha 3 × 2 publica referência 76,20 × 49,80, mas as colunas Largura e Espessura contêm 76,20 e 50,80. Ambos os textos são preservados; dimensions usa somente as colunas dimensionais explícitas."
+      },
+      {
+        "tables": [
+          "A.1",
+          "A.2",
+          "A.3"
+        ],
+        "kind": "footnote_cross_reference",
+        "note": "As notas a remetem a 4.1.3, numeração ausente no exemplar. A regra de massas orientativas está em 4.3.3. Esta observação não altera o texto publicado."
+      },
+      {
+        "tables": [
+          "A.1",
+          "A.2"
+        ],
+        "kind": "metric_commercial_designation",
+        "note": "A nota b indica denominação comercial em milímetros: 11 linhas de chatas com largura 130,00 e duas redondas de 11,50 e 12,00. source_inches é null nessas linhas; a referência original permanece."
+      },
+      {
+        "kind": "nominal_mass_and_corner_geometry",
+        "note": "Massas tabuladas não são substituídas por área ideal vezes densidade. B.1.2 não controla raios de chatas; B.6 fornece faixas de raios para quadradas, sem um raio nominal único. Não se infere raio pela massa."
+      }
+    ]
+  },
+  "records": [
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 1,
+      "source_inches": "3/8 × 1/8",
+      "source_reference": "9,53 × 3,18",
+      "dimensions": {
+        "b": "9,53",
+        "t": "3,18"
+      },
+      "mass_kg_m": "0,238"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 2,
+      "source_inches": "1/2 × 1/8",
+      "source_reference": "12,70 × 3,18",
+      "dimensions": {
+        "b": "12,70",
+        "t": "3,18"
+      },
+      "mass_kg_m": "0,317"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 3,
+      "source_inches": "1/2 × 3/16",
+      "source_reference": "12,70 × 4,76",
+      "dimensions": {
+        "b": "12,70",
+        "t": "4,76"
+      },
+      "mass_kg_m": "0,475"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 4,
+      "source_inches": "1/2 × 1/4",
+      "source_reference": "12,70 × 6,35",
+      "dimensions": {
+        "b": "12,70",
+        "t": "6,35"
+      },
+      "mass_kg_m": "0,633"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 5,
+      "source_inches": "5/8 × 1/8",
+      "source_reference": "15,88 × 3,18",
+      "dimensions": {
+        "b": "15,88",
+        "t": "3,18"
+      },
+      "mass_kg_m": "0,396"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 6,
+      "source_inches": "5/8 × 3/16",
+      "source_reference": "15,88 × 4,76",
+      "dimensions": {
+        "b": "15,88",
+        "t": "4,76"
+      },
+      "mass_kg_m": "0,593"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 7,
+      "source_inches": "5/8 × 1/4",
+      "source_reference": "15,88 × 6,35",
+      "dimensions": {
+        "b": "15,88",
+        "t": "6,35"
+      },
+      "mass_kg_m": "0,792"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 8,
+      "source_inches": "3/4 × 1/8",
+      "source_reference": "19,05 × 3,18",
+      "dimensions": {
+        "b": "19,05",
+        "t": "3,18"
+      },
+      "mass_kg_m": "0,476"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 9,
+      "source_inches": "3/4 × 3/16",
+      "source_reference": "19,05 × 4,76",
+      "dimensions": {
+        "b": "19,05",
+        "t": "4,76"
+      },
+      "mass_kg_m": "0,712"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 10,
+      "source_inches": "3/4 × 1/4",
+      "source_reference": "19,05 × 6,35",
+      "dimensions": {
+        "b": "19,05",
+        "t": "6,35"
+      },
+      "mass_kg_m": "0,950"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 11,
+      "source_inches": "7/8 × 1/8",
+      "source_reference": "22,23 × 3,18",
+      "dimensions": {
+        "b": "22,23",
+        "t": "3,18"
+      },
+      "mass_kg_m": "0,555"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 12,
+      "source_inches": "7/8 × 3/16",
+      "source_reference": "22,23 × 4,76",
+      "dimensions": {
+        "b": "22,23",
+        "t": "4,76"
+      },
+      "mass_kg_m": "0,831"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 13,
+      "source_inches": "7/8 × 1/4",
+      "source_reference": "22,23 × 6,35",
+      "dimensions": {
+        "b": "22,23",
+        "t": "6,35"
+      },
+      "mass_kg_m": "1,108"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 6,
+      "pdf_page": 12,
+      "row": 14,
+      "source_inches": "7/8 × 5/16",
+      "source_reference": "22,23 × 7,94",
+      "dimensions": {
+        "b": "22,23",
+        "t": "7,94"
+      },
+      "mass_kg_m": "1,380"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 1,
+      "source_inches": "7/8 × 1/2",
+      "source_reference": "22,23 × 12,70",
+      "dimensions": {
+        "b": "22,23",
+        "t": "12,70"
+      },
+      "mass_kg_m": "2,216"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 2,
+      "source_inches": "1 × 1/8",
+      "source_reference": "25,40 × 3,18",
+      "dimensions": {
+        "b": "25,40",
+        "t": "3,18"
+      },
+      "mass_kg_m": "0,634"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 3,
+      "source_inches": "1 × 3/16",
+      "source_reference": "25,40 × 4,76",
+      "dimensions": {
+        "b": "25,40",
+        "t": "4,76"
+      },
+      "mass_kg_m": "0,949"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 4,
+      "source_inches": "1 × 1/4",
+      "source_reference": "25,40 × 6,35",
+      "dimensions": {
+        "b": "25,40",
+        "t": "6,35"
+      },
+      "mass_kg_m": "1,266"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 5,
+      "source_inches": "1 × 5/16",
+      "source_reference": "25,40 × 7,94",
+      "dimensions": {
+        "b": "25,40",
+        "t": "7,94"
+      },
+      "mass_kg_m": "1,583"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 6,
+      "source_inches": "1 × 3/8",
+      "source_reference": "25,40 × 9,53",
+      "dimensions": {
+        "b": "25,40",
+        "t": "9,53"
+      },
+      "mass_kg_m": "1,900"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 7,
+      "source_inches": "1.1/4 × 1/8",
+      "source_reference": "31,75 × 3,18",
+      "dimensions": {
+        "b": "31,75",
+        "t": "3,18"
+      },
+      "mass_kg_m": "0,793"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 8,
+      "source_inches": "1.1/4 × 3/16",
+      "source_reference": "31,75 × 4,76",
+      "dimensions": {
+        "b": "31,75",
+        "t": "4,76"
+      },
+      "mass_kg_m": "1,186"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 9,
+      "source_inches": "1.1/4 × 1/4",
+      "source_reference": "31,75 × 6,35",
+      "dimensions": {
+        "b": "31,75",
+        "t": "6,35"
+      },
+      "mass_kg_m": "1,583"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 10,
+      "source_inches": "1.1/4 × 5/16",
+      "source_reference": "31,75 × 7,94",
+      "dimensions": {
+        "b": "31,75",
+        "t": "7,94"
+      },
+      "mass_kg_m": "1,979"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 11,
+      "source_inches": "1.1/4 × 3/8",
+      "source_reference": "31,75 × 9,53",
+      "dimensions": {
+        "b": "31,75",
+        "t": "9,53"
+      },
+      "mass_kg_m": "2,375"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 12,
+      "source_inches": "1.1/4 × 1/2",
+      "source_reference": "31,75 × 12,70",
+      "dimensions": {
+        "b": "31,75",
+        "t": "12,70"
+      },
+      "mass_kg_m": "3,165"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 13,
+      "source_inches": "1.1/2 × 1/8",
+      "source_reference": "38,10 × 3,18",
+      "dimensions": {
+        "b": "38,10",
+        "t": "3,18"
+      },
+      "mass_kg_m": "0,951"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 14,
+      "source_inches": "1.1/2 × 3/16",
+      "source_reference": "38,10 × 4,76",
+      "dimensions": {
+        "b": "38,10",
+        "t": "4,76"
+      },
+      "mass_kg_m": "1,424"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 15,
+      "source_inches": "1.1/2 × 1/4",
+      "source_reference": "38,10 × 6,35",
+      "dimensions": {
+        "b": "38,10",
+        "t": "6,35"
+      },
+      "mass_kg_m": "1,899"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 16,
+      "source_inches": "1.1/2 × 5/16",
+      "source_reference": "38,10 × 7,94",
+      "dimensions": {
+        "b": "38,10",
+        "t": "7,94"
+      },
+      "mass_kg_m": "2,375"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 17,
+      "source_inches": "1.1/2 × 3/8",
+      "source_reference": "38,10 × 9,53",
+      "dimensions": {
+        "b": "38,10",
+        "t": "9,53"
+      },
+      "mass_kg_m": "2,850"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 18,
+      "source_inches": "1.1/2 × 1/2",
+      "source_reference": "38,10 × 12,70",
+      "dimensions": {
+        "b": "38,10",
+        "t": "12,70"
+      },
+      "mass_kg_m": "3,798"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 19,
+      "source_inches": "1.1/2 × 5/8",
+      "source_reference": "38,10 × 15,88",
+      "dimensions": {
+        "b": "38,10",
+        "t": "15,88"
+      },
+      "mass_kg_m": "4,749"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 20,
+      "source_inches": "1.3/4 × 1/2",
+      "source_reference": "44,45 × 12,70",
+      "dimensions": {
+        "b": "44,45",
+        "t": "12,70"
+      },
+      "mass_kg_m": "4,181"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 21,
+      "source_inches": "1.3/4 × 1/4",
+      "source_reference": "44,45 × 6,35",
+      "dimensions": {
+        "b": "44,45",
+        "t": "6,35"
+      },
+      "mass_kg_m": "1,966"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 22,
+      "source_inches": "2 × 1/8",
+      "source_reference": "50,80 × 3,18",
+      "dimensions": {
+        "b": "50,80",
+        "t": "3,18"
+      },
+      "mass_kg_m": "1,268"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 23,
+      "source_inches": "2 × 3/16",
+      "source_reference": "50,80 × 4,76",
+      "dimensions": {
+        "b": "50,80",
+        "t": "4,76"
+      },
+      "mass_kg_m": "1,898"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 24,
+      "source_inches": "2 × 1/4",
+      "source_reference": "50,80 × 6,35",
+      "dimensions": {
+        "b": "50,80",
+        "t": "6,35"
+      },
+      "mass_kg_m": "2,532"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 25,
+      "source_inches": "2 × 5/16",
+      "source_reference": "50,80 × 7,94",
+      "dimensions": {
+        "b": "50,80",
+        "t": "7,94"
+      },
+      "mass_kg_m": "3,166"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 26,
+      "source_inches": "2 × 3/8",
+      "source_reference": "50,80 × 9,53",
+      "dimensions": {
+        "b": "50,80",
+        "t": "9,53"
+      },
+      "mass_kg_m": "3,800"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 27,
+      "source_inches": "2 × 1/2",
+      "source_reference": "50,80 × 12,70",
+      "dimensions": {
+        "b": "50,80",
+        "t": "12,70"
+      },
+      "mass_kg_m": "5,065"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 28,
+      "source_inches": "2 × 5/8",
+      "source_reference": "50,80 × 15,88",
+      "dimensions": {
+        "b": "50,80",
+        "t": "15,88"
+      },
+      "mass_kg_m": "6,333"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 7,
+      "pdf_page": 13,
+      "row": 29,
+      "source_inches": "2 × 3/4",
+      "source_reference": "50,80 × 19,05",
+      "dimensions": {
+        "b": "50,80",
+        "t": "19,05"
+      },
+      "mass_kg_m": "7,597"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 1,
+      "source_inches": "2 × 1",
+      "source_reference": "50,80 × 25,40",
+      "dimensions": {
+        "b": "50,80",
+        "t": "25,40"
+      },
+      "mass_kg_m": "10,129"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 2,
+      "source_inches": "2.1/2 × 3/16",
+      "source_reference": "63,50 × 4,76",
+      "dimensions": {
+        "b": "63,50",
+        "t": "4,76"
+      },
+      "mass_kg_m": "2,335"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 3,
+      "source_inches": "2.1/2 × 1/4",
+      "source_reference": "63,50 × 6,35",
+      "dimensions": {
+        "b": "63,50",
+        "t": "6,35"
+      },
+      "mass_kg_m": "3,165"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 4,
+      "source_inches": "2.1/2 × 5/16",
+      "source_reference": "63,50 × 7,94",
+      "dimensions": {
+        "b": "63,50",
+        "t": "7,94"
+      },
+      "mass_kg_m": "3,958"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 5,
+      "source_inches": "2.1/2 × 3/8",
+      "source_reference": "63,50 × 9,53",
+      "dimensions": {
+        "b": "63,50",
+        "t": "9,53"
+      },
+      "mass_kg_m": "4,750"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 6,
+      "source_inches": "2.1/2 × 1/2",
+      "source_reference": "63,50 × 12,70",
+      "dimensions": {
+        "b": "63,50",
+        "t": "12,70"
+      },
+      "mass_kg_m": "6,331"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 7,
+      "source_inches": "2.1/2 × 5/8",
+      "source_reference": "63,50 × 15,88",
+      "dimensions": {
+        "b": "63,50",
+        "t": "15,88"
+      },
+      "mass_kg_m": "7,916"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 8,
+      "source_inches": "2.1/2 × 3/4",
+      "source_reference": "63,50 × 19,05",
+      "dimensions": {
+        "b": "63,50",
+        "t": "19,05"
+      },
+      "mass_kg_m": "9,496"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 9,
+      "source_inches": "2.3/4 × 1/2",
+      "source_reference": "69,85 × 12,70",
+      "dimensions": {
+        "b": "69,85",
+        "t": "12,70"
+      },
+      "mass_kg_m": "6,714"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 10,
+      "source_inches": "3 × 1/4",
+      "source_reference": "76,20 × 6,35",
+      "dimensions": {
+        "b": "76,20",
+        "t": "6,35"
+      },
+      "mass_kg_m": "3,798"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 11,
+      "source_inches": "3 × 5/16",
+      "source_reference": "76,20 × 7,94",
+      "dimensions": {
+        "b": "76,20",
+        "t": "7,94"
+      },
+      "mass_kg_m": "4,749"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 12,
+      "source_inches": "3 × 3/8",
+      "source_reference": "76,20 × 9,53",
+      "dimensions": {
+        "b": "76,20",
+        "t": "9,53"
+      },
+      "mass_kg_m": "5,701"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 13,
+      "source_inches": "3 × 1/2",
+      "source_reference": "76,20 × 12,70",
+      "dimensions": {
+        "b": "76,20",
+        "t": "12,70"
+      },
+      "mass_kg_m": "7,597"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 14,
+      "source_inches": "3 × 5/8",
+      "source_reference": "76,20 × 15,88",
+      "dimensions": {
+        "b": "76,20",
+        "t": "15,88"
+      },
+      "mass_kg_m": "9,499"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 15,
+      "source_inches": "3 × 3/4",
+      "source_reference": "76,20 × 19,05",
+      "dimensions": {
+        "b": "76,20",
+        "t": "19,05"
+      },
+      "mass_kg_m": "11,395"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 16,
+      "source_inches": "3 × 1",
+      "source_reference": "76,20 × 25,40",
+      "dimensions": {
+        "b": "76,20",
+        "t": "25,40"
+      },
+      "mass_kg_m": "15,194"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 17,
+      "source_inches": "3 × 1.1/8",
+      "source_reference": "76,20 × 28,57",
+      "dimensions": {
+        "b": "76,20",
+        "t": "28,57"
+      },
+      "mass_kg_m": "17,090"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 18,
+      "source_inches": "3 × 1.1/4",
+      "source_reference": "76,20 × 31,75",
+      "dimensions": {
+        "b": "76,20",
+        "t": "31,75"
+      },
+      "mass_kg_m": "18,990"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 19,
+      "source_inches": "3 × 2",
+      "source_reference": "76,20 × 49,80",
+      "dimensions": {
+        "b": "76,20",
+        "t": "50,80"
+      },
+      "mass_kg_m": "30,390"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 20,
+      "source_inches": "3.1/2 × 1/4",
+      "source_reference": "88,90 × 6,35",
+      "dimensions": {
+        "b": "88,90",
+        "t": "6,35"
+      },
+      "mass_kg_m": "4,307"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 21,
+      "source_inches": "3.1/2 × 3/8",
+      "source_reference": "88,90 × 9,52",
+      "dimensions": {
+        "b": "88,90",
+        "t": "9,52"
+      },
+      "mass_kg_m": "6,490"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 22,
+      "source_inches": "3.1/2 × 1/2",
+      "source_reference": "88,90 × 12,70",
+      "dimensions": {
+        "b": "88,90",
+        "t": "12,70"
+      },
+      "mass_kg_m": "8,590"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 23,
+      "source_inches": "3.1/2 × 5/8",
+      "source_reference": "88,90 × 15,88",
+      "dimensions": {
+        "b": "88,90",
+        "t": "15,88"
+      },
+      "mass_kg_m": "10,847"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 24,
+      "source_inches": "3.1/2 × 3/4",
+      "source_reference": "88,90 × 19,05",
+      "dimensions": {
+        "b": "88,90",
+        "t": "19,05"
+      },
+      "mass_kg_m": "13,047"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 25,
+      "source_inches": "4 × 1/4",
+      "source_reference": "101,60 × 6,35",
+      "dimensions": {
+        "b": "101,60",
+        "t": "6,35"
+      },
+      "mass_kg_m": "5,065"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 26,
+      "source_inches": "4 × 5/16",
+      "source_reference": "101,60 × 7,94",
+      "dimensions": {
+        "b": "101,60",
+        "t": "7,94"
+      },
+      "mass_kg_m": "6,333"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 27,
+      "source_inches": "4 × 3/8",
+      "source_reference": "101,60 × 9,53",
+      "dimensions": {
+        "b": "101,60",
+        "t": "9,53"
+      },
+      "mass_kg_m": "7,601"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 28,
+      "source_inches": "4 × 1/2",
+      "source_reference": "101,60 × 12,70",
+      "dimensions": {
+        "b": "101,60",
+        "t": "12,70"
+      },
+      "mass_kg_m": "10,129"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 8,
+      "pdf_page": 14,
+      "row": 29,
+      "source_inches": "4 × 5/8",
+      "source_reference": "101,60 × 15,88",
+      "dimensions": {
+        "b": "101,60",
+        "t": "15,88"
+      },
+      "mass_kg_m": "12,665"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 1,
+      "source_inches": "4 × 3/4",
+      "source_reference": "101,60 × 19,05",
+      "dimensions": {
+        "b": "101,60",
+        "t": "19,05"
+      },
+      "mass_kg_m": "15,194"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 2,
+      "source_inches": "4 × 1",
+      "source_reference": "101,60 × 25,40",
+      "dimensions": {
+        "b": "101,60",
+        "t": "25,40"
+      },
+      "mass_kg_m": "20,258"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 3,
+      "source_inches": "6 × 1/4",
+      "source_reference": "152,40 × 6,35",
+      "dimensions": {
+        "b": "152,40",
+        "t": "6,35"
+      },
+      "mass_kg_m": "7,597"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 4,
+      "source_inches": "6 × 5/16",
+      "source_reference": "152,40 × 7,94",
+      "dimensions": {
+        "b": "152,40",
+        "t": "7,94"
+      },
+      "mass_kg_m": "9,499"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 5,
+      "source_inches": "6 × 3/8",
+      "source_reference": "152,40 × 9,53",
+      "dimensions": {
+        "b": "152,40",
+        "t": "9,53"
+      },
+      "mass_kg_m": "11,401"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 6,
+      "source_inches": "6 × 1/2",
+      "source_reference": "152,40 × 12,70",
+      "dimensions": {
+        "b": "152,40",
+        "t": "12,70"
+      },
+      "mass_kg_m": "15,194"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 7,
+      "source_inches": "6 × 5/8",
+      "source_reference": "152,40 × 15,88",
+      "dimensions": {
+        "b": "152,40",
+        "t": "15,88"
+      },
+      "mass_kg_m": "18,998"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 8,
+      "source_inches": "6 × 3/4",
+      "source_reference": "152,40 × 19,05",
+      "dimensions": {
+        "b": "152,40",
+        "t": "19,05"
+      },
+      "mass_kg_m": "22,790"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 9,
+      "source_inches": "6 × 1",
+      "source_reference": "152,40 × 25,40",
+      "dimensions": {
+        "b": "152,40",
+        "t": "25,40"
+      },
+      "mass_kg_m": "30,387"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 10,
+      "source_inches": null,
+      "source_reference": "130,00 × 10,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "10,00"
+      },
+      "mass_kg_m": "10,205"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 11,
+      "source_inches": null,
+      "source_reference": "130,00 × 11,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "11,00"
+      },
+      "mass_kg_m": "11,266"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 12,
+      "source_inches": null,
+      "source_reference": "130,00 × 12,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "12,00"
+      },
+      "mass_kg_m": "12,250"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 13,
+      "source_inches": null,
+      "source_reference": "130,00 × 13,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "13,00"
+      },
+      "mass_kg_m": "13,130"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 14,
+      "source_inches": null,
+      "source_reference": "130,00 × 14,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "14,00"
+      },
+      "mass_kg_m": "14,290"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 15,
+      "source_inches": null,
+      "source_reference": "130,00 × 15,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "15,00"
+      },
+      "mass_kg_m": "15,308"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 16,
+      "source_inches": null,
+      "source_reference": "130,00 × 16,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "16,00"
+      },
+      "mass_kg_m": "16,330"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 17,
+      "source_inches": null,
+      "source_reference": "130,00 × 18,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "18,00"
+      },
+      "mass_kg_m": "18,370"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 18,
+      "source_inches": null,
+      "source_reference": "130,00 × 19,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "19,00"
+      },
+      "mass_kg_m": "19,390"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 19,
+      "source_inches": null,
+      "source_reference": "130,00 × 21,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "21,00"
+      },
+      "mass_kg_m": "21,430"
+    },
+    {
+      "family": "flat-bar",
+      "table": "A.1",
+      "page": 9,
+      "pdf_page": 15,
+      "row": 20,
+      "source_inches": null,
+      "source_reference": "130,00 × 22,00",
+      "dimensions": {
+        "b": "130,00",
+        "t": "22,00"
+      },
+      "mass_kg_m": "22,451"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 1,
+      "source_inches": "1/4",
+      "source_reference": "6,35",
+      "dimensions": {
+        "d": "6,35"
+      },
+      "mass_kg_m": "0,249"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 2,
+      "source_inches": "5/16",
+      "source_reference": "7,94",
+      "dimensions": {
+        "d": "7,94"
+      },
+      "mass_kg_m": "0,389"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 3,
+      "source_inches": "3/8",
+      "source_reference": "9,53",
+      "dimensions": {
+        "d": "9,53"
+      },
+      "mass_kg_m": "0,560"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 4,
+      "source_inches": "7/16",
+      "source_reference": "11,11",
+      "dimensions": {
+        "d": "11,11"
+      },
+      "mass_kg_m": "0,760"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 5,
+      "source_inches": null,
+      "source_reference": "11,50",
+      "dimensions": {
+        "d": "11,50"
+      },
+      "mass_kg_m": "0,815"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 6,
+      "source_inches": null,
+      "source_reference": "12,00",
+      "dimensions": {
+        "d": "12,00"
+      },
+      "mass_kg_m": "0,888"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 7,
+      "source_inches": "1/2",
+      "source_reference": "12,70",
+      "dimensions": {
+        "d": "12,70"
+      },
+      "mass_kg_m": "0,994"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 8,
+      "source_inches": "9/16",
+      "source_reference": "14,29",
+      "dimensions": {
+        "d": "14,29"
+      },
+      "mass_kg_m": "1,259"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 9,
+      "source_inches": "5/8",
+      "source_reference": "15,88",
+      "dimensions": {
+        "d": "15,88"
+      },
+      "mass_kg_m": "1,555"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 10,
+      "source_inches": "11/16",
+      "source_reference": "17,46",
+      "dimensions": {
+        "d": "17,46"
+      },
+      "mass_kg_m": "1,880"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 11,
+      "source_inches": "3/4",
+      "source_reference": "19,05",
+      "dimensions": {
+        "d": "19,05"
+      },
+      "mass_kg_m": "2,237"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 12,
+      "source_inches": "13/16",
+      "source_reference": "20,64",
+      "dimensions": {
+        "d": "20,64"
+      },
+      "mass_kg_m": "2,627"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 13,
+      "source_inches": "7/8",
+      "source_reference": "22,23",
+      "dimensions": {
+        "d": "22,23"
+      },
+      "mass_kg_m": "3,047"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 14,
+      "source_inches": "15/16",
+      "source_reference": "23,81",
+      "dimensions": {
+        "d": "23,81"
+      },
+      "mass_kg_m": "3,495"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 15,
+      "source_inches": "1",
+      "source_reference": "25,40",
+      "dimensions": {
+        "d": "25,40"
+      },
+      "mass_kg_m": "3,978"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 16,
+      "source_inches": "1.1/16",
+      "source_reference": "26,98",
+      "dimensions": {
+        "d": "26,98"
+      },
+      "mass_kg_m": "4,488"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 17,
+      "source_inches": "1.1/8",
+      "source_reference": "28,58",
+      "dimensions": {
+        "d": "28,58"
+      },
+      "mass_kg_m": "5,036"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 18,
+      "source_inches": "1.3/16",
+      "source_reference": "30,16",
+      "dimensions": {
+        "d": "30,16"
+      },
+      "mass_kg_m": "5,608"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 19,
+      "source_inches": "1.1/4",
+      "source_reference": "31,75",
+      "dimensions": {
+        "d": "31,75"
+      },
+      "mass_kg_m": "6,215"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 20,
+      "source_inches": "1.3/8",
+      "source_reference": "34,93",
+      "dimensions": {
+        "d": "34,93"
+      },
+      "mass_kg_m": "7,522"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 21,
+      "source_inches": "1.7/16",
+      "source_reference": "36,51",
+      "dimensions": {
+        "d": "36,51"
+      },
+      "mass_kg_m": "8,218"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 22,
+      "source_inches": "1.1/2",
+      "source_reference": "38,10",
+      "dimensions": {
+        "d": "38,10"
+      },
+      "mass_kg_m": "8,950"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 23,
+      "source_inches": "1.9/16",
+      "source_reference": "39,68",
+      "dimensions": {
+        "d": "39,68"
+      },
+      "mass_kg_m": "9,707"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 24,
+      "source_inches": "1.5/8",
+      "source_reference": "41,28",
+      "dimensions": {
+        "d": "41,28"
+      },
+      "mass_kg_m": "10,501"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 10,
+      "pdf_page": 16,
+      "row": 25,
+      "source_inches": "1.11/16",
+      "source_reference": "42,86",
+      "dimensions": {
+        "d": "42,86"
+      },
+      "mass_kg_m": "11,326"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 1,
+      "source_inches": "1.3/4",
+      "source_reference": "44,45",
+      "dimensions": {
+        "d": "44,45"
+      },
+      "mass_kg_m": "12,182"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 2,
+      "source_inches": "1.13/16",
+      "source_reference": "46,04",
+      "dimensions": {
+        "d": "46,04"
+      },
+      "mass_kg_m": "13,069"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 3,
+      "source_inches": "1.7/8",
+      "source_reference": "47,62",
+      "dimensions": {
+        "d": "47,62"
+      },
+      "mass_kg_m": "13,981"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 4,
+      "source_inches": "2",
+      "source_reference": "50,80",
+      "dimensions": {
+        "d": "50,80"
+      },
+      "mass_kg_m": "15,911"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 5,
+      "source_inches": "2.1/16",
+      "source_reference": "52,38",
+      "dimensions": {
+        "d": "52,38"
+      },
+      "mass_kg_m": "16,916"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 6,
+      "source_inches": "2.1/8",
+      "source_reference": "53,98",
+      "dimensions": {
+        "d": "53,98"
+      },
+      "mass_kg_m": "17,965"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 7,
+      "source_inches": "2.1/4",
+      "source_reference": "57,15",
+      "dimensions": {
+        "d": "57,15"
+      },
+      "mass_kg_m": "20,137"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 8,
+      "source_inches": "2.5/16",
+      "source_reference": "58,73",
+      "dimensions": {
+        "d": "58,73"
+      },
+      "mass_kg_m": "21,266"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 9,
+      "source_inches": "2.3/8",
+      "source_reference": "60,33",
+      "dimensions": {
+        "d": "60,33"
+      },
+      "mass_kg_m": "22,440"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 10,
+      "source_inches": "2.7/16",
+      "source_reference": "61,91",
+      "dimensions": {
+        "d": "61,91"
+      },
+      "mass_kg_m": "23,631"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 11,
+      "source_inches": "2.1/2",
+      "source_reference": "63,50",
+      "dimensions": {
+        "d": "63,50"
+      },
+      "mass_kg_m": "24,860"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 12,
+      "source_inches": "2.9/16",
+      "source_reference": "65,09",
+      "dimensions": {
+        "d": "65,09"
+      },
+      "mass_kg_m": "26,121"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 13,
+      "source_inches": "2.5/8",
+      "source_reference": "66,68",
+      "dimensions": {
+        "d": "66,68"
+      },
+      "mass_kg_m": "27,413"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 14,
+      "source_inches": "2.11/16",
+      "source_reference": "68,26",
+      "dimensions": {
+        "d": "68,26"
+      },
+      "mass_kg_m": "28,727"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 15,
+      "source_inches": "2.3/4",
+      "source_reference": "69,85",
+      "dimensions": {
+        "d": "69,85"
+      },
+      "mass_kg_m": "30,081"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 16,
+      "source_inches": "2.13/16",
+      "source_reference": "71,43",
+      "dimensions": {
+        "d": "71,43"
+      },
+      "mass_kg_m": "31,457"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 17,
+      "source_inches": "2.7/8",
+      "source_reference": "73,03",
+      "dimensions": {
+        "d": "73,03"
+      },
+      "mass_kg_m": "32,882"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 18,
+      "source_inches": "3",
+      "source_reference": "76,20",
+      "dimensions": {
+        "d": "76,20"
+      },
+      "mass_kg_m": "35,799"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 19,
+      "source_inches": "3.1/16",
+      "source_reference": "77,79",
+      "dimensions": {
+        "d": "77,79"
+      },
+      "mass_kg_m": "37,308"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 20,
+      "source_inches": "3.1/8",
+      "source_reference": "79,38",
+      "dimensions": {
+        "d": "79,38"
+      },
+      "mass_kg_m": "38,849"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 21,
+      "source_inches": "3.1/4",
+      "source_reference": "82,55",
+      "dimensions": {
+        "d": "82,55"
+      },
+      "mass_kg_m": "42,014"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 22,
+      "source_inches": "3.7/16",
+      "source_reference": "87,31",
+      "dimensions": {
+        "d": "87,31"
+      },
+      "mass_kg_m": "46,999"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 23,
+      "source_inches": "3.1/2",
+      "source_reference": "88,90",
+      "dimensions": {
+        "d": "88,90"
+      },
+      "mass_kg_m": "48,726"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 24,
+      "source_inches": "3.3/4",
+      "source_reference": "95,25",
+      "dimensions": {
+        "d": "95,25"
+      },
+      "mass_kg_m": "55,936"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 25,
+      "source_inches": "3.13/16",
+      "source_reference": "96,84",
+      "dimensions": {
+        "d": "96,84"
+      },
+      "mass_kg_m": "57,819"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 26,
+      "source_inches": "3.7/8",
+      "source_reference": "98,42",
+      "dimensions": {
+        "d": "98,42"
+      },
+      "mass_kg_m": "59,721"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 27,
+      "source_inches": "4",
+      "source_reference": "101,60",
+      "dimensions": {
+        "d": "101,60"
+      },
+      "mass_kg_m": "63,642"
+    },
+    {
+      "family": "round-bar",
+      "table": "A.2",
+      "page": 11,
+      "pdf_page": 17,
+      "row": 28,
+      "source_inches": "4.1/16",
+      "source_reference": "103,19",
+      "dimensions": {
+        "d": "103,19"
+      },
+      "mass_kg_m": "65,650"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 1,
+      "source_inches": "1/4",
+      "source_reference": "6,35",
+      "dimensions": {
+        "b": "6,35"
+      },
+      "mass_kg_m": "0,310"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 2,
+      "source_inches": "5/16",
+      "source_reference": "7,94",
+      "dimensions": {
+        "b": "7,94"
+      },
+      "mass_kg_m": "0,495"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 3,
+      "source_inches": "3/8",
+      "source_reference": "9,53",
+      "dimensions": {
+        "b": "9,53"
+      },
+      "mass_kg_m": "0,713"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 4,
+      "source_inches": "1/2",
+      "source_reference": "12,70",
+      "dimensions": {
+        "b": "12,70"
+      },
+      "mass_kg_m": "1,270"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 5,
+      "source_inches": "5/8",
+      "source_reference": "15,88",
+      "dimensions": {
+        "b": "15,88"
+      },
+      "mass_kg_m": "1,980"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 6,
+      "source_inches": "11/16",
+      "source_reference": "17,46",
+      "dimensions": {
+        "b": "17,46"
+      },
+      "mass_kg_m": "2,393"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 7,
+      "source_inches": "3/4",
+      "source_reference": "19,05",
+      "dimensions": {
+        "b": "19,05"
+      },
+      "mass_kg_m": "2,850"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 8,
+      "source_inches": "13/16’",
+      "source_reference": "20,64",
+      "dimensions": {
+        "b": "20,64"
+      },
+      "mass_kg_m": "3,344"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 9,
+      "source_inches": "7/8",
+      "source_reference": "22,23",
+      "dimensions": {
+        "b": "22,23"
+      },
+      "mass_kg_m": "3,880"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 10,
+      "source_inches": "1",
+      "source_reference": "25,40",
+      "dimensions": {
+        "b": "25,40"
+      },
+      "mass_kg_m": "5,060"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 11,
+      "source_inches": "1.1/8",
+      "source_reference": "28,58",
+      "dimensions": {
+        "b": "28,58"
+      },
+      "mass_kg_m": "6,410"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 12,
+      "source_inches": "1.1/4",
+      "source_reference": "31,75",
+      "dimensions": {
+        "b": "31,75"
+      },
+      "mass_kg_m": "7,910"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 13,
+      "source_inches": "1.5/16",
+      "source_reference": "33,34",
+      "dimensions": {
+        "b": "33,34"
+      },
+      "mass_kg_m": "8,730"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 14,
+      "source_inches": "1.1/2",
+      "source_reference": "38,10",
+      "dimensions": {
+        "b": "38,10"
+      },
+      "mass_kg_m": "11,150"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 15,
+      "source_inches": "1.9/16",
+      "source_reference": "39,69",
+      "dimensions": {
+        "b": "39,69"
+      },
+      "mass_kg_m": "12,370"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 16,
+      "source_inches": "1.3/4",
+      "source_reference": "44,45",
+      "dimensions": {
+        "b": "44,45"
+      },
+      "mass_kg_m": "15,510"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 17,
+      "source_inches": "1.13/16",
+      "source_reference": "46,04",
+      "dimensions": {
+        "b": "46,04"
+      },
+      "mass_kg_m": "16,640"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 18,
+      "source_inches": "2",
+      "source_reference": "50,80",
+      "dimensions": {
+        "b": "50,80"
+      },
+      "mass_kg_m": "20,260"
+    },
+    {
+      "family": "square-bar",
+      "table": "A.3",
+      "page": 12,
+      "pdf_page": 18,
+      "row": 19,
+      "source_inches": "2.1/16",
+      "source_reference": "52,39",
+      "dimensions": {
+        "b": "52,39"
+      },
+      "mass_kg_m": "21,550"
+    }
+  ]
+}

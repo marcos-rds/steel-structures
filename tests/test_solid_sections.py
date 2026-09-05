@@ -119,8 +119,8 @@ class SolidMathTests(unittest.TestCase):
 
 
 class SolidCatalogTests(unittest.TestCase):
-    def test_installed_fixture_is_discovered_after_fresh_load_and_reload(self):
-        for library in (ProfileLibrary(CATALOGS_DIR), ProfileLibrary(CATALOGS_DIR).reload()):
+    def test_isolated_fixture_is_available_after_explicit_load_and_reload(self):
+        for library in (ProfileLibrary(FIXTURE_PATH.parent), ProfileLibrary(FIXTURE_PATH.parent).reload()):
             profiles = library.list_profiles(category_id="solid-steel")
             self.assertEqual(len(profiles), 6)
             self.assertEqual({s.id for s in library.list_series("solid-steel")},
@@ -129,7 +129,7 @@ class SolidCatalogTests(unittest.TestCase):
             self.assertEqual({p.ref.catalog_id for p in profiles}, {CATALOG_ID})
 
     def test_source_and_commercial_exclusion_are_explicit(self):
-        for p in ProfileLibrary(CATALOGS_DIR).list_profiles(category_id="solid-steel"):
+        for p in ProfileLibrary(FIXTURE_PATH.parent).list_profiles(category_id="solid-steel"):
             self.assertIsNone(p.manufacturer)
             self.assertEqual(p.catalog.issuer.name, "Steel Structures")
             self.assertEqual(p.catalog.source.source_type, "development_fixture")
@@ -143,7 +143,7 @@ class SolidCatalogTests(unittest.TestCase):
             self.assertEqual(dict(p.reported_section_properties), {})
 
     def test_creation_facade_area_mass_and_local_properties(self):
-        for p in ProfileLibrary(CATALOGS_DIR).list_profiles(category_id="solid-steel"):
+        for p in ProfileLibrary(FIXTURE_PATH.parent).list_profiles(category_id="solid-steel"):
             g = build_section_geometry(p)
             adapted = profile_catalog.get(p.designation)
             self.assertAlmostEqual(adapted.area_cm2 * 100, g.area)
@@ -165,7 +165,8 @@ class SolidCatalogTests(unittest.TestCase):
             (root / "audit").mkdir()
             (root / "dev" / "fixture.json").write_text(json.dumps(payload()), encoding="utf-8")
             (root / "audit" / "raw.json").write_text("{}", encoding="utf-8")
-            self.assertEqual(len(ProfileLibrary(root).list_profiles()), 6)
+            self.assertEqual(len(ProfileLibrary(root).list_profiles()), 0)
+            self.assertEqual(len(ProfileLibrary(root / "dev").list_profiles()), 6)
 
 
 class SolidSourceValidationTests(unittest.TestCase):

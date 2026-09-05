@@ -46,11 +46,11 @@ class Stage2BCatalogTests(unittest.TestCase):
             "abnt-nbr-6355-2012-a3": 85,
             "arcelormittal-tuper-hollow-2024": 2999,
             "gerdau-construcao-metalica-2023-01": 218,
-            "steelstructures-solid-sections-validation": 6,
+            "abnt-nbr-16683-2018-solid": 164,
         })
         all_profiles = self.library.list_profiles()
-        self.assertEqual(len(all_profiles), 3308)
-        self.assertEqual(len({item.ref for item in all_profiles}), 3308)
+        self.assertEqual(len(all_profiles), 3466)
+        self.assertEqual(len({item.ref for item in all_profiles}), 3466)
         self.assertEqual(len(tuple(item for item in self.library.list_categories()
                                    if item.catalog_id == CATALOG_ID)), 1)
         self.assertEqual(len(tuple(item for item in self.library.list_series()

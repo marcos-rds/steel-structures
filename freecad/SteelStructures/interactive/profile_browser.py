@@ -30,6 +30,9 @@ def _profile_subtitle(profile, series_name):
     if profile.catalog.source.source_type == "development_fixture":
         parts.append(profile.catalog.name)
         return " — ".join(parts)
+    if profile.geometry_type == "solid_section" and profile.catalog.source.source_type == "normative":
+        parts.append(profile.catalog.source.source_name)
+        return " — ".join(parts)
     if (profile.geometry_type, profile.geometry_variant) == ("equal_angle", "equal_leg"):
         parts.append("Abas iguais")
     if profile.manufacturer is not None:

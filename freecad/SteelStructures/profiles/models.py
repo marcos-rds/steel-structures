@@ -27,6 +27,8 @@ class CatalogSource:
     source_date: str | None = None
     notes: str | None = None
     source_type: str | None = None
+    # Informative density stated by the source, never a mass-calculation trigger.
+    density_kg_m3: float | None = None
 
 
 @dataclass(frozen=True)
@@ -65,6 +67,9 @@ class CatalogMetadata:
     material_notes: str | None = None
     issuer: IssuerDefinition | None = None
     supply_condition_definitions: tuple[SupplyConditionDefinition, ...] = ()
+    region: str | None = None
+    country: str | None = None
+    catalog_pack: str | None = None
 
 
 @dataclass(frozen=True)
@@ -125,6 +130,11 @@ class ProfileSourceMetadata:
     mass_type: str | None = None
     source_mass_per_length_kg_m: float | None = None
     density_kg_m3: float | None = None
+    source_table: str | None = None
+    # One-based locations; printed source_page and PDF page remain independent.
+    source_row: int | None = None
+    source_pdf_page: int | None = None
+    mass_basis: str | None = None
 
 
 @dataclass(frozen=True)

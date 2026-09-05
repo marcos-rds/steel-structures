@@ -45,6 +45,8 @@ class Profile:
 
 _LIBRARY = ProfileLibrary(CATALOGS_DIR)
 _CACHE: Dict[str, Profile] | None = None
+_LEGACY_LIBRARY = ProfileLibrary(CATALOGS_DIR / "dev")
+_LEGACY_CACHE: Dict[str, Profile] | None = None
 
 
 def is_creation_profile(definition) -> bool:
@@ -83,15 +85,16 @@ def _adapt(definition, categories, series) -> Profile:
     )
 
 
-def _load() -> Dict[str, Profile]:
+def _load(library=None) -> Dict[str, Profile]:
+    library = library if library is not None else _LIBRARY
     categories_by_id = {
-        (item.catalog_id, item.id): item.name for item in _LIBRARY.list_categories()
+        (item.catalog_id, item.id): item.name for item in library.list_categories()
     }
     series_by_id = {
-        (item.catalog_id, item.id): item.name for item in _LIBRARY.list_series()
+        (item.catalog_id, item.id): item.name for item in library.list_series()
     }
     result = {}
-    for definition in _LIBRARY.list_profiles():
+    for definition in library.list_profiles():
         if not is_creation_profile(definition):
             continue
         # The legacy contract has no catalog namespace. Keep its historical
@@ -111,6 +114,18 @@ def profiles() -> Dict[str, Profile]:
     if _CACHE is None:
         _CACHE = _load()
     return _CACHE
+
+
+def _legacy_profiles() -> Dict[str, Profile]:
+    """Resolve Stage-A documents without exposing fixtures in new selections."""
+    global _LEGACY_CACHE
+    if _LEGACY_CACHE is None:
+        legacy = _load(_LEGACY_LIBRARY)
+        collisions = set(legacy).intersection(profiles())
+        if collisions:
+            raise ValueError("Perfis públicos colidem com fixtures históricas: " + ", ".join(sorted(collisions)))
+        _LEGACY_CACHE = legacy
+    return _LEGACY_CACHE
 
 
 def categories() -> List[str]:
@@ -145,14 +160,26 @@ def property_designation(designation: str) -> str:
     return canonical_designation(designation).replace('"', "″")
 
 
-def property_designations(category: str | None = None, series: str | None = None) -> List[str]:
-    return [property_designation(value) for value in designations(category, series)]
+def property_designations(category: str | None = None, series: str | None = None,
+                          current_profile: str | None = None) -> List[str]:
+    """Public choices plus only the legacy selection already held by an object."""
+    values = designations(category, series)
+    current = canonical_designation(current_profile) if current_profile else None
+    if current and current not in values and current not in profiles():
+        legacy = _legacy_profiles().get(current)
+        if legacy and (category is None or legacy.category == category) and (
+                series is None or legacy.series == series):
+            values.append(current)
+    return [property_designation(value) for value in values]
 
 
 def get(designation: str) -> Profile:
     catalog = profiles()
     canonical = canonical_designation(designation)
     if canonical not in catalog:
+        legacy = _legacy_profiles().get(canonical)
+        if legacy is not None:
+            return legacy
         raise KeyError(f"Perfil não encontrado: {designation}")
     return catalog[canonical]
 
@@ -193,6 +220,8 @@ def selection_for_ref(ref: ProfileRef):
 
 def reload():
     """Reload typed catalogs and invalidate the compatibility cache."""
-    global _CACHE
+    global _CACHE, _LEGACY_CACHE
     _LIBRARY.reload()
+    _LEGACY_LIBRARY.reload()
     _CACHE = None
+    _LEGACY_CACHE = None

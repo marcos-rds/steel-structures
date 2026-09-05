@@ -59,6 +59,7 @@ SECTION_PROPERTY_QUANTITIES = {
 
 AVAILABILITY_STATUSES = {
     "standard", "made_to_order", "consultation", "development_fixture",
+    "normative_table",
 }
 
 
@@ -114,6 +115,14 @@ def _number(value, path, catalog_id, field, positive=False):
     if positive and result <= 0.0:
         raise _error(path, catalog_id, f"{field} deve ser positivo")
     return result
+
+
+def _optional_positive_integer(value, path, catalog_id, field):
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise _error(path, catalog_id, f"{field} deve ser inteiro positivo")
+    return value
 
 
 def convert_to_canonical(value, quantity: str, unit: str) -> float:
@@ -181,7 +190,18 @@ def validate_catalog_payload(payload, path: Path):
         )
     if manufacturer is None and issuer is None:
         raise _error(path, catalog_id, "catálogo requer manufacturer ou issuer")
+    region = _string(raw_catalog.get("region"), path, catalog_id, "catalog.region", True)
+    if region is not None and re.fullmatch(r"[A-Z]{2}", region) is None:
+        raise _error(path, catalog_id, "catalog.region deve conter duas letras ASCII maiúsculas")
+    catalog_pack = raw_catalog.get("catalog_pack")
+    if catalog_pack is not None:
+        catalog_pack = _id(catalog_pack, path, catalog_id, "catalog.catalog_pack")
     source_raw = _mapping(raw_catalog.get("source"), path, catalog_id, "catalog.source")
+    source_density = source_raw.get("density_kg_m3")
+    if source_density is not None:
+        source_density = _number(
+            source_density, path, catalog_id, "source.density_kg_m3", True,
+        )
     source = CatalogSource(
         source_name=_string(source_raw.get("source_name"), path, catalog_id, "source.source_name"),
         source_revision=_string(source_raw.get("source_revision"), path, catalog_id, "source.source_revision", True),
@@ -189,6 +209,7 @@ def validate_catalog_payload(payload, path: Path):
         source_date=_string(source_raw.get("source_date"), path, catalog_id, "source.source_date", True),
         notes=_string(source_raw.get("notes"), path, catalog_id, "source.notes", True),
         source_type=_string(source_raw.get("source_type"), path, catalog_id, "source.source_type", True),
+        density_kg_m3=source_density,
     )
     units = _validate_units(payload.get("units"), path, catalog_id)
     supply_conditions = []
@@ -237,6 +258,9 @@ def validate_catalog_payload(payload, path: Path):
         material_notes=_string(raw_catalog.get("material_notes"), path, catalog_id, "catalog.material_notes", True),
         issuer=issuer,
         supply_condition_definitions=tuple(supply_conditions),
+        region=region,
+        country=_string(raw_catalog.get("country"), path, catalog_id, "catalog.country", True),
+        catalog_pack=catalog_pack,
     )
 
     categories = []
@@ -516,6 +540,9 @@ def validate_catalog_payload(payload, path: Path):
         availability = _string(raw.get("availability_status"), path, catalog_id, f"profiles[{index}].availability_status")
         if availability not in AVAILABILITY_STATUSES:
             raise _error(path, catalog_id, f"perfil {profile_id}: availability_status inválido: {availability!r}")
+        if availability == "normative_table" and source.source_type != "normative":
+            raise _error(path, catalog_id,
+                         f"perfil {profile_id}: availability_status normative_table exige origem normativa")
         geometry_status = _string(
             raw.get("geometry_status", "released"), path, catalog_id,
             f"profiles[{index}].geometry_status",
@@ -538,11 +565,12 @@ def validate_catalog_payload(payload, path: Path):
                 _number(value, path, catalog_id, f"source_dimensions.{name}", True)
                 for name, value in source_dimensions_raw.items()
             }
-            source_page = source_metadata_raw.get("source_page")
-            if source_page is not None and (
-                isinstance(source_page, bool) or not isinstance(source_page, int) or source_page <= 0
-            ):
-                raise _error(path, catalog_id, f"perfil {profile_id}: source_page deve ser inteiro positivo")
+            source_locations = {
+                name: _optional_positive_integer(
+                    source_metadata_raw.get(name), path, catalog_id,
+                    f"perfil {profile_id}: {name}",
+                ) for name in ("source_page", "source_pdf_page", "source_row")
+            }
             def optional_number(name):
                 value = source_metadata_raw.get(name)
                 return None if value is None else _number(
@@ -556,6 +584,21 @@ def validate_catalog_payload(payload, path: Path):
                                 "source_metadata.mass_type", True)
             if mass_type not in {None, "published", "derived", "calculated_fixture"}:
                 raise _error(path, catalog_id, f"perfil {profile_id}: mass_type inválido")
+            mass_basis = _string(
+                source_metadata_raw.get("mass_basis"), path, catalog_id,
+                "source_metadata.mass_basis", True,
+            )
+            if mass_basis not in {None, "normative_table"}:
+                raise _error(path, catalog_id, f"perfil {profile_id}: mass_basis inválido")
+            if mass_basis == "normative_table" and (
+                source.source_type != "normative"
+                or mass_type not in {None, "published"}
+                or (published_mass is None and (
+                    mass_type != "published" or physical.mass_per_length_kg_m is None
+                ))
+            ):
+                raise _error(path, catalog_id,
+                             f"perfil {profile_id}: normative_table exige origem normativa e massa publicada")
             if (weight is None) != (basis is None) or (basis is not None and basis != 6000):
                 raise _error(path, catalog_id, f"perfil {profile_id}: peso por 6 m requer peso e base 6000 mm")
             if weight is not None:
@@ -582,7 +625,14 @@ def validate_catalog_payload(payload, path: Path):
             elif density is not None:
                 raise _error(path, catalog_id, f"perfil {profile_id}: densidade de cálculo exige calculated_fixture")
             source_metadata = ProfileSourceMetadata(
-                source_page=source_page,
+                source_page=source_locations["source_page"],
+                source_pdf_page=source_locations["source_pdf_page"],
+                source_row=source_locations["source_row"],
+                source_table=_string(
+                    source_metadata_raw.get("source_table"), path, catalog_id,
+                    "source_metadata.source_table", True,
+                ),
+                mass_basis=mass_basis,
                 source_weight_p_kg_per_6m=weight,
                 source_weight_basis_mm=basis,
                 mass_type=mass_type,

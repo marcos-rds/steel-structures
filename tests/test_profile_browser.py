@@ -222,7 +222,7 @@ class ProfileBrowserModelTests(unittest.TestCase):
         self.assertEqual(len(self.library.list_series("rolled-steel")), 7)
         self.assertEqual(len(self.model.set_filter("rolled-steel")), 218)
         self.assertEqual(len(self.model.set_filter("tubular")), 2999)
-        self.assertEqual(len(self.model.set_filter("solid-steel")), 6)
+        self.assertEqual(len(self.model.set_filter("solid-steel")), 164)
 
     def test_series_filter_preserves_catalog_order(self):
         profiles = self.model.set_filter("rolled-steel", "w")

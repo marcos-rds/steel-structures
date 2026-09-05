@@ -335,7 +335,9 @@ class StructuralMemberProxy:
         _set_enum(obj, "ProfileSeries", available_series, series_preference, EMPTY_SERIES)
         selected_series = str(obj.ProfileSeries)
 
-        available_profiles = profile_catalog.property_designations(selected_category, selected_series)
+        available_profiles = profile_catalog.property_designations(
+            selected_category, selected_series, current_profile,
+        )
         profile_preference = current_profile if current_profile in available_profiles else None
         _set_enum(obj, "Profile", available_profiles, profile_preference, EMPTY_PROFILE)
         try:
