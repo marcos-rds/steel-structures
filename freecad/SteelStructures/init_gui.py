@@ -101,6 +101,7 @@ class SteelStructuresWorkbench(Gui.Workbench):
         from . import commands  # noqa: F401 - registers FreeCAD commands
 
         member_commands = ["SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_AdjustMember", "SteelStructures_CreateGrid"]
+        member_commands += ["SteelStructures_CreateTruss"]
         catalog_commands = ["SteelStructures_ProfileBrowser"]
         self.general_tools = load_general_tools(commands)
         try:
@@ -127,6 +128,8 @@ class SteelStructuresWorkbench(Gui.Workbench):
         commands.close_member_tool()
         commands.close_grid_panel()
         commands.close_adjustment_panel()
+        from .interactive.truss_controller import close_truss_panel
+        close_truss_panel()
         draft_toolbar = getattr(Gui, "draftToolBar", None)
         if draft_toolbar is not None and hasattr(draft_toolbar, "Deactivated"):
             draft_toolbar.Deactivated()

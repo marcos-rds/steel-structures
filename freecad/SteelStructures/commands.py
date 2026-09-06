@@ -495,3 +495,40 @@ Gui.addCommand("SteelStructures_CreateColumn", CreateColumnCommand())
 Gui.addCommand("SteelStructures_CreateGrid", CreateGridCommand())
 Gui.addCommand("SteelStructures_AdjustMember", AdjustMemberCommand())
 Gui.addCommand("SteelStructures_ProfileBrowser", ProfileBrowserCommand())
+
+
+class CreateTrussCommand:
+    def GetResources(self):
+        from .paths import TRUSS_ICON
+        return {"Pixmap": TRUSS_ICON, "MenuText": "Criar Treliça", "ToolTip": "Criar treliça paramétrica Warren ou Pratt."}
+
+    def IsActive(self):
+        return App.ActiveDocument is not None
+
+    def Activated(self):
+        from .interactive.truss_controller import open_truss_panel
+        try:
+            open_truss_panel(App.ActiveDocument)
+        except ValueError as exc:
+            App.Console.PrintWarning(str(exc)+"\n")
+
+
+class UpdateTrussCommand(CreateTrussCommand):
+    def GetResources(self):
+        resources = super().GetResources()
+        resources.update(MenuText="Atualizar Treliça", ToolTip="Revisar e aplicar a definição candidata da treliça selecionada.")
+        return resources
+
+    def IsActive(self):
+        selected = Gui.Selection.getSelection()
+        return len(selected) == 1 and hasattr(selected[0], "AppliedState") and hasattr(selected[0], "GeneratedMembers")
+
+    def Activated(self):
+        from .interactive.truss_controller import open_truss_panel
+        selected = Gui.Selection.getSelection()
+        if self.IsActive():
+            open_truss_panel(App.ActiveDocument, selected[0])
+
+
+Gui.addCommand("SteelStructures_CreateTruss", CreateTrussCommand())
+Gui.addCommand("SteelStructures_UpdateTruss", UpdateTrussCommand())

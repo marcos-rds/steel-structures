@@ -416,6 +416,7 @@ class StructuralMemberProxy:
 
     def _update_axis_editor_mode(self, obj):
         linked = str(getattr(obj, "AxisDefinitionMode", "Independent")) == "Linked"
+        linked = linked or bool(getattr(obj, "GenerationOwner", None))
         for name in ("StartPoint", "EndPoint", "Length"):
             try:
                 obj.setEditorMode(name, 1 if linked else 0)
@@ -512,6 +513,10 @@ class StructuralMemberProxy:
         obj.CatalogSource = profile.source
 
     def execute(self, obj):
+        if getattr(obj, "GenerationOwner", None) is not None:
+            from .member_batch import execute_generated_member
+            execute_generated_member(obj)
+            return
         # Also upgrades legacy and single-end objects when they are recomputed.
         required_properties = {
             "ProfileCategory", "DisplayName", "Length",
@@ -587,7 +592,8 @@ class StructuralMemberProxy:
             elif mode == "Associative":
                 reference = getattr(obj, prefix + "AdjustmentReference")
                 unpacked = unpack_link_sub(reference)
-                if unpacked is None or would_create_adjustment_cycle(obj, unpacked[0]):
+                if unpacked is None or would_create_adjustment_cycle(
+                        getattr(obj, "ReferenceTarget", obj), unpacked[0]):
                     return None
                 subelement = unpacked[1]
                 plane_reference = None
@@ -710,6 +716,12 @@ class StructuralMemberProxy:
         if (getattr(self, "_updating", False) or getattr(self, "_syncing_length", False)
                 or getattr(self, "_syncing_placement", False)
                 or getattr(self, "_syncing_axis_source", False)):
+            return
+        if getattr(obj, "GenerationOwner", None) is not None and prop in (
+                "Placement", "StartPoint", "EndPoint", "Length", "Rotation", "Profile",
+                "ProfileCategory", "ProfileSeries", "Insertion", "AxisDefinitionMode"):
+            # Owned inputs are applied atomically by the truss. In particular,
+            # Undo/restore must not turn intermediate Placement deltas into axes.
             return
         if prop == "Placement":
             if str(getattr(obj, "AxisDefinitionMode", "Independent")) == "Linked":
@@ -856,6 +868,7 @@ def create_member(
     axis_source=None,
     link_axis: bool = False,
     section_geometry_mode: str = "Detailed",
+    recompute: bool = True,
 ):
     obj = document.addObject("Part::FeaturePython", "StructuralMember")
     StructuralMemberProxy(obj)
@@ -886,5 +899,6 @@ def create_member(
 
     obj.ViewObject.ShapeColor = tuple(float(component) for component in color)
     obj.ViewObject.LineColor = (0.15, 0.15, 0.15)
-    document.recompute()
+    if recompute:
+        document.recompute()
     return obj

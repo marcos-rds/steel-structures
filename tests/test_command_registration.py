@@ -42,7 +42,8 @@ class NativeCommandTests(unittest.TestCase):
                 names.append(node.args[0].value)
         self.assertEqual(names, [
             "SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_CreateGrid",
-            "SteelStructures_AdjustMember", "SteelStructures_ProfileBrowser", "SteelStructures_MoveCopy"
+            "SteelStructures_AdjustMember", "SteelStructures_ProfileBrowser", "SteelStructures_CreateTruss",
+            "SteelStructures_UpdateTruss", "SteelStructures_MoveCopy"
         ])
 
     def test_command_loads_structural_member_draft_tool(self):
