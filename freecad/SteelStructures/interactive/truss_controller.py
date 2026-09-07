@@ -9,6 +9,7 @@ from ..trusses.models import EnvelopeDefinition
 from ..trusses.envelope import paths
 from ..trusses.realization import build_candidate
 from ..trusses.serialization import decode_state, dumps
+from ..truss_reference import resolve_linked_reference, selection_reference, source_geometry
 
 _active_panel = None
 
@@ -63,24 +64,30 @@ class TrussController:
         self.timings = {}
         self.closed = False
         self._station_config = None
+        self.last_candidate = None
 
     def candidate(self, config):
+        config = resolve_linked_reference(self.document, config, self.object)
         applied = (decode_state(self.object.AppliedState)["candidate"]["config"]
                    if self.object is not None else self._station_config)
         candidate = build_candidate(config, applied)
         self._station_config = candidate.config
+        self.last_candidate = candidate
         return candidate
 
     def preview(self, config):
         started = perf_counter()
         candidate = self.candidate(config)
         self.timings["pure_seconds"] = perf_counter()-started
+        config = candidate.config
         definition = EnvelopeDefinition(config["envelope_type"], config["span"], config["height"], config["apex_position"])
         return dict(nodes=[asdict(n) for n in candidate.graph.nodes],
                     edges=[asdict(e) for e in candidate.graph.edges],
                     stations=[asdict(s) for s in candidate.stations.stations],
                     envelope=paths(definition), warnings=list(candidate.warnings),
-                    left_panels=candidate.stations.left_panels, right_panels=candidate.stations.right_panels)
+                    effective=candidate.config["panelization_result"], topology_mode=candidate.config["topology_mode"],
+                    left_panels=candidate.stations.left_panels, right_panels=candidate.stations.right_panels,
+                    reference_base=config.get("reference_edge","") if config.get("reference_mode")=="DraftRectangle" else "")
 
     def preview3d(self, config, enabled=True):
         if not enabled:
@@ -117,7 +124,7 @@ class TrussController:
             self._preview = None
         self._preview_signature = None
 
-    def pick_points(self, callback):
+    def pick_points(self, callback, count=2):
         """Native Draft snapping, without replacing the truss task dialog."""
         self.cancel_picker()
         import WorkingPlane
@@ -128,7 +135,10 @@ class TrussController:
 
         def finish(start=None, end=None):
             self.cancel_picker()
-            callback(start, end, normal)
+            if count==3:
+                callback(points if len(points)==3 else None)
+            else:
+                callback(start, end, normal)
 
         def move(event):
             if not self.closed:
@@ -142,7 +152,7 @@ class TrussController:
             if point is None:
                 return
             points.append(App.Vector(point))
-            if len(points) == 2:
+            if len(points) == count:
                 finish(points[0], points[1])
 
         def key(event):
@@ -156,6 +166,19 @@ class TrussController:
         except Exception:
             self.cancel_picker()
             raise
+
+    def selected_reference(self):
+        source,mode,edge=selection_reference(Gui.Selection.getSelectionEx())
+        if source.Document!=self.document:
+            raise ValueError("Selecione uma fonte no documento da treliça.")
+        return dict(reference_mode=mode,reference_source=source.Name,reference_edge=edge,reference_linked=False)
+
+    def reference_geometry(self, config):
+        source=self.document.getObject(config.get("reference_source",""))
+        if source is None: raise ValueError("Selecione uma fonte Draft válida.")
+        import WorkingPlane
+        up=list(WorkingPlane.get_working_plane().v)
+        return source_geometry(source,config["reference_mode"],config.get("reference_edge",""),config["plane_normal"],up)
 
     def cancel_picker(self):
         if self._view is not None:
@@ -198,13 +221,24 @@ def open_truss_panel(document, obj=None):
         _active_panel = None
         Gui.Control.closeDialog()
 
-    config = config_from_object(obj) if obj is not None else default_config()
+    config = config_from_object(obj, resolve_reference=False) if obj is not None else default_config()
     if obj is None:
         import WorkingPlane
         plane = WorkingPlane.get_working_plane()
         config.update(start=list(plane.position),
                       end=list(plane.position.add(plane.u * config["span"])),
                       plane_normal=list(plane.axis))
+        if Gui.Selection.getSelectionEx():
+            try:
+                config.update(controller.selected_reference())
+                if config.get("reference_edge"):
+                    config.update(controller.reference_geometry(config))
+                else:
+                    config["reference_defined"]=False
+            except ValueError as exc:
+                if config.get("reference_mode") in ("DraftLine","DraftRectangle"):
+                    config["reference_defined"]=False
+                App.Console.PrintWarning(str(exc)+"\n")
     try:
         panel = TrussTaskPanel(document, controller, config, on_close=closed,
                                point_picker=controller.pick_points)

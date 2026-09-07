@@ -11,8 +11,8 @@ from PySide import QtCore, QtGui, QtWidgets
 ROLE_COLORS = {
     "TOP_CHORD": (41, 95, 153),
     "BOTTOM_CHORD": (41, 95, 153),
-    "VERTICAL": (73, 117, 92),
-    "DIAGONAL": (119, 88, 144),
+    "VERTICAL": (230, 125, 25),
+    "DIAGONAL": (215, 175, 20),
     "END_POST": (167, 103, 42),
 }
 
@@ -73,6 +73,14 @@ class TrussPreview2D(QtWidgets.QGraphicsView):
                 *start, *end, self._pen(ROLE_COLORS.get(role, (75, 75, 75)), 1.6)
             )
             item.setToolTip(str(key))
+            item.setData(0, "edge")
+            item.setData(1, key)
+        if model.get("reference_base"):
+            start,end=envelope[1][0],envelope[1][-1]
+            scene.addLine(*start,*end,self._pen((20,160,135),3))
+            label=scene.addSimpleText("Base · "+model["reference_base"].replace("Edge","Lado "))
+            label.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations,True)
+            label.setPos((start[0]+end[0])/2,start[1])
         for key, position in nodes.items():
             item = scene.addEllipse(
                 -2.5, -2.5, 5.0, 5.0,
@@ -82,6 +90,8 @@ class TrussPreview2D(QtWidgets.QGraphicsView):
             item.setPos(*position)
             item.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations, True)
             item.setToolTip(str(key))
+            item.setData(0, "node")
+            item.setData(1, key)
         self._has_geometry = bool(nodes)
         bounds = scene.itemsBoundingRect()
         margin = max(bounds.width(), bounds.height(), 1.0) * 0.07

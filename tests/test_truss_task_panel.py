@@ -70,6 +70,10 @@ def load_gui():
 
 
 preview_module, panel_module = load_gui()
+# Qt stays stubbed in the loaded globals. Lazy C2 imports resolve against the
+# real pure package after load_gui removes its temporary import namespace.
+panel_module.__package__ = "freecad.SteelStructures.interactive"
+panel_module.__spec__ = None
 
 
 class Number:

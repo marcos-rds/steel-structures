@@ -21,6 +21,6 @@ def encode_state(candidate, bindings=None):
 def decode_state(text):
     result = loads(text)
     if (type(result.get("schema_version")) is not int or type(result.get("generator_version")) is not int
-            or result["schema_version"] != SCHEMA_VERSION or result["generator_version"] != GENERATOR_VERSION):
+            or result["schema_version"] not in (1, SCHEMA_VERSION) or result["generator_version"] != GENERATOR_VERSION):
         raise ValueError("Versão de treliça não suportada; definição aplicada preservada.")
     return result

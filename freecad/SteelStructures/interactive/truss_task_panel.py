@@ -214,6 +214,8 @@ class TrussTaskPanel:
 
     def __init__(self, document, controller, initial_config, on_close=None,
                  point_picker=None):
+        from ..trusses.editing import custom_state
+        initial_config=custom_state(initial_config)
         self.document = document
         self.controller = controller
         self._initial = deepcopy(initial_config)
@@ -274,6 +276,8 @@ class TrussTaskPanel:
         self._preview_timer.timeout.connect(self._update_preview3d)
         self.show_3d.toggled.connect(self._toggle_preview3d)
         self._updating = False
+        if initial_config.get("reference_mode")=="DraftRectangle" and not initial_config.get("reference_edge"):
+            self.sections["Referência"][0].setChecked(True)
         self._refresh()
 
     def _section(self, root, title, expanded=False):
@@ -347,10 +351,39 @@ class TrussTaskPanel:
         self.span.valueChanged.connect(self._span_changed)
 
     def _build_web(self, root, config):
+        from ..trusses.preset_contracts import PRESETS, compatible_presets
+        from .grid_task_panel import SpacingEditor
+        class TrussSpacingEditor(SpacingEditor):
+            # Grid displays two decimals. Preserve reference-derived spacings
+            # exactly until the user edits them, including an explicit remainder.
+            def _append(self,value):
+                spin=super()._append(value)
+                blocked=spin.blockSignals(True)
+                spin.setDecimals(6)
+                spin.setValue(value)
+                spin._truss_exact_value=float(value)
+                spin._truss_display_value=float(spin.value())
+                spin.blockSignals(blocked)
+                return spin
+
+            def values(self):
+                return [spin._truss_exact_value if spin.value()==spin._truss_display_value
+                        else float(spin.value()) for spin in self._spins]
+
         form = self._section(root, "Alma")
         self.preset = self._combo(
-            (("Warren", "Warren"), ("Pratt", "Pratt")), config["topology_preset"]
+            tuple(("Custom" if key=="Custom" else PRESETS[key].label,key) for key in compatible_presets(config["envelope_type"])), config["topology_preset"]
         )
+        self.topology_state=QtWidgets.QLabel()
+        self.driver=self._combo((("Número de painéis","ByPanelCount"),("Espaçamento desejado","ByTargetSpacing"),
+                                 ("Ângulo desejado das diagonais","ByTargetDiagonalAngle"),("Lista de espaçamentos","CustomSpacingList")),
+                                config.get("panelization_mode","ByPanelCount"))
+        self.target_spacing=self._number(config.get("target_spacing",1000.),.001)
+        self.target_angle=self._number(config.get("target_angle",45.),.01,89.99,"°")
+        self.spacing_editor=TrussSpacingEditor("Espaçamentos absolutos",config.get("custom_spacings",[config["span"]/config["panel_count"]]*config["panel_count"]),self._refresh)
+        self.spacing_editor.summary.hide()
+        self.x_connection=self._combo((("Sem conexão central","Disconnected"),("Conectado: nó central + 4 segmentos","Connected")),config.get("x_connection","Disconnected"))
+        self.x_label=QtWidgets.QLabel("Variante X:")
         self.panel_count = QtWidgets.QSpinBox()
         self.panel_count.setRange(4, 200)
         self.panel_count.setValue(config["panel_count"])
@@ -360,13 +393,126 @@ class TrussTaskPanel:
         self.closure = QtWidgets.QLabel()
         self.closure.setWordWrap(True)
         form.addRow("Padrão:", self.preset)
+        form.addRow(self.topology_state)
+        form.addRow("Panelização:",self.driver)
         form.addRow("Número de painéis:", self.panel_count)
+        self.target_spacing_label=QtWidgets.QLabel("Espaçamento desejado:")
+        self.target_angle_label=QtWidgets.QLabel("Ângulo desejado:")
+        form.addRow(self.target_spacing_label,self.target_spacing)
+        form.addRow(self.target_angle_label,self.target_angle)
+        form.addRow(self.spacing_editor)
+        self.spacing_balance=QtWidgets.QLabel()
+        self.complete_span=QtWidgets.QPushButton("Completar vão")
+        self.complete_span.clicked.connect(self._complete_span)
+        form.addRow(self.spacing_balance)
+        form.addRow(self.complete_span)
+        form.addRow(self.x_label,self.x_connection)
+        actions=QtWidgets.QWidget()
+        actions_layout=QtWidgets.QHBoxLayout(actions)
+        actions_layout.setContentsMargins(0,0,0,0)
+        for label,callback in (("Editar alma…",self._open_topology_editor),("Restaurar padrão",self._restore_topology)):
+            button=QtWidgets.QPushButton(label)
+            button.clicked.connect(callback)
+            actions_layout.addWidget(button)
+        form.addRow(actions)
         form.addRow("Banzo superior:", self.top_continuity)
         form.addRow("Banzo inferior:", self.bottom_continuity)
         form.addRow(self.closure)
-        for combo in (self.preset, self.top_continuity, self.bottom_continuity):
+        self.preset.currentIndexChanged.connect(self._preset_changed)
+        for combo in (self.top_continuity, self.bottom_continuity):
             combo.currentIndexChanged.connect(self._refresh)
         self.panel_count.valueChanged.connect(self._refresh)
+        self.driver.currentIndexChanged.connect(self._refresh)
+        self.x_connection.currentIndexChanged.connect(self._refresh)
+        self.target_spacing.valueChanged.connect(self._refresh)
+        self.target_angle.valueChanged.connect(self._refresh)
+
+    def _complete_span(self):
+        values=self.spacing_editor.values()
+        remaining=self.get_config()["span"]-math.fsum(values)
+        if remaining>1e-6:
+            self.spacing_editor.set_values(values+[remaining])
+
+    def _sync_presets(self):
+        from ..trusses.preset_contracts import PRESETS, compatible_presets
+        kind=self.envelope_type.currentData()
+        data=self._initial.get("custom_topology")
+        if self._initial.get("topology_mode")=="Custom" and data and kind!=data["envelope_type"]:
+            blocked=self.envelope_type.blockSignals(True)
+            self.envelope_type.setCurrentIndex(self.envelope_type.findData(data["envelope_type"]))
+            self.envelope_type.blockSignals(blocked)
+            kind=data["envelope_type"]
+            self._preset_notice="Custom preservado: use Restaurar padrão antes de trocar o envelope."
+        keys=compatible_presets(kind)
+        current="Custom" if self._initial.get("topology_mode")=="Custom" else self.preset.currentData()
+        if current not in keys:
+            current="Warren"
+            self._preset_notice="Padrão incompatível com o envelope: selecionado Warren."
+        if [self.preset.itemData(i) for i in range(self.preset.count())]!=list(keys):
+            blocked=self.preset.blockSignals(True)
+            self.preset.clear()
+            for key in keys: self.preset.addItem("Custom" if key=="Custom" else PRESETS[key].label,key)
+            self.preset.setCurrentIndex(self.preset.findData(current))
+            self.preset.blockSignals(blocked)
+        self._set_preset_value(current)
+
+    def _set_preset_value(self,value):
+        blocked=self.preset.blockSignals(True)
+        self.preset.setCurrentIndex(self.preset.findData(value))
+        self.preset.blockSignals(blocked)
+
+    def _preset_changed(self):
+        if self._updating: return
+        selected=self.preset.currentData()
+        if self._initial.get("topology_mode")=="Custom":
+            if selected!="Custom": self._initial["base_preset"]=selected
+            self._set_preset_value("Custom")
+        else:
+            if selected=="Custom":
+                self._initial["base_preset"]=self._initial.get("topology_preset","Warren")
+            else:
+                self._initial.pop("base_preset",None)
+            self._initial["topology_preset"]=selected
+        self._refresh()
+
+    def apply_topology_edit(self, action, **args):
+        from ..trusses.editing import edit_candidate
+        before=self.get_config()
+        candidate=self.controller.candidate(before)
+        edited=edit_candidate(candidate,action,**args)
+        validated=self.controller.candidate(edited)
+        self._initial.update(topology_mode="Custom",topology_preset="Custom",
+                             base_preset=validated.config["base_preset"],custom_topology=validated.config["custom_topology"])
+        self._set_preset_value("Custom")
+        blocked=self.driver.blockSignals(True)
+        self.driver.setCurrentIndex(self.driver.findData(validated.config["panelization_mode"]))
+        self.driver.blockSignals(blocked)
+        self._refresh()
+        if before.get("panelization_mode")=="ByTargetDiagonalAngle":
+            self.message.setText("Topologia Custom: mantida a quantidade efetiva de painéis; ângulo-alvo desativado.")
+
+    def _open_topology_editor(self):
+        if not self._refresh(): return
+        from .truss_topology_editor import TopologyEditor
+        dialog=TopologyEditor(self)
+        dialog.exec()
+        dialog.deleteLater()
+        self._refresh()
+
+    def _restore_topology(self):
+        # The named button is the explicit replacement action; selecting a preset
+        # while Custom only selects the seed for this operation.
+        from ..trusses.editing import restore_preset
+        try:
+            config=restore_preset(self.get_config())
+            candidate=self.controller.candidate(config)
+            self._initial.update(topology_mode=candidate.config["topology_mode"],custom_topology=candidate.config.get("custom_topology"))
+            self._initial.pop("base_preset",None)
+            self._initial["topology_preset"]=candidate.config["topology_preset"]
+            self._set_preset_value(candidate.config["topology_preset"])
+            self._refresh()
+        except (ValueError,RuntimeError) as exc:
+            self.message.setText(str(exc))
 
     def _build_profiles(self, root):
         form = self._section(root, "Perfis")
@@ -440,28 +586,35 @@ class TrussTaskPanel:
 
     def _build_reference(self, root, config):
         form = self._section(root, "Referência")
+        self.reference_mode=self._combo((("Dois pontos","TwoPoints"),("Linha Draft","DraftLine"),
+                                        ("Retângulo Draft","DraftRectangle"),("Três pontos","ThreePoints")),config.get("reference_mode","TwoPoints"))
+        self.keep_reference_link=QtWidgets.QCheckBox("Manter vínculo com a fonte")
+        self.keep_reference_link.setChecked(config.get("reference_linked",False))
+        self.reference_edge=self._combo((("Selecione o lado da base",""),)+tuple((f"Lado {i} (Edge{i})",f"Edge{i}") for i in range(1,5)),config.get("reference_edge",""))
+        self.reference_edge_label=QtWidgets.QLabel("Base do retângulo:")
+        self.source_label=QtWidgets.QLabel(config.get("reference_source", ""))
         start_widget, self.start_inputs = self._vector_inputs(config["start"])
         end_widget, self.end_inputs = self._vector_inputs(config["end"])
         normal_widget, self.normal_inputs = self._vector_inputs(config["plane_normal"], normal=True)
-        form.addRow("Modo:", QtWidgets.QLabel("Dois pontos"))
+        form.addRow("Modo:", self.reference_mode)
         advanced = QtWidgets.QWidget()
         advanced_form = QtWidgets.QFormLayout(advanced)
         advanced_form.addRow("P0 (X, Y, Z), mm:", start_widget)
         advanced_form.addRow("P1 (X, Y, Z), mm:", end_widget)
         advanced_form.addRow("Normal (X, Y, Z):", normal_widget)
-        axes = QtWidgets.QLabel("X segue P0 ? P1; Y = normal ? X.")
+        axes = QtWidgets.QLabel("X segue P0 → P1; Y = normal × X.")
         axes.setWordWrap(True)
         advanced_form.addRow(axes)
         advanced.hide()
-        header = QtWidgets.QToolButton()
-        header.setText("? Avan?ado")
-        header.setCheckable(True)
-        header.toggled.connect(lambda checked: (
-            advanced.setVisible(checked), header.setText(("? " if checked else "? ") + "Avan?ado")))
+        header = _DisclosureHeader("Avançado")
+        header.button.toggled.connect(advanced.setVisible)
         self.pick_button = QtWidgets.QPushButton("Selecionar dois pontos")
         self.pick_button.setEnabled(self._point_picker is not None)
         self.pick_button.clicked.connect(self._pick_points)
         form.addRow(self.pick_button)
+        form.addRow(self.keep_reference_link)
+        form.addRow(self.reference_edge_label,self.reference_edge)
+        form.addRow(self.source_label)
         self.plane_label = QtWidgets.QLabel()
         self.plane_label.setWordWrap(True)
         form.addRow(self.plane_label)
@@ -471,6 +624,61 @@ class TrussTaskPanel:
             spin.valueChanged.connect(self._points_changed)
         for spin in self.normal_inputs:
             spin.valueChanged.connect(self._refresh)
+        self.reference_mode.currentIndexChanged.connect(self._reference_mode_changed)
+        self.keep_reference_link.toggled.connect(self._refresh)
+        self.reference_edge.currentIndexChanged.connect(self._reference_edge_changed)
+
+    def _reference_mode_changed(self):
+        if self._updating: return
+        mode=self.reference_mode.currentData()
+        self._initial.update(reference_mode=mode,reference_source="",reference_edge="",reference_defined=mode=="TwoPoints")
+        self.keep_reference_link.setChecked(False)
+        self._refresh()
+
+    def _apply_reference_values(self, values):
+        custom=self._initial.get("custom_topology")
+        if custom and values.get("envelope_type",custom["envelope_type"])!=custom["envelope_type"]:
+            raise ValueError("Custom preservado: restaure o padrão antes de mudar o envelope da referência.")
+        self._initial.update({k:v for k,v in values.items() if k.startswith("reference_")})
+        self._initial["reference_defined"]=True
+        for key,spins in (("start",self.start_inputs),("end",self.end_inputs),("plane_normal",self.normal_inputs)):
+            if key in values: self._write_vector(spins,values[key])
+        for key,widget,factor in (("height",self.height,1),("apex_position",self.apex,100)):
+            if key in values:
+                blocked=widget.blockSignals(True); widget.setValue(values[key]*factor); widget.blockSignals(blocked)
+        if "envelope_type" in values:
+            blocked=self.envelope_type.blockSignals(True)
+            self.envelope_type.setCurrentIndex(self.envelope_type.findData(values["envelope_type"]))
+            self.envelope_type.blockSignals(blocked)
+        self._points_changed()
+
+    def _reference_edge_changed(self):
+        if self._updating or self.reference_mode.currentData()!="DraftRectangle": return
+        try:
+            self._apply_reference_values(self.controller.reference_geometry(self.get_config()))
+        except (ValueError,RuntimeError) as exc:
+            self._initial["reference_defined"]=False
+            self._show_error(str(exc))
+
+    def _select_draft_reference(self):
+        try:
+            selected=self.controller.selected_reference()
+            self._initial.update(selected)
+            self._initial["reference_defined"]=False
+            blocked=self.reference_mode.blockSignals(True)
+            self.reference_mode.setCurrentIndex(self.reference_mode.findData(selected["reference_mode"]))
+            self.reference_mode.blockSignals(blocked)
+            blocked=self.reference_edge.blockSignals(True)
+            self.reference_edge.setCurrentIndex(self.reference_edge.findData(selected["reference_edge"]))
+            self.reference_edge.blockSignals(blocked)
+            if not selected["reference_edge"]:
+                self._initial["reference_defined"]=False
+                self.sections["Referência"][0].setChecked(True)
+                self._refresh()
+                return
+            self._apply_reference_values(self.controller.reference_geometry(self.get_config()))
+        except (ValueError,RuntimeError) as exc:
+            self._show_error(str(exc))
 
     @staticmethod
     def _read_vector(spins):
@@ -506,6 +714,13 @@ class TrussTaskPanel:
             start=start, end=end, plane_normal=self._read_vector(self.normal_inputs),
             role_specs=deepcopy(self._role_specs),
         )
+        if hasattr(self,"driver"):
+            config.update(panelization_mode=self.driver.currentData(),target_spacing=float(self.target_spacing.value()),
+                          target_angle=float(self.target_angle.value()),custom_spacings=self.spacing_editor.values(),
+                          x_connection=self.x_connection.currentData())
+        if hasattr(self,"reference_mode"):
+            config.update(reference_mode=self.reference_mode.currentData(),reference_linked=self.keep_reference_link.isChecked(),
+                          reference_edge=self.reference_edge.currentData() if self.reference_mode.currentData()=="DraftRectangle" else "Edge1")
         return config
 
     def _points_changed(self, _value=None):
@@ -534,10 +749,33 @@ class TrussTaskPanel:
     def _pick_points(self):
         if self._closed or self._point_picker is None:
             return
+        mode=self.reference_mode.currentData() if hasattr(self,"reference_mode") else "TwoPoints"
+        if mode in ("DraftLine","DraftRectangle"):
+            self._select_draft_reference()
+            return
         self._point_generation += 1
         generation = self._point_generation
         self.pick_button.setEnabled(False)
-        self.message.setText("Selecione P0 e P1 na vista 3D; o plano continua explícito.")
+        self.message.setText("Selecione o início e o fim da base na vista 3D.")
+        if mode=="ThreePoints":
+            from ..trusses.reference_geometry import three_points
+            self.message.setText("Selecione início, fim da base e ápice; Esc cancela a captura.")
+            def received_three(points):
+                if self._closed or generation!=self._point_generation: return
+                self.pick_button.setEnabled(True)
+                if points is None:
+                    self._refresh()
+                    return
+                try:
+                    self._apply_reference_values(three_points(*(point_components(p) for p in points)))
+                except ValueError as exc:
+                    self._show_error(str(exc))
+            try:
+                self.controller.pick_points(received_three,count=3)
+            except (ValueError,RuntimeError) as exc:
+                self.pick_button.setEnabled(True)
+                self._show_error(str(exc))
+            return
         def received(start, end, normal=None):
             if self._closed or generation != self._point_generation:
                 return
@@ -555,6 +793,7 @@ class TrussTaskPanel:
                 self._write_vector(self.normal_inputs, point_components(normal))
             self._write_vector(self.start_inputs, start_value)
             self._write_vector(self.end_inputs, end_value)
+            self._initial["reference_defined"]=True
             self._points_changed()
         try:
             self._point_picker(received)
@@ -573,17 +812,64 @@ class TrussTaskPanel:
         if self._updating or self._closed:
             return False
         self._preview_timer.stop()
+        self._preset_notice=""
+        if hasattr(self,"driver"): self._sync_presets()
         config = self.get_config()
+        if hasattr(self,"driver"):
+            from ..trusses.preset_contracts import PRESETS
+            mode=config.get("panelization_mode","ByPanelCount")
+            custom=config.get("topology_mode","Preset")=="Custom"
+            self.topology_state.setText("Topologia: Custom — trocar o padrão só escolhe a semente para Restaurar padrão." if custom else "Topologia: padrão gerado")
+            self.topology_state.setWordWrap(True)
+            self.panel_count.setEnabled(mode=="ByPanelCount")
+            for widget in (self.target_spacing,self.target_spacing_label): widget.setVisible(mode=="ByTargetSpacing")
+            for widget in (self.target_angle,self.target_angle_label): widget.setVisible(mode=="ByTargetDiagonalAngle")
+            self.spacing_editor.setVisible(mode=="CustomSpacingList")
+            total=math.fsum(config["custom_spacings"])
+            remaining=config["span"]-total
+            self.spacing_balance.setVisible(mode=="CustomSpacingList")
+            self.spacing_balance.setText(f"Soma: {total:g} mm · Vão: {config['span']:g} mm · Restante: {remaining:g} mm"+
+                                        (" — conflito: soma excede o vão" if remaining < -1e-6 else ""))
+            self.complete_span.setVisible(mode=="CustomSpacingList" and remaining>1e-6)
+            for widget in (self.x_label,self.x_connection): widget.setVisible(config["topology_preset"]=="X")
+            angle_item=self.driver.model().item(self.driver.findData("ByTargetDiagonalAngle"))
+            angle_item.setEnabled(not custom and bool(PRESETS[config["topology_preset"]].angle_family))
+        if hasattr(self,"reference_mode"):
+            mode=config.get("reference_mode","TwoPoints")
+            source_mode=mode in ("DraftLine","DraftRectangle")
+            self.keep_reference_link.setVisible(source_mode)
+            for widget in (self.reference_edge,self.reference_edge_label): widget.setVisible(mode=="DraftRectangle")
+            self.source_label.setVisible(source_mode)
+            self.source_label.setText(config.get("reference_source", "Nenhuma fonte selecionada"))
+            self.pick_button.setText("Usar seleção Draft" if source_mode else "Selecionar três pontos" if mode=="ThreePoints" else "Selecionar dois pontos")
+            linked=config.get("reference_linked",False)
+            self.span.setEnabled(not linked)
+            self.height.setEnabled(not (linked and mode=="DraftRectangle"))
+            if mode=="DraftRectangle" and config.get("reference_source") and not config.get("reference_edge"):
+                self._valid=False
+                self._set_accept_enabled(False)
+                self.controller.remove_preview()
+                self.message.setStyleSheet("")
+                self.message.setText("Retângulo aceito. Escolha Base em Referência: Lado 1, 2, 3 ou 4.")
+                return False
         pitched = config["envelope_type"] == "DuoPitch"
         for widget in (self.apex, self.apex_label, self.pitch_note):
             widget.setVisible(pitched)
-        normal = config["plane_normal"]
-        self.plane_label.setText(
-            "Normal explícita: (%g, %g, %g). X segue P0 → P1; Y = normal × X."
-            % tuple(normal)
-        )
+        self.plane_label.setText(f"Referência definida · Vão: {config['span']:g} mm · Altura: {config['height']:g} mm")
         try:
             model = self.controller.preview(config)
+            candidate=getattr(self.controller,"last_candidate",None)
+            if candidate is not None:
+                effective=candidate.config
+                self._initial.update({k:effective[k] for k in ("topology_mode","topology_preset","base_preset","custom_topology","left_panels","right_panels") if k in effective})
+                self._set_preset_value(effective["topology_preset"])
+                for name,spins in (("start",self.start_inputs),("end",self.end_inputs),("plane_normal",self.normal_inputs)):
+                    self._write_vector(spins,effective[name])
+                for name,widget,factor in (("span",self.span,1),("height",self.height,1),("apex_position",self.apex,100),("panel_count",self.panel_count,1)):
+                    blocked=widget.blockSignals(True); widget.setValue(effective[name]*factor); widget.blockSignals(blocked)
+                self._axis_direction=[(b-a)/effective["span"] for a,b in zip(effective["start"],effective["end"])]
+                config=self.get_config()
+                self.plane_label.setText(f"Referência definida · Vão: {effective['span']:g} mm · Altura: {effective['height']:g} mm")
             self.preview.set_model(model)
             present = {edge["role"] for edge in model["edges"]}
             for role, button in getattr(self, "role_buttons", {}).items():
@@ -610,7 +896,19 @@ class TrussTaskPanel:
             self.closure.setText(f"Fechamento: {left} painéis à esquerda + {right} à direita.")
         else:
             self.closure.setText(f"Fechamento: {max(len(stations) - 1, 0)} painéis no vão.")
-        warnings = list(model.get("warnings", ()))
+        if "effective" in model:
+            result=model["effective"]
+            text=f"{result['panel_count']} painéis · espaçamento médio efetivo {result['spacing']:.3f} mm"
+            if "angle" in result:
+                text+=f" · ângulo médio efetivo {result['angle']:.2f}° ({result['minimum_angle']:.2f}–{result['maximum_angle']:.2f}°)"
+            self.closure.setText(text)
+        from ..trusses.validation import human_diagnostics
+        warnings = human_diagnostics(model.get("warnings", ()))
+        if self._preset_notice: warnings.append(self._preset_notice)
+        if hasattr(self,"topology_state") and config.get("topology_mode")=="Custom":
+            from ..trusses.preset_contracts import PRESETS
+            base=config.get("base_preset","Custom")
+            self.topology_state.setText("Base para restaurar: "+PRESETS[base].label)
         self.message.setStyleSheet("")
         self.message.setText("\n".join(warnings + ["Preview 2D atualizado."]))
         if self.show_3d.isChecked():

@@ -157,10 +157,15 @@ class ManualFixTests(unittest.TestCase):
 
     def test_structural_properties_readonly_on_creation_and_restore(self):
         from freecad.SteelStructures.trusses.models import SCHEMA_VERSION, CONTINUITIES
-        proxy_type = definition("truss.py", "StructuralTrussProxy",
-                                dict(SCHEMA_VERSION=SCHEMA_VERSION, CONTINUITIES=CONTINUITIES))
+        from freecad.SteelStructures.trusses.preset_contracts import PRESETS
+        from freecad.SteelStructures.trusses.drivers import DRIVERS
+        namespace = dict(SCHEMA_VERSION=SCHEMA_VERSION, CONTINUITIES=CONTINUITIES,
+                         PRESETS=PRESETS, DRIVERS=DRIVERS)
+        definition("truss.py", "ensure_c2_properties", namespace)
+        proxy_type = definition("truss.py", "StructuralTrussProxy", namespace)
         modes = {}
-        obj = SimpleNamespace(addProperty=lambda *args: None,
+        properties = []
+        obj = SimpleNamespace(PropertiesList=properties, addProperty=lambda kind,name,*args: properties.append(name),
                               setEditorMode=lambda name, mode: modes.update({name: mode}))
         proxy = proxy_type(obj)
         structural = ("TopologyPreset", "EnvelopeType", "PanelCount", "TopChordContinuity",

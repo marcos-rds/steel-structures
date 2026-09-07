@@ -4,6 +4,21 @@ import math
 TOLERANCE = 1e-7
 
 
+def connected_components(graph):
+    remaining={n.key for n in graph.nodes}
+    adjacency=graph.adjacency
+    result=[]
+    while remaining:
+        component=set(); queue=[min(remaining)]
+        while queue:
+            key=queue.pop()
+            if key not in remaining: continue
+            remaining.remove(key); component.add(key)
+            queue.extend(adjacency[key])
+        result.append(frozenset(component))
+    return tuple(sorted(result,key=lambda c:(-len(c),sorted(c))))
+
+
 def validate_graph(graph):
     errors, warnings = [], []
     nodes = {n.key: n for n in graph.nodes}
@@ -43,17 +58,7 @@ def validate_graph(graph):
                 errors.append("Edge atravessa nó conectado intermediário: {} / {}.".format(edge.key,key))
     if errors:
         return tuple(errors), ()
-    remaining = set(nodes)
-    components = 0
-    adjacency = graph.adjacency
-    while remaining:
-        components += 1
-        queue = [min(remaining)]
-        while queue:
-            key = queue.pop()
-            if key in remaining:
-                remaining.remove(key)
-                queue.extend(adjacency[key])
+    components = len(connected_components(graph))
     if components > 1:
         warnings.append("Componentes desconectados: {}.".format(components))
     for i, a in enumerate(graph.nodes):
@@ -73,3 +78,17 @@ def validate_graph(graph):
                     cross(c,d,a)*cross(c,d,b) < -TOLERANCE):
                 warnings.append("Cruzamento sem conexão: {} / {}.".format(edge.key, other.key))
     return (), tuple(warnings)
+
+
+def human_diagnostics(warnings):
+    """Summarize graph diagnostics without leaking entity identifiers into UI."""
+    result=[]
+    crossings=sum(w.startswith("Cruzamento sem conexão:") for w in warnings)
+    coincident=sum(w.startswith("Nós coincidentes") for w in warnings)
+    for warning in warnings:
+        if warning.startswith("Componentes desconectados:"):
+            count=int(warning.split(":")[1].strip().rstrip("."))
+            result.append(f"{count} componentes desconectados")
+    if crossings: result.append(f"{crossings} cruzamentos sem conexão")
+    if coincident: result.append(f"{coincident} pares de nós coincidentes")
+    return result

@@ -1,7 +1,7 @@
 """C1 value objects. Distances are millimetres, angles are degrees."""
 from dataclasses import dataclass, field
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 GENERATOR_VERSION = 1
 ROLES = ("TOP_CHORD", "BOTTOM_CHORD", "VERTICAL", "DIAGONAL", "END_POST")
 CONTINUITIES = ("Continuous", "SegmentAtBreaks", "SegmentAtEveryNode")

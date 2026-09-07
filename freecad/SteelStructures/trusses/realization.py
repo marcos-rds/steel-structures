@@ -3,7 +3,7 @@ from dataclasses import asdict, replace
 import math
 from .models import (EnvelopeDefinition, MemberSpec, Candidate, RealizationItem,
                      RegenerationAction, RegenerationPlan, ROLES)
-from .panelization import panelize
+from .drivers import resolve_panelization
 from .patterns import generate_topology
 from .runs import physical_runs
 from .validation import validate_graph
@@ -41,6 +41,16 @@ def transform_point(point, frame):
 
 def build_candidate(config, applied=None):
     config = loads(dumps(config))  # no caller-owned mutable data retained
+    config.setdefault("topology_mode", "Preset")
+    config.setdefault("panelization_mode", "ByPanelCount")
+    config.setdefault("reference_mode", "TwoPoints")
+    config.setdefault("reference_linked", False)
+    from .editing import custom_state
+    config=custom_state(config)
+    if config.get("reference_defined", True) is not True:
+        raise ValueError("Defina a referência; para um retângulo indique explicitamente o lado da base.")
+    if config["topology_mode"] not in ("Preset", "Custom"):
+        raise ValueError("Modo de topologia inválido.")
     definition = EnvelopeDefinition(config["envelope_type"], float(config["span"]),
                                     float(config["height"]), float(config.get("apex_position", .5)))
     count = config["panel_count"]
@@ -52,12 +62,31 @@ def build_candidate(config, applied=None):
         elif config.get("left_panels") and config.get("right_panels") and sum(
                 (config["left_panels"], config["right_panels"])) == count:
             allocation = (config["left_panels"], config["right_panels"])
-    stations = panelize(definition, count, allocation)
-    config.update(left_panels=stations.left_panels, right_panels=stations.right_panels)
-    graph = generate_topology(definition, stations, config["topology_preset"])
+    stations, effective = resolve_panelization(config, definition, allocation)
+    config.update(panel_count=stations.panel_count, panelization_result=effective,
+                  left_panels=stations.left_panels, right_panels=stations.right_panels)
+    if config["topology_mode"] == "Custom":
+        from .editing import restore_graph, normalize_custom_graph, materialize
+        if not config.get("custom_topology"):
+            raise ValueError("Topologia Custom sem grafo materializado.")
+        graph = restore_graph(config["custom_topology"], config, stations)
+        origins=config["custom_topology"].get("edge_origins",{}).copy()
+        normalized=normalize_custom_graph(graph,origins)
+        if normalized!=graph:
+            config["custom_topology"]=materialize(normalized,config)
+        config["custom_topology"]["edge_origins"]={e.key:origins[e.key] for e in normalized.edges if e.key in origins}
+        graph=normalized
+    else:
+        graph = generate_topology(definition, stations, config["topology_preset"], config.get("x_connection", "Disconnected"))
+        if config["topology_preset"]=="Custom":
+            from .editing import materialize
+            config.update(topology_mode="Custom",custom_topology=materialize(graph,config))
     errors, warnings = validate_graph(graph)
     if errors:
         raise ValueError(" ".join(errors))
+    if (config["topology_mode"] == "Preset" and config["topology_preset"] == "X"
+            and config.get("x_connection", "Disconnected") == "Disconnected"):
+        warnings = tuple(w for w in warnings if not w.startswith("Cruzamento sem conexão:"))
     runs = physical_runs(graph, definition, config["top_continuity"], config["bottom_continuity"])
     frame = reference_frame(config)
     if abs(math.dist(config["start"], config["end"])-definition.span) > 1e-6:
@@ -97,7 +126,8 @@ def build_candidate(config, applied=None):
 
 
 def structural_signature(candidate):
-    return (candidate.config["envelope_type"], candidate.config["topology_preset"],
+    return (candidate.config["envelope_type"], "Custom" if candidate.config.get("topology_mode")=="Custom" else candidate.config["topology_preset"],
+            candidate.stations.panel_count,
             tuple((n.key, n.affiliations) for n in candidate.graph.nodes),
             tuple((e.key, e.start_node_key, e.end_node_key) for e in candidate.graph.edges),
             tuple((r.key, r.start_node_key, r.end_node_key, r.edge_keys) for r in candidate.runs))

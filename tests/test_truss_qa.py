@@ -281,7 +281,7 @@ class TrussPureIndependentTests(unittest.TestCase):
     def test_unsupported_serialized_versions_are_rejected(self):
         state = json.loads(encode_state(build_candidate(config())))
         for key in ("schema_version", "generator_version"):
-            for version in (0, 2, "1", None, True, 1.0):
+            for version in (0, 99, "1", None, True, 1.0) + ((2,) if key == "generator_version" else ()):
                 with self.subTest(key=key, version=version):
                     bad = copy.deepcopy(state)
                     bad[key] = version

@@ -15,6 +15,9 @@ from .paths import TRUSS_ICON
 from .trusses.models import SCHEMA_VERSION, ROLES, CONTINUITIES
 from .trusses.realization import build_candidate, plan_regeneration, reference_frame
 from .trusses.serialization import encode_state, decode_state, dumps, loads
+from .trusses.preset_contracts import PRESETS
+from .trusses.drivers import DRIVERS
+from .truss_reference import resolve_linked_reference, reference_containers
 
 ROLE_LABELS = {"TOP_CHORD": "Banzo superior", "BOTTOM_CHORD": "Banzo inferior",
                "VERTICAL": "Montantes", "DIAGONAL": "Diagonais", "END_POST": "Fechamentos"}
@@ -25,23 +28,28 @@ PROPERTY_CONFIG = {"EnvelopeType": "envelope_type", "Span": "span", "Height": "h
 
 
 def default_config():
-    designation = profile_catalog.designations()[0]
-    ref = profile_catalog.ref_for_designation(designation)
+    # Modeling defaults from the existing Gerdau catalog, not member sizing.
+    chord = profile_catalog.ref_for_designation('U 4" x 8,04')
+    angle = profile_catalog.ref_for_designation('L 40 x 4')
     return dict(envelope_type="Parallel", span=10000., height=2000., apex_position=.5,
                 panel_count=6, topology_preset="Warren", top_continuity="Continuous",
                 bottom_continuity="Continuous", left_panels=None, right_panels=None,
                 start=[0.,0.,0.], end=[10000.,0.,0.], plane_normal=[0.,-1.,0.],
-                role_specs={role: dict(profile_ref=asdict(ref), insertion="centroid", rotation=0.,
-                                      section_geometry_mode="Detailed", color=[.72,.72,.76],
-                                      assembly="Single", physical_fit="None") for role in ROLES})
+                role_specs={role: dict(profile_ref=asdict(chord if role in ("TOP_CHORD","BOTTOM_CHORD") else angle),
+                                      insertion="centroid", rotation=(-90. if role=="TOP_CHORD" else 90. if role=="BOTTOM_CHORD" else 180. if role=="END_POST_LEFT" else 0.),
+                                      section_geometry_mode="Detailed", color=([.2,.45,.85] if role in ("TOP_CHORD","BOTTOM_CHORD") else [1.,.8,.15] if role=="DIAGONAL" else [1.,.5,.1]),
+                                      assembly="Single", physical_fit="None")
+                            for role in ROLES+("END_POST_LEFT","END_POST_RIGHT")})
 
 
 def _value(value):
     return float(value.Value) if hasattr(value, "Value") else value
 
 
-def config_from_object(obj):
-    config = {key: _value(getattr(obj, prop)) for prop,key in PROPERTY_CONFIG.items()}
+def config_from_object(obj, resolve_reference=True):
+    config = loads(getattr(obj, "C2Configuration", "") or "{}")
+    config.update({key: _value(getattr(obj, prop)) for prop,key in PROPERTY_CONFIG.items()})
+    config["panelization_mode"] = str(obj.PanelizationMode)
     origin = obj.Placement.Base
     x = obj.Placement.Rotation.multVec(App.Vector(1,0,0))
     end = origin.add(x*float(config["span"]))
@@ -49,7 +57,38 @@ def config_from_object(obj):
     config.update(start=list(origin), end=list(end), plane_normal=list(normal),
                   role_specs=loads(obj.RoleSpecs), left_panels=obj.LeftPanels,
                   right_panels=obj.RightPanels)
-    return config
+    if config.get("reference_linked"):
+        link = getattr(obj, "ReferenceSource", None)
+        if not link or link[0] is None:
+            if resolve_reference:
+                raise ValueError("Fonte vinculada removida; último estado aplicado preservado.")
+            config["reference_source"] = ""
+        else:
+            config["reference_source"] = link[0].Name
+    return resolve_linked_reference(obj.Document, config, obj) if resolve_reference else config
+
+
+def ensure_c2_properties(obj):
+    """Additive migration: preserve C1 applied state until a successful apply."""
+    fields=(("App::PropertyString","C2Configuration","Interno"),
+            ("App::PropertyEnumeration","TopologyMode","Alma"),
+            ("App::PropertyEnumeration","ReferenceMode","Referência"),
+            ("App::PropertyBool","ReferenceLinked","Referência"),
+            ("App::PropertyLinkSub","ReferenceSource","Referência"),
+            ("App::PropertyLinkList","ReferenceContainers","Referência"))
+    for kind,name,group in fields:
+        if name not in obj.PropertiesList: obj.addProperty(kind,name,group)
+    for name,options,default in (("TopologyPreset",list(PRESETS),"Warren"),
+                               ("PanelizationMode",list(DRIVERS),"ByPanelCount"),
+                               ("TopologyMode",["Preset","Custom"],"Preset"),
+                               ("ReferenceMode",["TwoPoints","DraftLine","DraftRectangle","ThreePoints"],"TwoPoints")):
+        old=str(getattr(obj,name,""))
+        setattr(obj,name,options)
+        setattr(obj,name,old if old in options else default)
+    for name in ("TopologyMode","ReferenceMode","ReferenceLinked"):
+        obj.setEditorMode(name,1)
+    for name in ("C2Configuration","ReferenceSource","ReferenceContainers"):
+        obj.setEditorMode(name,2)
 
 
 def set_config(obj, config):
@@ -58,11 +97,21 @@ def set_config(obj, config):
     previous = proxy._updating
     proxy._updating = True
     try:
+        ensure_c2_properties(obj)
         for prop,key in PROPERTY_CONFIG.items():
             setattr(obj, prop, config[key])
         obj.Placement = App.Placement(App.Vector(*origin), App.Rotation(
             App.Vector(*x), App.Vector(*y), App.Vector(*z), "ZXY"))
         obj.RoleSpecs = dumps(config["role_specs"])
+        obj.PanelizationMode = config.get("panelization_mode", "ByPanelCount")
+        obj.TopologyMode = config.get("topology_mode", "Preset")
+        obj.ReferenceMode = config.get("reference_mode", "TwoPoints")
+        obj.ReferenceLinked = config.get("reference_linked", False)
+        source = obj.Document.getObject(config.get("reference_source", "")) if config.get("reference_source") else None
+        obj.ReferenceSource = (source, [config.get("reference_edge", "Edge1")]) if source is not None and obj.ReferenceLinked else None
+        obj.ReferenceContainers = reference_containers(source) if source is not None and obj.ReferenceLinked else []
+        excluded=set(PROPERTY_CONFIG.values())|{"start","end","plane_normal","role_specs","left_panels","right_panels"}
+        obj.C2Configuration = dumps({k:v for k,v in config.items() if k not in excluded})
     finally:
         proxy._updating = previous
 
@@ -150,13 +199,16 @@ def apply_existing_batch(obj, candidate, children, prepared):
                for key,child in children.items()}
     colors = {key: tuple(child.ViewObject.ShapeColor) for key,child in children.items()}
     owner_fields = ("AppliedState", "LeftPanels", "RightPanels", "GeneratedMembers", "NeedsRegeneration",
-                    "GenerationState", "GenerationMessage")
+                    "GenerationState", "GenerationMessage", "SchemaVersion", "Placement", "RoleSpecs") + tuple(PROPERTY_CONFIG)
+    owner_fields += tuple(name for name in ("C2Configuration", "TopologyMode", "ReferenceMode", "ReferenceLinked",
+                                           "ReferenceSource", "ReferenceContainers", "PanelizationMode") if hasattr(obj,name))
     owner_backup = {name: getattr(obj, name) for name in owner_fields}
     try:
         for item in candidate.items:
             apply_result(children[item.key], prepared[item.key], item.spec.color)
         for child in children.values():
             child.ControlledState = controlled_state(child)
+        set_config(obj, candidate.config)
         accept_state(obj, candidate, children)
     except Exception:
         for key,child in children.items():
@@ -208,6 +260,7 @@ class StructuralTrussProxy:
             obj.setEditorMode(name, 1)
         for name in ("RoleSpecs", "AppliedState", "GeneratedMembers", "RoleGroups"):
             obj.setEditorMode(name, 2)
+        ensure_c2_properties(obj)
         self._updating = False
 
     def execute(self, obj):
@@ -215,7 +268,7 @@ class StructuralTrussProxy:
             return
         self._updating = True
         try:
-            if obj.SchemaVersion != SCHEMA_VERSION:
+            if obj.SchemaVersion not in (1, SCHEMA_VERSION):
                 raise ValueError("SchemaVersion não suportada.")
             state = decode_state(obj.AppliedState)
             applied = build_candidate(state["candidate"]["config"])
@@ -227,7 +280,7 @@ class StructuralTrussProxy:
             if plan.structural:
                 obj.NeedsRegeneration = True
                 obj.GenerationState = "Pending"
-                obj.GenerationMessage = "Alteração estrutural pendente. Use Atualizar Treliça."
+                obj.GenerationMessage = "Alteração estrutural pendente. Dê duplo clique na treliça e confirme no Gerador."
                 return
             if any(action.action != "UNCHANGED" for action in plan.actions):
                 prepared = prepare_batch(candidate, children)
@@ -249,11 +302,15 @@ class StructuralTrussProxy:
             obj.Label = obj.DisplayName
 
     def onDocumentRestored(self, obj):
-        self._updating = False
+        self._updating = True
+        try:
+            ensure_c2_properties(obj)
+        finally:
+            self._updating = False
         for name in ("TopologyPreset", "EnvelopeType", "PanelCount", "TopChordContinuity",
                      "BottomChordContinuity", "PanelizationMode", "LeftPanels", "RightPanels"):
             obj.setEditorMode(name, 1)
-        if obj.SchemaVersion != SCHEMA_VERSION:
+        if obj.SchemaVersion not in (1, SCHEMA_VERSION):
             obj.GenerationState = "UnsupportedSchema"
             obj.NeedsRegeneration = True
 
@@ -334,6 +391,7 @@ class StructuralTrussViewProvider:
 
 
 def accept_state(obj, candidate, children):
+    obj.SchemaVersion = SCHEMA_VERSION
     obj.GeneratedMembers = [children[key] for key in sorted(children)]
     obj.AppliedState = encode_state(candidate, {key: children[key].Name for key in sorted(children)})
     obj.LeftPanels, obj.RightPanels = candidate.stations.left_panels, candidate.stations.right_panels
@@ -344,6 +402,7 @@ def accept_state(obj, candidate, children):
 
 def apply_truss(document, config, obj=None):
     """Explicit one-transaction create/regenerate; one final document recompute."""
+    config = resolve_linked_reference(document, config, obj)
     state = decode_state(obj.AppliedState) if obj is not None else None
     applied = build_candidate(state["candidate"]["config"]) if state else None
     candidate = build_candidate(config, applied)
@@ -353,6 +412,8 @@ def apply_truss(document, config, obj=None):
     if plan.conflicts:
         raise ValueError("; ".join(a.reason for a in plan.conflicts))
     prepared = prepare_batch(candidate, children)
+    source = document.getObject(config.get("reference_source", "")) if config.get("reference_source") else None
+    source_visibility = bool(source.ViewObject.Visibility) if source is not None else None
     document.openTransaction("Atualizar Treliça" if obj else "Criar Treliça")
     try:
         if obj is None:
@@ -407,11 +468,15 @@ def apply_truss(document, config, obj=None):
                     or child.Shape.Volume <= 0 or child.GenerationStatus != "Valid"):
                 raise ValueError("Falha ao aplicar membro: "+child.Name)
         obj.Proxy._updating = False
+        if source is not None:
+            source.ViewObject.Visibility = False
         document.commitTransaction()
         return obj
     except Exception:
         if obj is not None:
             obj.Proxy._updating = False
         document.abortTransaction()
+        if source is not None and source_visibility is not None:
+            source.ViewObject.Visibility = source_visibility
         document.recompute()
         raise
