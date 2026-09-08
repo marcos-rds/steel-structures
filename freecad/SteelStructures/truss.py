@@ -4,13 +4,11 @@ Definition -> parent -> StructuralMember -> ordinary role group is the native
 DAG. Hidden parent registries are organizational links, not reverse dependencies.
 """
 from dataclasses import asdict
-import math
 import FreeCAD as App
 from . import profile_catalog
 from .member import create_member
-from .member_adjustment_reference import unpack_link_sub, would_create_adjustment_cycle
-from .member_batch import (CONTROLLED, apply_result, item_values, lock_controlled,
-                           prepare_member, signature)
+from .member_batch import (apply_result, item_values, lock_controlled,
+                           prepare_member, signature, controlled_state, validate_adjustment_dependencies)
 from .paths import TRUSS_ICON
 from .trusses.models import SCHEMA_VERSION, ROLES, CONTINUITIES
 from .trusses.realization import build_candidate, plan_regeneration, reference_frame
@@ -116,23 +114,6 @@ def set_config(obj, config):
         proxy._updating = previous
 
 
-def controlled_state(child):
-    result = {}
-    for name in CONTROLLED:
-        value = getattr(child, name)
-        if isinstance(value, App.Vector):
-            value = [round(v, 8) for v in value]
-        elif hasattr(value, "Value"):
-            value = round(float(value.Value), 8)
-        else:
-            value = str(value)
-        result[name] = value
-    result["Color"] = [math.floor(v*255+.5) for v in child.ViewObject.ShapeColor]
-    # Placement is controlled as well; record numeric quaternion, never display text.
-    result["Placement"] = [round(v, 8) for v in list(child.Placement.Base)+list(child.Placement.Rotation.Q)]
-    return dumps(result)
-
-
 def bound_children(obj, state):
     members = list(obj.GeneratedMembers)
     if len({child.Name for child in members}) != len(members):
@@ -169,27 +150,7 @@ def conflicts_for(obj, children, candidate):
 
 
 def prepare_batch(candidate, children):
-    for child in children.values():
-        for prefix in ("Start", "End"):
-            if str(getattr(child, prefix+"AdjustmentMode")) != "Associative":
-                continue
-            if getattr(child.Proxy, "_last_generated_result", None) is None:
-                raise ValueError("Recompute o membro ajustado antes de Atualizar Treliça: "+child.Label)
-            reference = unpack_link_sub(getattr(child, prefix+"AdjustmentReference"))
-            if reference is None:
-                raise ValueError("Referência de ajuste ausente: "+child.Label)
-            target = reference[0]
-            if would_create_adjustment_cycle(child.GenerationOwner, target):
-                raise ValueError("Ajuste depende da própria treliça; revisão manual necessária: "+child.Label)
-            queue, seen = [target], set()
-            while queue:
-                source = queue.pop()
-                if source.Name in seen:
-                    continue
-                seen.add(source.Name)
-                if any(state in source.State for state in ("Touched", "Invalid", "Recompute")):
-                    raise ValueError("Recompute a origem do ajuste antes de Atualizar Treliça: "+source.Label)
-                queue.extend(source.OutList)
+    validate_adjustment_dependencies(children.values())
     return {item.key: prepare_member(children.get(item.key), item_values(item)) for item in candidate.items}
 
 

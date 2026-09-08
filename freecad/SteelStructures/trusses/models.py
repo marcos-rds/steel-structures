@@ -1,5 +1,6 @@
 """C1 value objects. Distances are millimetres, angles are degrees."""
 from dataclasses import dataclass, field
+from ..regeneration import RegenerationAction, RegenerationPlan
 
 SCHEMA_VERSION = 2
 GENERATOR_VERSION = 1
@@ -116,21 +117,3 @@ class Candidate:
     runs: tuple
     items: tuple
     warnings: tuple = ()
-
-
-@dataclass(frozen=True)
-class RegenerationAction:
-    key: str
-    action: str
-    existing_binding: str = ""
-    reason: str = ""
-
-
-@dataclass(frozen=True)
-class RegenerationPlan:
-    actions: tuple
-    structural: bool
-
-    @property
-    def conflicts(self):
-        return tuple(a for a in self.actions if a.action == "CONFLICT")

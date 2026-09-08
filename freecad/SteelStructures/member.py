@@ -646,8 +646,17 @@ class StructuralMemberProxy:
             return
 
         geometry = _section_geometry(profile, str(obj.SectionGeometryMode))
-        face = section_geometry_to_face(geometry)
         tx, ty = _geometry_insertion_translation(geometry, str(obj.Insertion))
+        assembly_transform = getattr(obj, "AssemblySectionTransform", "")
+        if assembly_transform:
+            import json
+            from .assemblies.transforms import SectionTransform, transform_section
+            from .profiles.geometry import Point2D
+            transform = SectionTransform(**json.loads(assembly_transform))
+            geometry, _references = transform_section(geometry, transform)
+            translation = transform.point(Point2D(tx, ty))
+            tx, ty = translation.x, translation.y
+        face = section_geometry_to_face(geometry)
         face.translate(App.Vector(tx + obj.OffsetX.Value, ty + obj.OffsetY.Value, 0.0))
 
         # Keep the shape local and drive position/orientation through the

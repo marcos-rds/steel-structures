@@ -7,6 +7,7 @@ only after the caller has validated the complete batch.
 """
 from types import SimpleNamespace
 import math
+import json
 import FreeCAD as App
 from . import member, profile_catalog
 from .profiles.models import ProfileRef
@@ -53,6 +54,8 @@ def snapshot(obj=None, values=None):
     defaults.update({name: "" for name in OUTPUTS})
     if obj is not None:
         defaults.update({name: _copy(getattr(obj, name)) for name in INPUTS})
+        if hasattr(obj, "AssemblySectionTransform"):
+            defaults["AssemblySectionTransform"] = str(obj.AssemblySectionTransform)
         defaults["ReferenceTarget"] = obj
     defaults.update(values or {})
     for name in ("Rotation", "OffsetX", "OffsetY", "StartExtension", "EndExtension"):
@@ -109,6 +112,8 @@ def signature(obj):
         else:
             value = str(value)
         values.append(value)
+    if hasattr(obj, "AssemblySectionTransform"):
+        values.append(str(obj.AssemblySectionTransform))
     return tuple(values)
 
 
@@ -135,6 +140,11 @@ def apply_result(obj, result, color=None):
             setattr(obj, name, getattr(value, "Value", value))
         for name in OUTPUTS:
             setattr(obj, name, getattr(result, name))
+        if hasattr(result, "AssemblySectionTransform"):
+            if "AssemblySectionTransform" not in obj.PropertiesList:
+                obj.addProperty("App::PropertyString", "AssemblySectionTransform", "Assembly")
+            obj.AssemblySectionTransform = result.AssemblySectionTransform
+            obj.setEditorMode("AssemblySectionTransform", 1)
         obj.Length = result.MemberLength
         obj.Shape = result.Shape
         obj.Placement = App.Placement(result.Placement)
@@ -165,7 +175,6 @@ def lock_controlled(obj):
 
 def execute_generated_member(obj):
     proxy = obj.Proxy
-    from .truss import controlled_state
     if obj.ExpressionEngine or (obj.ControlledState and controlled_state(obj) != obj.ControlledState):
         obj.GenerationStatus = "Conflict: propriedade controlada alterada diretamente; Shape anterior preservada."
         return
@@ -182,3 +191,49 @@ def execute_generated_member(obj):
         # A generated child's manual fitting can fail without destroying its last Shape.
         obj.GenerationStatus = "Erro: "+str(exc)
         App.Console.PrintWarning("Steel Structures: "+str(exc)+"\n")
+
+
+def controlled_state(child):
+    result = {}
+    for name in CONTROLLED:
+        value = getattr(child, name)
+        if isinstance(value, App.Vector):
+            value = [round(v, 8) for v in value]
+        elif hasattr(value, "Value"):
+            value = round(float(value.Value), 8)
+        else:
+            value = str(value)
+        result[name] = value
+    result["Color"] = [math.floor(v*255+.5) for v in child.ViewObject.ShapeColor]
+    # Placement is controlled as well; record numeric quaternion, never display text.
+    result["Placement"] = [round(v, 8) for v in list(child.Placement.Base)+list(child.Placement.Rotation.Q)]
+    if hasattr(child, "AssemblySectionTransform"):
+        result["AssemblySectionTransform"] = str(child.AssemblySectionTransform)
+    return json.dumps(result, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+
+
+
+def validate_adjustment_dependencies(children):
+    """Shared preflight for an atomic batch of existing physical members."""
+    from .member_adjustment_reference import unpack_link_sub, would_create_adjustment_cycle
+    for child in children:
+        for prefix in ("Start", "End"):
+            if str(getattr(child, prefix+"AdjustmentMode")) != "Associative":
+                continue
+            if getattr(child.Proxy, "_last_generated_result", None) is None:
+                raise ValueError("Recompute o membro ajustado antes de Atualizar Treliça: "+child.Label)
+            reference = unpack_link_sub(getattr(child, prefix+"AdjustmentReference"))
+            if reference is None:
+                raise ValueError("Referência de ajuste ausente: "+child.Label)
+            target = reference[0]
+            if would_create_adjustment_cycle(child.GenerationOwner, target):
+                raise ValueError("Ajuste depende da própria treliça; revisão manual necessária: "+child.Label)
+            queue, seen = [target], set()
+            while queue:
+                source = queue.pop()
+                if source.Name in seen:
+                    continue
+                seen.add(source.Name)
+                if any(state in source.State for state in ("Touched", "Invalid", "Recompute")):
+                    raise ValueError("Recompute a origem do ajuste antes de Atualizar Treliça: "+source.Label)
+                queue.extend(source.OutList)
