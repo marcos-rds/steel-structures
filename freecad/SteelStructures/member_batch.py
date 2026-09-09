@@ -95,10 +95,13 @@ def item_values(item):
     u0, v0 = base.multVec(App.Vector(1,0,0)), base.multVec(App.Vector(0,1,0))
     desired_u = App.Vector(*item.section_u_global)
     angle = (math.degrees(math.atan2(desired_u.dot(v0), desired_u.dot(u0))) + item.spec.rotation) % 360.
-    return dict(StartPoint=start, EndPoint=end, ProfileCategory=category, ProfileSeries=series,
+    values = dict(StartPoint=start, EndPoint=end, ProfileCategory=category, ProfileSeries=series,
                 Profile=profile_catalog.property_designation(designation), Insertion=insertion,
                 Rotation=angle, SectionGeometryMode=item.spec.section_geometry_mode,
                 AxisDefinitionMode="Independent", AxisSource=None)
+    if getattr(item, "section_transform", None) is not None:
+        values["AssemblySectionTransform"] = json.dumps(item.section_transform, sort_keys=True)
+    return values
 
 
 def signature(obj):

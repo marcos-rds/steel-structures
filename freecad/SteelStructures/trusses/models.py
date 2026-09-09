@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from ..regeneration import RegenerationAction, RegenerationPlan
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 GENERATOR_VERSION = 1
 ROLES = ("TOP_CHORD", "BOTTOM_CHORD", "VERTICAL", "DIAGONAL", "END_POST")
 CONTINUITIES = ("Continuous", "SegmentAtBreaks", "SegmentAtEveryNode")
@@ -84,6 +84,7 @@ class MemberSpec:
     color: tuple = (0.72, 0.72, 0.76)
     assembly: str = "Single"
     physical_fit: str = "None"
+    assembly_spec: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -107,6 +108,10 @@ class RealizationItem:
     end_global: tuple
     section_u_global: tuple
     spec: MemberSpec
+    run_key: str = ""
+    assembly_key: str = ""
+    component_key: str = ""
+    section_transform: dict | None = None
 
 
 @dataclass(frozen=True)

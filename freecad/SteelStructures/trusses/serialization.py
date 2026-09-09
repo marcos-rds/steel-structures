@@ -14,13 +14,15 @@ def loads(text):
 
 
 def encode_state(candidate, bindings=None):
-    return dumps({"schema_version": SCHEMA_VERSION, "generator_version": GENERATOR_VERSION,
+    version = SCHEMA_VERSION if any(s.get("assembly", "Single") != "Single"
+                                  for s in candidate.config["role_specs"].values()) else 2
+    return dumps({"schema_version": version, "generator_version": GENERATOR_VERSION,
                   "candidate": asdict(candidate), "bindings": bindings or {}})
 
 
 def decode_state(text):
     result = loads(text)
     if (type(result.get("schema_version")) is not int or type(result.get("generator_version")) is not int
-            or result["schema_version"] not in (1, SCHEMA_VERSION) or result["generator_version"] != GENERATOR_VERSION):
+            or result["schema_version"] not in (1, 2, SCHEMA_VERSION) or result["generator_version"] != GENERATOR_VERSION):
         raise ValueError("Versão de treliça não suportada; definição aplicada preservada.")
     return result

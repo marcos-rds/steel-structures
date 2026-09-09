@@ -1236,6 +1236,7 @@ class ProfileBrowserModelTests(unittest.TestCase):
         )
         dialog = types.SimpleNamespace(
             library=self.library, tree=tree,
+            _profile_filter=lambda _profile: True,
             _is_profile_selectable=lambda profile: profile.series_id in {"w", "hp"},
             _select_table_ref=lambda ref: selected_refs.append(ref),
             _select_initial_series=lambda: self.fail("catalog has selectable profiles"),

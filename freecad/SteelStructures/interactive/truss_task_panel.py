@@ -540,11 +540,18 @@ class TrussTaskPanel:
             (item.label for item in section_insertion_references(geometry)
              if spec["insertion"] in (item.id, item.label)), spec["insertion"],
         )
-        text = f"{designation}\n{insertion} · {spec['rotation']:g}°  ..."
+        from ..trusses.assemblies import ASSEMBLY_MODES
+        composition = dict(ASSEMBLY_MODES)[spec.get("assembly", "Single")]
+        text = f"{designation}\nComposição: {composition}  ..."
         button.setText(text)
-        button.setToolTip(text + "\nAbrir perfil, inserção e orientação")
-        miniature = SectionOrientationPreview(self.form)
-        miniature.set_geometry(geometry, spec["insertion"], spec["rotation"])
+        button.setToolTip(text + f"\n{insertion} · {spec['rotation']:g}°\nAbrir perfil, composição e orientação")
+        if spec.get("assembly", "Single") == "Single":
+            miniature = SectionOrientationPreview(self.form)
+            miniature.set_geometry(geometry, spec["insertion"], spec["rotation"])
+        else:
+            from .assembly_preview import AssemblyPreview
+            miniature = AssemblyPreview(self.form)
+            miniature.set_role(spec)
         miniature.resize(miniature.sizeHint())
         pixmap = QtGui.QPixmap(120, 84)
         pixmap.fill(QtCore.Qt.transparent)
@@ -554,16 +561,19 @@ class TrussTaskPanel:
             miniature.render(painter, QtCore.QPoint())
         finally:
             painter.end()
+            miniature.hide()  # render() must not leave a child overlay until deferred deletion.
             miniature.deleteLater()
         button.setIcon(QtGui.QIcon(pixmap))
 
     def _edit_role(self, role):
         title = dict(ROLE_LABELS)[role]
-        dialog = _RoleProfileDialog(self.document, title, self._role_specs[role], self.form)
+        from .assembly_editor import AssemblyEditor
+        dialog = AssemblyEditor(self.document, title, self._role_specs[role], self.form)
         if dialog.exec() == QtWidgets.QDialog.Accepted:
             self._role_specs[role] = dialog.role_spec()
             self._update_role_button(role)
             self._refresh()
+        dialog.deleteLater()
 
     def _vector_inputs(self, value, *, normal=False):
         container = QtWidgets.QWidget()

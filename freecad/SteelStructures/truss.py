@@ -151,7 +151,14 @@ def conflicts_for(obj, children, candidate):
 
 def prepare_batch(candidate, children):
     validate_adjustment_dependencies(children.values())
-    return {item.key: prepare_member(children.get(item.key), item_values(item)) for item in candidate.items}
+    prepared = {}
+    for item in candidate.items:
+        child = children.get(item.key)
+        values = item_values(item)
+        if child is not None and hasattr(child, "AssemblySectionTransform"):
+            values.setdefault("AssemblySectionTransform", "")  # Double -> Single clears previous T.
+        prepared[item.key] = prepare_member(child, values)
+    return prepared
 
 
 def apply_existing_batch(obj, candidate, children, prepared):
@@ -229,7 +236,7 @@ class StructuralTrussProxy:
             return
         self._updating = True
         try:
-            if obj.SchemaVersion not in (1, SCHEMA_VERSION):
+            if obj.SchemaVersion not in (1, 2, SCHEMA_VERSION):
                 raise ValueError("SchemaVersion não suportada.")
             state = decode_state(obj.AppliedState)
             applied = build_candidate(state["candidate"]["config"])
@@ -271,7 +278,7 @@ class StructuralTrussProxy:
         for name in ("TopologyPreset", "EnvelopeType", "PanelCount", "TopChordContinuity",
                      "BottomChordContinuity", "PanelizationMode", "LeftPanels", "RightPanels"):
             obj.setEditorMode(name, 1)
-        if obj.SchemaVersion not in (1, SCHEMA_VERSION):
+        if obj.SchemaVersion not in (1, 2, SCHEMA_VERSION):
             obj.GenerationState = "UnsupportedSchema"
             obj.NeedsRegeneration = True
 
@@ -352,7 +359,8 @@ class StructuralTrussViewProvider:
 
 
 def accept_state(obj, candidate, children):
-    obj.SchemaVersion = SCHEMA_VERSION
+    obj.SchemaVersion = SCHEMA_VERSION if any(s.get("assembly", "Single") != "Single"
+        for s in candidate.config["role_specs"].values()) else 2
     obj.GeneratedMembers = [children[key] for key in sorted(children)]
     obj.AppliedState = encode_state(candidate, {key: children[key].Name for key in sorted(children)})
     obj.LeftPanels, obj.RightPanels = candidate.stations.left_panels, candidate.stations.right_panels
@@ -400,6 +408,15 @@ def apply_truss(document, config, obj=None):
                 child.setEditorMode("ControlledState", 2)
                 child.setEditorMode("GenerationStatus", 1)
                 child.GenerationOwner, child.GenerationKey = obj, item.key
+            for name, value in (("RunKey", item.run_key), ("AssemblyKey", item.assembly_key),
+                                ("ComponentKey", item.component_key)):
+                if name not in child.PropertiesList:
+                    child.addProperty("App::PropertyString", name, "Geração")
+                setattr(child, name, value)
+                child.setEditorMode(name, 1)
+            if item.spec.assembly != "Single" or getattr(child, "AssemblySectionTransform", ""):
+                from .trusses.assemblies import component_label
+                child.DisplayName = child.Label = component_label(item, candidate.runs)
             apply_result(child, prepared[item.key], item.spec.color)
             child.ControlledState = controlled_state(child)
             result[item.key] = child
@@ -437,6 +454,11 @@ def apply_truss(document, config, obj=None):
         if obj is not None:
             obj.Proxy._updating = False
         document.abortTransaction()
+        for child in children.values():
+            restored = document.getObject(child.Name)
+            if restored is not None:
+                restored.Proxy._generated_prepared_signature = None
+                restored.Proxy._last_generated_result = None
         if source is not None and source_visibility is not None:
             source.ViewObject.Visibility = source_visibility
         document.recompute()

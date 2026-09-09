@@ -98,7 +98,7 @@ def build_candidate(config, applied=None):
     specs = {}
     for role in ROLES + ("END_POST_LEFT", "END_POST_RIGHT"):
         spec = MemberSpec(**config["role_specs"][role])
-        if (spec.assembly != "Single" or spec.physical_fit != "None"
+        if (spec.physical_fit != "None"
                 or spec.section_geometry_mode not in ("Detailed", "Simplified")
                 or not math.isfinite(spec.rotation) or len(spec.color) != 3
                 or not all(math.isfinite(v) and 0 <= v <= 1 for v in spec.color)
@@ -108,6 +108,12 @@ def build_candidate(config, applied=None):
         # FreeCAD persists view colors as 8-bit channels. Canonicalize once so
         # restoring a document never looks like a manual color override.
         spec = replace(spec, color=tuple(math.floor(v*255+.5)/255 for v in spec.color))
+        from .assemblies import role_assembly_spec
+        from ..assemblies.serialization import dumps as assembly_dumps
+        assembly = role_assembly_spec(asdict(spec))
+        if spec.assembly != "Single":
+            spec = replace(spec, assembly_spec=loads(assembly_dumps(assembly)))
+            config["role_specs"][role]["assembly_spec"] = spec.assembly_spec
         config["role_specs"][role]["color"] = list(spec.color)
         specs[role] = spec
     items = []
@@ -119,9 +125,10 @@ def build_candidate(config, applied=None):
         # X x Y = longitudinal: -normal gives Y = normal x longitudinal.
         # Thus positive section Y is up for a forward horizontal chord.
         section_u = tuple(-v for v in frame[3])
-        items.append(RealizationItem(run.key, run.role, run.start_node_key, run.end_node_key,
+        from .assemblies import expand_run
+        items.extend(expand_run(RealizationItem(run.key, run.role, run.start_node_key, run.end_node_key,
                                      a, b, transform_point(a, frame), transform_point(b, frame),
-                                     section_u, specs[spec_key]))
+                                     section_u, specs[spec_key])))
     return Candidate(config, stations, graph, runs, tuple(items), warnings)
 
 
@@ -130,7 +137,8 @@ def structural_signature(candidate):
             candidate.stations.panel_count,
             tuple((n.key, n.affiliations) for n in candidate.graph.nodes),
             tuple((e.key, e.start_node_key, e.end_node_key) for e in candidate.graph.edges),
-            tuple((r.key, r.start_node_key, r.end_node_key, r.edge_keys) for r in candidate.runs))
+            tuple((r.key, r.start_node_key, r.end_node_key, r.edge_keys) for r in candidate.runs),
+            tuple(sorted((i.run_key, i.assembly_key, i.component_key) for i in candidate.items)))
 
 
 def plan_regeneration(candidate, applied=None, bindings=None, conflicts=None):

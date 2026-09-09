@@ -331,6 +331,8 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
             initial_profile_ref=self._current_profile_ref(),
             is_profile_selectable=profile_catalog.is_creation_profile,
             insertion=self.insertion.currentText(),
+            **({"profile_filter": lambda profile: profile_catalog.is_creation_profile(profile)
+                and self._catalog.predicate(profile)} if hasattr(self, "_catalog") else {}),
         )
 
     def _open_profile_browser(self):
@@ -343,15 +345,17 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
     def set_profile_ref(self, ref):
         """Apply one Browser selection atomically and notify consumers once."""
         category, series, designation = profile_catalog.selection_for_ref(ref)
+        if designation not in getattr(self, "_catalog", profile_catalog).designations(category, series):
+            raise ValueError(f"Perfil indisponível para composição: {designation}")
         widgets = (self.category, self.series, self.profile)
         previous = [widget.blockSignals(True) for widget in widgets]
         try:
             self.category.setCurrentText(category)
             self.series.clear()
-            self.series.addItems(profile_catalog.series_for_category(category))
+            self.series.addItems(getattr(self, "_catalog", profile_catalog).series_for_category(category))
             self.series.setCurrentText(series)
             self.profile.clear()
-            for item in profile_catalog.designations(category, series):
+            for item in getattr(self, "_catalog", profile_catalog).designations(category, series):
                 self.profile.addItem(compact_profile_designation(item), item)
             index = self.profile.findData(designation)
             if index < 0:
@@ -362,6 +366,22 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
                 widget.blockSignals(blocked)
         self.refresh_automatic_name()
         self.profile.currentIndexChanged.emit(self.profile.currentIndex())
+
+    def set_profile_filter(self, predicate, preferred=None):
+        """Filter all three levels atomically; retain a compatible selection."""
+        from ..profiles.selection_filter import ProfileChoices
+        choices = ProfileChoices(predicate)
+        selected = choices.selection(self.profile_designation, preferred)
+        if selected is None:
+            raise ValueError("Nenhum perfil compatível disponível no catálogo.")
+        self._catalog = choices
+        blocked = self.category.blockSignals(True)
+        try:
+            self.category.clear()
+            self.category.addItems(choices.categories())
+        finally:
+            self.category.blockSignals(blocked)
+        self.set_profile_ref(profile_catalog.ref_for_designation(selected))
 
     def _mark_custom_name(self, _text):
         if not self._programmatic_name:
@@ -378,7 +398,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
         current = self.series.currentText()
         self.series.blockSignals(True)
         self.series.clear()
-        self.series.addItems(profile_catalog.series_for_category(self.category.currentText()))
+        self.series.addItems(getattr(self, "_catalog", profile_catalog).series_for_category(self.category.currentText()))
         index = self.series.findText(current)
         if index >= 0:
             self.series.setCurrentIndex(index)
@@ -389,7 +409,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
         current = self.profile.currentData()
         self.profile.blockSignals(True)
         self.profile.clear()
-        for designation in profile_catalog.designations(self.category.currentText(), self.series.currentText()):
+        for designation in getattr(self, "_catalog", profile_catalog).designations(self.category.currentText(), self.series.currentText()):
             self.profile.addItem(compact_profile_designation(designation), designation)
         index = self.profile.findData(current)
         if index >= 0:
@@ -525,10 +545,10 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
             self.element_type.setCurrentText(getattr(settings, "element_type", "Pilar"))
             self.category.setCurrentText(settings.category)
             self.series.clear()
-            self.series.addItems(profile_catalog.series_for_category(settings.category))
+            self.series.addItems(getattr(self, "_catalog", profile_catalog).series_for_category(settings.category))
             self.series.setCurrentText(settings.series)
             self.profile.clear()
-            for designation in profile_catalog.designations(settings.category, settings.series):
+            for designation in getattr(self, "_catalog", profile_catalog).designations(settings.category, settings.series):
                 self.profile.addItem(compact_profile_designation(designation), designation)
             index = self.profile.findData(settings.designation)
             if index >= 0:
