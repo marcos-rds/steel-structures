@@ -31,13 +31,15 @@ def resolve_member_assembly(nominal_axis, member_frame, assembly_spec):
             (assembly_spec.assembly_key, c.component_key), c.component_key, c.profile_ref,
             tuple(x+d for x, d in zip(a, shift)), tuple(x+d for x, d in zip(b, shift)),
             member_frame, c.insertion_reference, c.section_transform, c.section_geometry_mode, c.color))
-    return AssemblyRealization(assembly_spec, (a, b), member_frame, tuple(items))
+    from .interconnectors import resolve_interconnectors
+    interconnectors, distributions = resolve_interconnectors((a, b), tuple(items), assembly_spec)
+    return AssemblyRealization(assembly_spec, (a, b), member_frame, tuple(items), interconnectors, distributions)
 
 
 def plan_regeneration(candidate, applied=None, bindings=None, conflicts=None):
     """C1/C2 action vocabulary; independent of truss topology and its schema."""
-    before = {c.stable_identity: c for c in applied.components} if applied else {}
-    after = {c.stable_identity: c for c in candidate.components}
+    before = {c.stable_identity: c for c in applied.elements} if applied else {}
+    after = {c.stable_identity: c for c in candidate.elements}
     bindings, conflicts = bindings or {}, conflicts or {}
     actions = []
     for key in sorted(before.keys() | after.keys()):

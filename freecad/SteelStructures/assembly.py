@@ -28,9 +28,29 @@ def component_values(item):
                            section_geometry_mode=item.section_geometry_mode.value)
     proxy_item = SimpleNamespace(spec=spec, start_global=item.start_global,
                                  end_global=item.end_global, section_u_global=item.orientation.u)
-    values = item_values(proxy_item)
+    from .profiles.validation import ProfileNotFoundError
+    try:
+        values = item_values(proxy_item)
+    except ProfileNotFoundError as exc:
+        raise ValueError("Perfil da assembly não está disponível no catálogo.") from exc
     values["AssemblySectionTransform"] = json.dumps(asdict(item.section_transform), sort_keys=True)
     return values
+
+
+def element_metadata(item):
+    """Persistent semantic identity; old C3 component bindings remain unchanged."""
+    from .assemblies.interconnectors import InterconnectorRealization
+    connector = isinstance(item, InterconnectorRealization)
+    return dict(AssemblyKey=item.stable_identity[0],
+                AssemblyElementKind="Interconnector" if connector else "Component",
+                ComponentKey="" if connector else item.component_key,
+                InterconnectorKey=item.interconnector_key if connector else "",
+                InterconnectorSlotKey=_identity(item.slot_key) if connector else "",
+                GeneratedElementKey=item.generated_element_key if connector else item.component_key)
+
+
+def element_label(item, spec):
+    return item.label if hasattr(item, "interconnector_key") else spec.assembly_key+" / "+item.component_key
 
 
 def _applied(owner):
@@ -53,14 +73,18 @@ def prepare_assembly(owner, nominal_axis, member_frame, spec):
     registry = list(getattr(owner, "AssemblyMembers", []))
     if len({c.Name for c in registry}) != len(registry) or set(bindings.values()) != {c.Name for c in registry}:
         raise ValueError("Registro de assembly inconsistente.")
-    after = {c.stable_identity for c in candidate.components}
+    after = {c.stable_identity for c in candidate.elements}
+    previous = {c.stable_identity: c for c in applied.elements} if applied else {}
+    if set(previous) != set(bindings):
+        raise ValueError("Registro de identidades da assembly inconsistente.")
     for key, name in bindings.items():
         child = owner.Document.getObject(name)
         if (child is None or child not in registry or getattr(child, "GenerationOwner", None) != owner
                 or getattr(child, "GenerationKey", "") != _identity(key)
-                or getattr(child, "AssemblyKey", "") != key[0]
-                or getattr(child, "ComponentKey", "") != key[1]):
-            raise ValueError("Binding inconsistente: "+str(key))
+                or any(getattr(child, field, expected if len(key) == 2 and field not in
+                               ("AssemblyKey", "ComponentKey") else None) != expected
+                       for field, expected in element_metadata(previous[key]).items())):
+            raise ValueError("Vínculo de membro da assembly inconsistente.")
         children[key] = child
         if child.ExpressionEngine or controlled_state(child) != child.ControlledState:
             conflicts[key] = "Propriedade controlada alterada diretamente: "+name
@@ -74,7 +98,7 @@ def prepare_assembly(owner, nominal_axis, member_frame, spec):
     if plan.conflicts:
         raise ValueError("; ".join(a.reason for a in plan.conflicts))
     prepared = {c.stable_identity: prepare_member(children.get(c.stable_identity), component_values(c))
-                for c in candidate.components}
+                for c in candidate.elements}
     return candidate, plan, children, prepared
 
 
@@ -96,7 +120,7 @@ def apply_assembly(owner, nominal_axis, member_frame, spec, *, allow_structural=
                 owner.addProperty(kind, name, "Assembly")
                 owner.setEditorMode(name, 2)
         result = {}
-        for component in candidate.components:
+        for component in candidate.elements:
             key = component.stable_identity
             child = children.get(key)
             if child is None:
@@ -104,7 +128,7 @@ def apply_assembly(owner, nominal_axis, member_frame, spec, *, allow_structural=
                 child = create_member(document, values["StartPoint"], values["EndPoint"], values["Profile"],
                                       insertion=values["Insertion"], rotation=values["Rotation"],
                                       section_geometry_mode=values["SectionGeometryMode"],
-                                      display_name=spec.assembly_key+" / "+component.component_key, recompute=False)
+                                      display_name=element_label(component, spec), recompute=False)
                 for kind, name in (("App::PropertyLink", "GenerationOwner"),
                                    ("App::PropertyString", "GenerationKey"),
                                    ("App::PropertyString", "GenerationStatus"),
@@ -115,7 +139,13 @@ def apply_assembly(owner, nominal_axis, member_frame, spec, *, allow_structural=
                     child.setEditorMode(name, 1 if name != "ControlledState" else 2)
                 child.GenerationOwner = owner
                 child.GenerationKey = _identity(key)
-                child.AssemblyKey, child.ComponentKey = key
+            for name, value in element_metadata(component).items():
+                if name not in child.PropertiesList:
+                    child.addProperty("App::PropertyString", name, "Assembly")
+                setattr(child, name, value)
+                child.setEditorMode(name, 1)
+            if hasattr(component, "interconnector_key"):
+                child.DisplayName = child.Label = element_label(component, spec)
             apply_result(child, prepared[key], component.color)
             child.ControlledState = controlled_state(child)
             result[key] = child

@@ -4,6 +4,8 @@ import json
 from ..profiles.models import ProfileRef
 from .models import MemberAssemblySpec, AssemblyComponentSpec
 from .transforms import SectionTransform
+from .interconnectors import InterconnectorSpec
+from .distribution import DistributionSpec
 
 SCHEMA_VERSION = 1
 
@@ -24,4 +26,11 @@ def loads(value):
         raw["profile_ref"] = ProfileRef(**raw["profile_ref"])
         raw["section_transform"] = SectionTransform(**raw["section_transform"])
         components.append(AssemblyComponentSpec(**raw))
-    return MemberAssemblySpec(components=tuple(components), **data)
+    interconnectors = []
+    for raw in data.pop("interconnectors", ()):
+        raw = dict(raw)
+        raw["profile_ref"] = ProfileRef(**raw["profile_ref"])
+        raw["section_transform"] = SectionTransform(**raw.get("section_transform", {}))
+        raw["distribution"] = DistributionSpec(**raw.get("distribution", {}))
+        interconnectors.append(InterconnectorSpec(**raw))
+    return MemberAssemblySpec(components=tuple(components), interconnectors=tuple(interconnectors), **data)

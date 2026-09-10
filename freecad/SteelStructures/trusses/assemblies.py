@@ -97,6 +97,8 @@ def role_assembly_spec(role):
         if not role.get("assembly_spec"):
             raise ValueError("Configure a composição e a distância entre eixos.")
         assembly = loads(json.dumps(role["assembly_spec"]))
+        if assembly.interconnectors:
+            raise ValueError("Interconectores estão disponíveis pela API de assembly; integração no editor da Treliça fica para C4-B.")
         if (assembly.assembly_key != "ASSEMBLY" or assembly.behavior_mode != "MultiComponent"
                 or {c.component_key for c in assembly.components} != {"A", "B"}):
             raise ValueError("A composição do role deve conter os componentes A e B.")

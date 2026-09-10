@@ -8,6 +8,7 @@ from enum import Enum
 from ..profiles.models import ProfileRef
 from ..profiles.geometry import SectionGeometryMode
 from .transforms import SectionTransform
+from .interconnectors import InterconnectorSpec
 from ..regeneration import RegenerationAction, RegenerationPlan
 
 
@@ -98,3 +99,9 @@ class AssemblyRealization:
     nominal_axis: tuple
     member_frame: MemberFrame
     components: tuple
+    interconnectors: tuple[InterconnectorSpec, ...] = ()
+    distributions: tuple = ()
+
+    @property
+    def elements(self):
+        return self.components + self.interconnectors

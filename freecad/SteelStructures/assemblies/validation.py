@@ -39,8 +39,12 @@ def validate_spec(spec):
     from .models import AssemblyComponentSpec
     if not isinstance(spec.assembly_key, str) or not spec.assembly_key.strip():
         raise ValueError("AssemblyKey obrigatório.")
-    if spec.interconnectors:
-        raise ValueError("Interconnectors reservados para C4.")
+    from .interconnectors import InterconnectorSpec
+    if any(not isinstance(c, InterconnectorSpec) for c in spec.interconnectors):
+        raise ValueError("Especificação de interconector inválida.")
+    connector_keys = [c.interconnector_key for c in spec.interconnectors]
+    if len(set(connector_keys)) != len(connector_keys):
+        raise ValueError("Chaves de interconector devem ser únicas na assembly.")
     if spec.assembly_insertion not in ("Center", "SymmetricPair"):
         raise ValueError("Inserção de assembly ainda não suportada.")
     if not spec.components or any(not isinstance(c, AssemblyComponentSpec) for c in spec.components):
@@ -50,6 +54,11 @@ def validate_spec(spec):
         raise ValueError("ComponentKeys devem ser únicos e não vazios.")
     if (spec.behavior_mode == "Single") != (len(keys) == 1):
         raise ValueError("BehaviorMode incompatível com componentes.")
+    for connector in spec.interconnectors:
+        if len(keys) != 2:
+            raise ValueError("Interconectores nesta etapa requerem exatamente dois componentes.")
+        if any(k not in keys for k in connector.component_pair):
+            raise ValueError("Componente referido pelo interconector não existe na assembly.")
     for c in spec.components:
         if (not isinstance(c.profile_ref, ProfileRef)
                 or any(not isinstance(k, str) or not k.strip()
