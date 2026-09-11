@@ -138,7 +138,7 @@ def structural_signature(candidate):
             tuple((n.key, n.affiliations) for n in candidate.graph.nodes),
             tuple((e.key, e.start_node_key, e.end_node_key) for e in candidate.graph.edges),
             tuple((r.key, r.start_node_key, r.end_node_key, r.edge_keys) for r in candidate.runs),
-            tuple(sorted((i.run_key, i.assembly_key, i.component_key) for i in candidate.items)))
+            tuple(sorted(i.key for i in candidate.items)))
 
 
 def plan_regeneration(candidate, applied=None, bindings=None, conflicts=None):

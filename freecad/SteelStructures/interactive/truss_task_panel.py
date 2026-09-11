@@ -551,7 +551,10 @@ class TrussTaskPanel:
         else:
             from .assembly_preview import AssemblyPreview
             miniature = AssemblyPreview(self.form)
-            miniature.set_role(spec)
+            try:
+                miniature.set_role(spec, self._role_nominal_lengths(role)[0])
+            except ValueError as exc:
+                miniature.set_error(str(exc))
         miniature.resize(miniature.sizeHint())
         pixmap = QtGui.QPixmap(120, 84)
         pixmap.fill(QtCore.Qt.transparent)
@@ -568,12 +571,33 @@ class TrussTaskPanel:
     def _edit_role(self, role):
         title = dict(ROLE_LABELS)[role]
         from .assembly_editor import AssemblyEditor
-        dialog = AssemblyEditor(self.document, title, self._role_specs[role], self.form)
+        dialog = AssemblyEditor(self.document, title, self._role_specs[role], self.form,
+                                nominal_lengths=self._role_nominal_lengths(role))
         if dialog.exec() == QtWidgets.QDialog.Accepted:
             self._role_specs[role] = dialog.role_spec()
             self._update_role_button(role)
             self._refresh()
         dialog.deleteLater()
+
+    def _role_nominal_lengths(self, role):
+        from ..trusses.realization import build_candidate
+        config = deepcopy(self._initial if self._updating else self.get_config())
+        # Stationing depends only on logical runs. An invalid attachment must
+        # not prevent opening its editor to correct it.
+        for spec in config["role_specs"].values():
+            if spec.get("assembly_spec"):
+                spec["assembly_spec"]["spec"]["interconnectors"] = []
+        candidate = build_candidate(config)
+        lengths = []
+        for run in candidate.runs:
+            key = run.role
+            a = candidate.graph.node(run.start_node_key).position_local
+            b = candidate.graph.node(run.end_node_key).position_local
+            if key == "END_POST":
+                key += "_LEFT" if (a[0]+b[0])/2 < config["span"]/2 else "_RIGHT"
+            if key == role:
+                lengths.append(math.dist(a, b))
+        return tuple(sorted(set(lengths))) or (config["span"],)
 
     def _vector_inputs(self, value, *, normal=False):
         container = QtWidgets.QWidget()

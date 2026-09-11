@@ -14,6 +14,21 @@ from tests.test_profile_options_browser_integration import _load_options_runtime
 
 
 class AssemblyRefinementTests(unittest.TestCase):
+    def test_single_nominal_length_is_noninteractive_multiple_lengths_remain_selectable(self):
+        qt = types.SimpleNamespace(QLabel=Mock(), QComboBox=Mock())
+        editor_type = definition('interactive/assembly_editor.py', 'AssemblyEditor',
+                                dict(_RoleProfileDialog=object, QtWidgets=qt))
+        editor = object.__new__(editor_type)
+        editor._queue_refresh = Mock()
+        editor.nominal_lengths = (1000.,)
+        editor._setup_run_length()
+        qt.QLabel.assert_called_once_with('Comprimento nominal: 1000 mm')
+        qt.QComboBox.assert_not_called()
+        editor.nominal_lengths = (1000.,2000.)
+        editor._setup_run_length()
+        self.assertEqual(qt.QComboBox.return_value.addItem.call_count,2)
+        qt.QComboBox.return_value.currentIndexChanged.connect.assert_called_once_with(editor._queue_refresh)
+
     def test_all_catalog_levels_use_validation_compatibility(self):
         for mode in ('Single', 'DoubleAngle', 'DoubleChannelInward', 'DoubleChannelOutward', 'SpacedPair'):
             choices = ProfileChoices(lambda p: mode in compatible_modes(p))
@@ -112,7 +127,8 @@ class AssemblyRefinementTests(unittest.TestCase):
         for item in before.items:
             child = types.SimpleNamespace(
                 Name='Member'+str(len(children)), GenerationKey=item.key, ComponentKey=item.component_key,
-                PropertiesList=['RunKey', 'AssemblyKey', 'ComponentKey'], setEditorMode=lambda *args: None,
+                PropertiesList=['RunKey', 'AssemblyKey', 'ComponentKey', 'AssemblyElementKind',
+                                'InterconnectorKey', 'InterconnectorSlotKey', 'GeneratedElementKey'], setEditorMode=lambda *args: None,
                 AssemblySectionTransform='transform' if item.spec.assembly != 'Single' else '',
                 Label=component_label(item, before.runs), DisplayName=component_label(item, before.runs),
                 StartExtension=12, Adjustments=['kept'], State=[], GenerationStatus='Valid',

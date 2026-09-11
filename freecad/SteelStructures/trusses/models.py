@@ -112,6 +112,11 @@ class RealizationItem:
     assembly_key: str = ""
     component_key: str = ""
     section_transform: dict | None = None
+    element_kind: str = "Component"
+    interconnector_key: str = ""
+    slot_key: tuple = ()
+    generated_element_key: str = ""
+    element_label: str = ""
 
 
 @dataclass(frozen=True)

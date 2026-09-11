@@ -134,6 +134,8 @@ def conflicts_for(obj, children, candidate):
     conflicts = {}
     after = {item.key for item in candidate.items}
     groups = list(obj.RoleGroups)
+    groups += [child for group in groups for child in group.Group
+               if getattr(child, "AssemblyInterconnectorGroup", False)]
     for key,child in children.items():
         if child.ControlledState and controlled_state(child) != child.ControlledState:
             conflicts[key] = "Propriedade controlada alterada diretamente: "+child.Label
@@ -409,7 +411,11 @@ def apply_truss(document, config, obj=None):
                 child.setEditorMode("GenerationStatus", 1)
                 child.GenerationOwner, child.GenerationKey = obj, item.key
             for name, value in (("RunKey", item.run_key), ("AssemblyKey", item.assembly_key),
-                                ("ComponentKey", item.component_key)):
+                                ("ComponentKey", item.component_key),
+                                ("AssemblyElementKind", item.element_kind),
+                                ("InterconnectorKey", item.interconnector_key),
+                                ("InterconnectorSlotKey", dumps(item.slot_key) if item.slot_key else ""),
+                                ("GeneratedElementKey", item.generated_element_key or item.component_key)):
                 if name not in child.PropertiesList:
                     child.addProperty("App::PropertyString", name, "Geração")
                 setattr(child, name, value)
@@ -432,7 +438,25 @@ def apply_truss(document, config, obj=None):
                 group.Label = ROLE_LABELS[role]
                 group.setEditorMode("TrussRole", 2)
                 groups[role] = group
-            groups[role].Group = members
+            connectors = [result[i.key] for i in candidate.items if i.role == role and i.element_kind == "Interconnector"]
+            subgroup = next((g for g in groups[role].Group if getattr(g, "AssemblyInterconnectorGroup", False)), None)
+            if connectors:
+                if subgroup is None:
+                    subgroup = document.addObject("App::DocumentObjectGroup", "TrussInterconnectors")
+                    subgroup.addProperty("App::PropertyBool", "AssemblyInterconnectorGroup", "Geração")
+                    subgroup.AssemblyInterconnectorGroup = True
+                    subgroup.setEditorMode("AssemblyInterconnectorGroup", 2)
+                    subgroup.Label = "Interconectores"
+                subgroup.Group = connectors
+                groups[role].Group = [m for m in members if m not in connectors]+[subgroup]
+                if not groups[role].ViewObject.Visibility:
+                    subgroup.ViewObject.Visibility = False
+                    for child in connectors:
+                        child.ViewObject.Visibility = False
+            else:
+                groups[role].Group = members
+                if subgroup is not None:
+                    document.removeObject(subgroup.Name)
         obj.RoleGroups = [groups[role] for role in ROLES if role in groups]
         for key,child in children.items():
             if key not in result:

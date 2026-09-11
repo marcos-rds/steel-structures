@@ -31,6 +31,8 @@ def component_label(item, runs):
     peers = [r.key for r in runs if r.role == item.role]
     number = peers.index(item.run_key)+1
     label = f"{labels[item.role]} {number:02d}"
+    if item.element_kind == "Interconnector":
+        return label+" / "+item.element_label
     return label if item.spec.assembly == "Single" else f"{label} / {item.component_key}"
 
 
@@ -52,7 +54,7 @@ def role_profile(spec):
     return profile_catalog.get(designation).definition
 
 
-def configure_assembly(role, mode, spacing=100., insertion="SymmetricPair", transforms=None):
+def configure_assembly(role, mode, spacing=100., insertion="SymmetricPair", transforms=None, interconnectors=None):
     """Return a detached role configuration for the editor and scripting API."""
     result = dict(role)
     if mode not in compatible_modes(role_profile(role)):
@@ -74,7 +76,10 @@ def configure_assembly(role, mode, spacing=100., insertion="SymmetricPair", tran
             raise ValueError("Defina a orientação dos dois componentes.")
         assembly = replace(assembly, components=tuple(replace(c, section_transform=t)
                            for c, t in zip(assembly.components, transforms)))
-    assembly = replace(assembly, assembly_insertion=insertion)
+    if interconnectors is None:
+        interconnectors = (loads(json.dumps(role["assembly_spec"])).interconnectors
+                           if role.get("assembly_spec") else ())
+    assembly = replace(assembly, assembly_insertion=insertion, interconnectors=tuple(interconnectors))
     result["assembly_spec"] = json.loads(dumps(assembly))
     # Material/profile/insertion/color are controlled by the role, canonicalized below.
     result["assembly_spec"] = json.loads(dumps(role_assembly_spec(result)))
@@ -97,8 +102,6 @@ def role_assembly_spec(role):
         if not role.get("assembly_spec"):
             raise ValueError("Configure a composição e a distância entre eixos.")
         assembly = loads(json.dumps(role["assembly_spec"]))
-        if assembly.interconnectors:
-            raise ValueError("Interconectores estão disponíveis pela API de assembly; integração no editor da Treliça fica para C4-B.")
         if (assembly.assembly_key != "ASSEMBLY" or assembly.behavior_mode != "MultiComponent"
                 or {c.component_key for c in assembly.components} != {"A", "B"}):
             raise ValueError("A composição do role deve conter os componentes A e B.")
@@ -146,4 +149,18 @@ def expand_run(item):
             end_global=component.end_global, section_u_global=frame.u,
             section_transform=asdict(component.section_transform),
             spec=replace(item.spec, rotation=0.)))
+    for connector in realization.interconnectors:
+        identity = (item.key,)+connector.stable_identity
+        # Rendered physical members have their own profile and frame, but no
+        # new topology endpoints. start/end node keys remain run provenance.
+        items.append(replace(item, key=json.dumps(identity, separators=(",", ":")),
+            run_key=item.key, assembly_key=assembly.assembly_key, component_key="",
+            element_kind="Interconnector", interconnector_key=connector.interconnector_key,
+            slot_key=connector.slot_key, generated_element_key=connector.generated_element_key,
+            element_label=connector.label.split(" / Face")[0]+(" / 2" if identity[-1] == "SECONDARY" else ""),
+            start_global=connector.start_global, end_global=connector.end_global,
+            section_u_global=connector.orientation.u, section_transform=asdict(connector.section_transform),
+            spec=replace(item.spec, profile_ref=asdict(connector.profile_ref), rotation=0.,
+                         insertion=connector.insertion_reference, color=connector.color,
+                         section_geometry_mode=connector.section_geometry_mode.value)))
     return tuple(items)

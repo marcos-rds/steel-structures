@@ -219,7 +219,7 @@ class InterconnectorTests(unittest.TestCase):
             self.assertAlmostEqual(sum(x*y for x, y in zip(c.orientation.u, c.orientation.w)), 0.)
             self.assertGreater(math.dist(c.start_global, c.end_global), 240.)
 
-    def test_truss_topology_is_untouched_and_editor_rejects_silent_loss(self):
+    def test_truss_topology_is_untouched_and_role_preserves_interconnectors(self):
         from tests.test_truss_assemblies import config
         from freecad.SteelStructures.trusses.realization import build_candidate
         from freecad.SteelStructures.trusses.assemblies import configure_assembly, role_assembly_spec
@@ -235,8 +235,12 @@ class InterconnectorTests(unittest.TestCase):
         payload = json.loads(dumps(self.specs[3]))
         payload["spec"]["assembly_key"] = "ASSEMBLY"
         role["assembly_spec"] = payload
-        with self.assertRaisesRegex(ValueError, "C4-B"):
-            role_assembly_spec(role)
+        self.assertEqual(role_assembly_spec(role).interconnectors, self.specs[3].interconnectors)
+        value["role_specs"]["TOP_CHORD"] = role
+        integrated = build_candidate(value)
+        self.assertEqual(integrated.graph, candidate.graph)
+        self.assertEqual(integrated.runs, candidate.runs)
+        self.assertTrue(any(i.element_kind == "Interconnector" for i in integrated.items))
 
     def test_catalog_profiles_in_proof_are_real(self):
         from freecad.SteelStructures import profile_catalog

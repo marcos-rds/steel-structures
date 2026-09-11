@@ -8,7 +8,7 @@ from enum import Enum
 from ..profiles.models import ProfileRef
 from ..profiles.geometry import SectionGeometryMode
 from .transforms import SectionTransform
-from .interconnectors import InterconnectorSpec
+from .interconnectors import InterconnectorSpec, InterconnectorRealization
 from ..regeneration import RegenerationAction, RegenerationPlan
 
 
@@ -47,7 +47,7 @@ class MemberAssemblySpec:
     assembly_insertion: AssemblyInsertion
     components: tuple
     component_spacing: float | None = None
-    interconnectors: tuple = ()
+    interconnectors: tuple[InterconnectorSpec, ...] = ()
 
     def __post_init__(self):
         object.__setattr__(self, "components", tuple(self.components))
@@ -99,7 +99,7 @@ class AssemblyRealization:
     nominal_axis: tuple
     member_frame: MemberFrame
     components: tuple
-    interconnectors: tuple[InterconnectorSpec, ...] = ()
+    interconnectors: tuple[InterconnectorRealization, ...] = ()
     distributions: tuple = ()
 
     @property

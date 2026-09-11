@@ -19,8 +19,8 @@ class AssemblyPreview(QtWidgets.QWidget):
     def minimumSizeHint(self):
         return QtCore.QSize(180, 175)
 
-    def set_role(self, role):
-        self.model = transverse_preview(role)
+    def set_role(self, role, nominal_length=1000.):
+        self.model = transverse_preview(role, nominal_length)
         self.error = ""
         self.update()
 
@@ -73,6 +73,21 @@ class AssemblyPreview(QtWidgets.QWidget):
             painter.drawEllipse(p, 4, 4)
             painter.setPen(text_color)
             painter.drawText(p+QtCore.QPointF(7, -7), component["key"])
+        for attachment in self.model.get("attachments", ()):
+            for points in attachment["paths"]:
+                polygon = QtGui.QPolygonF([screen(p) for p in points])
+                color = QtGui.QColor.fromRgbF(*attachment["color"])
+                painter.setBrush(color)
+                painter.setPen(QtGui.QPen(text_color, 1.))
+                painter.drawPolygon(polygon)
+        painter.setBrush(QtCore.Qt.NoBrush)
+        for face in self.model.get("faces", ()):
+            pen = QtGui.QPen(QtGui.QColor(47, 128, 237) if face["selected"] else text_color, 1.)
+            pen.setStyle(QtCore.Qt.DashLine)
+            painter.setPen(pen)
+            a, b = (screen(p) for p in face["points"])
+            painter.drawLine(a, b)
+            painter.drawText(b+QtCore.QPointF(3, -4), face["label"])
         from ..profiles.geometry import Point2D
         center = screen(Point2D(0, 0))
         painter.setPen(QtGui.QPen(QtGui.QColor(220, 65, 65), 1.8))

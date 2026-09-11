@@ -8,12 +8,13 @@ from ..assemblies.transforms import SectionTransform
 
 
 class AssemblyEditor(_RoleProfileDialog):
-    def __init__(self, document, title, spec, parent=None):
+    def __init__(self, document, title, spec, parent=None, nominal_lengths=(1000.,)):
         super().__init__(document, title, spec, parent)
         self._building = True
         self._last_mode = spec.get("assembly", "Single")
         self._notice = ""
         self._profile_choices = {}
+        self.nominal_lengths = tuple(sorted(set(nominal_lengths)))
         self.mode = QtWidgets.QComboBox()
         for key, label in ASSEMBLY_MODES:
             self.mode.addItem(label, key)
@@ -62,6 +63,34 @@ class AssemblyEditor(_RoleProfileDialog):
         self.layout().insertWidget(self.layout().count()-1, self.message)
         self.buttons = self.findChild(QtWidgets.QDialogButtonBox)
         current = role_assembly_spec(spec)
+        from .interconnector_editor import InterconnectorEditor
+        from .assembly_longitudinal_preview import AssemblyLongitudinalPreview
+        self.connectors = InterconnectorEditor(current.interconnectors, self)
+        self.longitudinal = AssemblyLongitudinalPreview(self)
+        self._setup_run_length()
+        self.side_panel = QtWidgets.QWidget()
+        side_layout = QtWidgets.QVBoxLayout(self.side_panel)
+        side_layout.setContentsMargins(0, 0, 0, 0)
+        side_layout.addWidget(self.connectors)
+        side_layout.addWidget(self.run_length)
+        side_layout.addWidget(self.longitudinal)
+        side_layout.addStretch(1)
+        self.side_panel.setMinimumWidth(320)
+        body = QtWidgets.QWidget()
+        columns = QtWidgets.QHBoxLayout(body)
+        columns.setContentsMargins(0, 0, 0, 0)
+        left = QtWidgets.QWidget()
+        left_layout = QtWidgets.QVBoxLayout(left)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        layout = self.layout()
+        widgets = [layout.itemAt(i).widget() for i in range(layout.count())]
+        for widget in widgets:
+            if widget is not None and widget not in (self.message, self.buttons):
+                layout.removeWidget(widget)
+                left_layout.addWidget(widget)
+        columns.addWidget(left, 3)
+        columns.addWidget(self.side_panel, 2)
+        layout.insertWidget(0, body)
         self.spacing.setValue(current.component_spacing if current.component_spacing is not None else 100.)
         self.assembly_insertion.setCurrentIndex(self.assembly_insertion.findData(
             current.assembly_insertion.value if self._last_mode != "Single" else "SymmetricPair"))
@@ -73,6 +102,7 @@ class AssemblyEditor(_RoleProfileDialog):
         self._refresh_timer.setSingleShot(True)
         self._refresh_timer.setInterval(0)
         self._refresh_timer.timeout.connect(self._refresh_composition)
+        self.connectors.changed.connect(self._queue_refresh)
         self.mode.currentIndexChanged.connect(self._mode_changed)
         for signal in (self.spacing.valueChanged, self.assembly_insertion.currentIndexChanged,
                        self.angle_arrangement.currentIndexChanged, self.options.profile.currentIndexChanged,
@@ -86,7 +116,7 @@ class AssemblyEditor(_RoleProfileDialog):
         self._building = False
         self._refresh_composition()
         self.adjustSize()
-        self.resize(510, self.sizeHint().height())
+        self.resize(900 if self._last_mode != "Single" else 510, self.sizeHint().height())
 
     def _set_transforms(self, transforms):
         for combo, transform in zip(self.component_orientations, transforms):
@@ -107,6 +137,16 @@ class AssemblyEditor(_RoleProfileDialog):
         mode = self.mode.currentData()
         self.options.set_profile_filter(
             lambda profile: mode in compatible_modes(profile), self._profile_choices.get(mode))
+
+    def _setup_run_length(self):
+        if len(self.nominal_lengths) == 1:
+            self.run_length = QtWidgets.QLabel(f"Comprimento nominal: {self.nominal_lengths[0]:g} mm")
+        else:
+            self.run_length = QtWidgets.QComboBox()
+            for i, length in enumerate(self.nominal_lengths):
+                self.run_length.addItem(f"Comprimento nominal {i+1}: {length:g} mm", length)
+            self.run_length.setToolTip("Prévia de um comprimento deste role; todos são validados ao confirmar.")
+            self.run_length.currentIndexChanged.connect(self._queue_refresh)
 
     def _mode_changed(self, *_):
         self._profile_choices[self._last_mode] = self.options.profile_designation
@@ -135,11 +175,13 @@ class AssemblyEditor(_RoleProfileDialog):
             if self.angle_arrangement.currentData() == "inward":
                 transforms = transforms[::-1]
         return configure_assembly(role, mode, self.spacing.value(),
-                                  self.assembly_insertion.currentData(), transforms)
+                                  self.assembly_insertion.currentData(), transforms,
+                                  self.connectors.values() if mode != "Single" else ())
 
     def _refresh_composition(self):
         mode = self.mode.currentData()
         multiple = mode != "Single"
+        self.side_panel.setVisible(multiple)
         for widget in (self.spacing_label, self.spacing, self.insertion_label, self.assembly_insertion):
             widget.setVisible(multiple)
         for widget in (self.angle_label, self.angle_arrangement):
@@ -161,7 +203,16 @@ class AssemblyEditor(_RoleProfileDialog):
         self.options.rotation.setToolTip("Gira o conjunto, incluindo os eixos dos componentes." if multiple else "Rotação da seção.")
         try:
             role = self.role_spec()
-            self.preview.set_role(role)
+            from ..trusses.assembly_preview import role_realization
+            for length in self.nominal_lengths:
+                role_realization(role, length)
+            length = self.nominal_lengths[0] if len(self.nominal_lengths) == 1 else self.run_length.currentData()
+            self.preview.set_role(role, length)
+            self.longitudinal.set_role(role, length)
+            distributions = self.longitudinal.model["distributions"]
+            self.connectors.effective.setText("\n".join(
+                f"Espaçamento efetivo: {d.effective_spacing:g} mm · {d.effective_count} estações"
+                for _, d in distributions))
             self.message.setText(self._notice)
             self.message.setStyleSheet("")
             self.buttons.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(True)
@@ -170,6 +221,8 @@ class AssemblyEditor(_RoleProfileDialog):
             self.message.setText(str(exc))
             self.message.setStyleSheet("color: #c44;")
             self.preview.set_error("Composição incompatível. Selecione um perfil compatível ou Simples.")
+            self.longitudinal.clear()
+            self.connectors.effective.setText("")
             self.buttons.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
             self._valid_composition = False
 
