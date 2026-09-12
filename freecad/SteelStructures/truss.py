@@ -8,6 +8,7 @@ import FreeCAD as App
 from . import profile_catalog
 from .member import create_member
 from .member_batch import (apply_result, item_values, lock_controlled,
+                           prepared_item,
                            prepare_member, signature, controlled_state, validate_adjustment_dependencies)
 from .paths import TRUSS_ICON
 from .trusses.models import SCHEMA_VERSION, ROLES, CONTINUITIES
@@ -36,7 +37,9 @@ def default_config():
                 role_specs={role: dict(profile_ref=asdict(chord if role in ("TOP_CHORD","BOTTOM_CHORD") else angle),
                                       insertion="centroid", rotation=(-90. if role=="TOP_CHORD" else 90. if role=="BOTTOM_CHORD" else 180. if role=="END_POST_LEFT" else 0.),
                                       section_geometry_mode="Detailed", color=([.2,.45,.85] if role in ("TOP_CHORD","BOTTOM_CHORD") else [1.,.8,.15] if role=="DIAGONAL" else [1.,.5,.1]),
-                                      assembly="Single", physical_fit="None")
+                                      assembly="Single",
+                                      physical_fit=("None" if role in ("TOP_CHORD", "BOTTOM_CHORD") else "ToChord"),
+                                      physical_fit_gap=0.0)
                             for role in ROLES+("END_POST_LEFT","END_POST_RIGHT")})
 
 
@@ -151,6 +154,40 @@ def conflicts_for(obj, children, candidate):
     return conflicts
 
 
+def resynchronize_accepted_snapshots(obj):
+    """Repair snapshots made stale by document Undo/Redo, without hiding edits.
+
+    FreeCAD restores persistent properties transactionally, while Python proxy
+    caches are not part of that transaction. A child is resynchronized only
+    when its current controlled inputs exactly match the realization described
+    by the currently restored AppliedState. A real external edit therefore
+    remains different and continues to be reported by ``conflicts_for``.
+    """
+    if obj is None or not getattr(obj, "AppliedState", ""):
+        return 0
+    state = decode_state(obj.AppliedState)
+    candidate = build_candidate(state["candidate"]["config"])
+    children = bound_children(obj, state)
+    prepared = prepare_batch(candidate, children)
+    repaired = 0
+    for item in candidate.items:
+        child = children[item.key]
+        current = controlled_state(child)
+        expected_color = tuple(item.spec.color)
+        if len(tuple(child.ViewObject.ShapeColor)) == 4:
+            expected_color += (1.,)
+        expected = controlled_state(prepared[item.key], expected_color)
+        if current != expected:
+            continue
+        if child.ControlledState != current:
+            child.ControlledState = current
+            repaired += 1
+        child.Proxy._last_generated_result = prepared[item.key]
+        child.Proxy._generated_prepared_signature = None
+        lock_controlled(child)
+    return repaired
+
+
 def prepare_batch(candidate, children):
     validate_adjustment_dependencies(children.values())
     prepared = {}
@@ -159,7 +196,7 @@ def prepare_batch(candidate, children):
         values = item_values(item)
         if child is not None and hasattr(child, "AssemblySectionTransform"):
             values.setdefault("AssemblySectionTransform", "")  # Double -> Single clears previous T.
-        prepared[item.key] = prepare_member(child, values)
+        prepared[item.key] = prepared_item(item, child, values)
     return prepared
 
 
@@ -168,6 +205,9 @@ def apply_existing_batch(obj, candidate, children, prepared):
     backups = {key: getattr(child.Proxy, "_last_generated_result", None) or prepare_member(child)
                for key,child in children.items()}
     colors = {key: tuple(child.ViewObject.ShapeColor) for key,child in children.items()}
+    fit_fields = ("PhysicalFitPlan", "PhysicalFitAutoState", "PhysicalFitStatus")
+    fit_backups = {key: {name: getattr(child, name) for name in fit_fields
+                         if name in child.PropertiesList} for key, child in children.items()}
     owner_fields = ("AppliedState", "LeftPanels", "RightPanels", "GeneratedMembers", "NeedsRegeneration",
                     "GenerationState", "GenerationMessage", "SchemaVersion", "Placement", "RoleSpecs") + tuple(PROPERTY_CONFIG)
     owner_fields += tuple(name for name in ("C2Configuration", "TopologyMode", "ReferenceMode", "ReferenceLinked",
@@ -183,6 +223,8 @@ def apply_existing_batch(obj, candidate, children, prepared):
     except Exception:
         for key,child in children.items():
             apply_result(child, backups[key], colors[key])
+            for name, value in fit_backups[key].items():
+                setattr(child, name, value)
             child.ControlledState = controlled_state(child)
         for name,value in owner_backup.items():
             setattr(obj, name, value)
@@ -238,7 +280,7 @@ class StructuralTrussProxy:
             return
         self._updating = True
         try:
-            if obj.SchemaVersion not in (1, 2, SCHEMA_VERSION):
+            if obj.SchemaVersion not in (1, 2, 3, SCHEMA_VERSION):
                 raise ValueError("SchemaVersion não suportada.")
             state = decode_state(obj.AppliedState)
             applied = build_candidate(state["candidate"]["config"])
@@ -280,7 +322,7 @@ class StructuralTrussProxy:
         for name in ("TopologyPreset", "EnvelopeType", "PanelCount", "TopChordContinuity",
                      "BottomChordContinuity", "PanelizationMode", "LeftPanels", "RightPanels"):
             obj.setEditorMode(name, 1)
-        if obj.SchemaVersion not in (1, 2, SCHEMA_VERSION):
+        if obj.SchemaVersion not in (1, 2, 3, SCHEMA_VERSION):
             obj.GenerationState = "UnsupportedSchema"
             obj.NeedsRegeneration = True
 
@@ -361,10 +403,10 @@ class StructuralTrussViewProvider:
 
 
 def accept_state(obj, candidate, children):
-    obj.SchemaVersion = SCHEMA_VERSION if any(s.get("assembly", "Single") != "Single"
-        for s in candidate.config["role_specs"].values()) else 2
     obj.GeneratedMembers = [children[key] for key in sorted(children)]
-    obj.AppliedState = encode_state(candidate, {key: children[key].Name for key in sorted(children)})
+    encoded = encode_state(candidate, {key: children[key].Name for key in sorted(children)})
+    obj.SchemaVersion = decode_state(encoded)["schema_version"]
+    obj.AppliedState = encoded
     obj.LeftPanels, obj.RightPanels = candidate.stations.left_panels, candidate.stations.right_panels
     obj.NeedsRegeneration = False
     obj.GenerationState = "Valid"

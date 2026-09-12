@@ -1,6 +1,7 @@
 """Focused regressions for the C1 manual feedback (no FreeCAD/Qt runtime)."""
 import ast
 import copy
+from dataclasses import asdict
 import math
 from pathlib import Path
 from types import SimpleNamespace
@@ -30,6 +31,60 @@ class ManualFixTests(unittest.TestCase):
         config = config_fixture()
         config["role_specs"]["END_POST"] = copy.deepcopy(config["role_specs"]["END_POST_LEFT"])
         return config
+
+    def test_new_truss_defaults_fit_web_roles_only(self):
+        from freecad.SteelStructures.trusses.models import ROLES
+        factory = definition("truss.py", "default_config", dict(
+            profile_catalog=profile_catalog, asdict=asdict, ROLES=ROLES))
+        roles = factory()["role_specs"]
+        self.assertEqual(roles["TOP_CHORD"]["physical_fit"], "None")
+        self.assertEqual(roles["BOTTOM_CHORD"]["physical_fit"], "None")
+        for role in ("DIAGONAL", "VERTICAL", "END_POST",
+                     "END_POST_LEFT", "END_POST_RIGHT"):
+            self.assertEqual(roles[role]["physical_fit"], "ToChord")
+            self.assertEqual(roles[role]["physical_fit_gap"], 0.)
+
+    def test_undo_redo_snapshot_resync_keeps_real_external_edit_detection(self):
+        item = SimpleNamespace(key="WEB", spec=SimpleNamespace(color=(1., .5, 0.)))
+        candidate = SimpleNamespace(items=(item,))
+        child = SimpleNamespace(
+            current="accepted-before-undo", ControlledState="accepted-after-apply",
+            ViewObject=SimpleNamespace(ShapeColor=(1., .5, 0., 1.)),
+            Proxy=SimpleNamespace(_last_generated_result="stale",
+                                  _generated_prepared_signature="stale"))
+        prepared = SimpleNamespace(current="accepted-before-undo")
+        owner = SimpleNamespace(AppliedState="restored")
+        locked = []
+        namespace = dict(
+            decode_state=lambda _text: {"candidate": {"config": {}}},
+            build_candidate=lambda _config: candidate,
+            bound_children=lambda _obj, _state: {"WEB": child},
+            prepare_batch=lambda _candidate, _children: {"WEB": prepared},
+            controlled_state=lambda source, color=None: source.current,
+            lock_controlled=lambda current: locked.append(current),
+        )
+        resync = definition("truss.py", "resynchronize_accepted_snapshots", namespace)
+
+        # apply -> undo -> reopen: current inputs match restored AppliedState,
+        # therefore the stale post-apply snapshot is repaired.
+        self.assertEqual(resync(owner), 1)
+        self.assertEqual(child.ControlledState, "accepted-before-undo")
+        self.assertIs(child.Proxy._last_generated_result, prepared)
+        self.assertIsNone(child.Proxy._generated_prepared_signature)
+        self.assertEqual(locked, [child])
+
+        # A direct external edit does not match the accepted realization and
+        # must remain visible to the existing conflict guard.
+        child.current = "manual-external-edit"
+        child.ControlledState = "accepted-before-undo"
+        self.assertEqual(resync(owner), 0)
+        self.assertNotEqual(child.current, child.ControlledState)
+
+        # Redo has the same rule: once current inputs match the redone state,
+        # reopening can safely rebuild its accepted snapshot.
+        child.current = prepared.current = "accepted-after-apply"
+        self.assertEqual(resync(owner), 1)
+        self.assertEqual(child.current, child.ControlledState)
 
     def test_independent_end_specs_roundtrip_without_topology_changes(self):
         config = self.candidate()
@@ -173,5 +228,38 @@ class ManualFixTests(unittest.TestCase):
         self.assertTrue(all(modes[name] == 1 for name in structural))
         self.assertTrue(all(name not in modes for name in ("Span", "Height", "ApexPosition", "DisplayName")))
         modes.clear()
+        obj.SchemaVersion = 3
         proxy.onDocumentRestored(obj)
         self.assertTrue(all(modes[name] == 1 for name in structural))
+        self.assertNotEqual(obj.GenerationState, "UnsupportedSchema")
+
+    def test_object_schema_matches_the_encoded_applied_state(self):
+        from freecad.SteelStructures.trusses.serialization import encode_state, decode_state
+        from freecad.SteelStructures.trusses.assemblies import configure_assembly
+        from tests.test_truss_assemblies import config
+        accept = definition("truss.py", "accept_state", dict(
+            encode_state=encode_state, decode_state=decode_state))
+
+        configs = []
+        plain = config()
+        configs.append(plain)
+        assembled = copy.deepcopy(plain)
+        role = assembled["role_specs"]["DIAGONAL"]
+        assembled["role_specs"]["DIAGONAL"] = configure_assembly(
+            role, "DoubleAngle", 60.)
+        configs.append(assembled)
+        fitted = copy.deepcopy(plain)
+        fitted["role_specs"]["DIAGONAL"]["physical_fit"] = "ToChord"
+        fitted["role_specs"]["DIAGONAL"]["physical_fit_gap"] = 0.
+        configs.append(fitted)
+
+        self.assertEqual([decode_state(encode_state(build_candidate(value)))["schema_version"]
+                          for value in configs], [2, 3, 4])
+        for value in configs:
+            candidate = build_candidate(value)
+            children = {item.key: SimpleNamespace(Name="Member"+str(index))
+                        for index, item in enumerate(candidate.items)}
+            owner = SimpleNamespace()
+            accept(owner, candidate, children)
+            self.assertEqual(owner.SchemaVersion,
+                             decode_state(owner.AppliedState)["schema_version"])

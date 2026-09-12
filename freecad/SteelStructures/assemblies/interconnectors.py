@@ -124,7 +124,15 @@ def resolve_interconnectors(nominal_axis, components, assembly_spec):
             fixed = DistributionSpec(station_count=distribution.effective_count,
                                      station_keys=tuple(s.key for s in distribution.stations))
             for _ in range(100):
-                trial = _station_elements(a, b, w, normal, spec, assembly_spec, distribution)
+                # Attachment to the component faces may translate a connector
+                # along the host axis.  Measure the final attached envelope,
+                # otherwise the last connector can remain inside a fitted end.
+                trial = attach_elements(
+                    nominal_axis,
+                    components,
+                    spec,
+                    _station_elements(a, b, w, normal, spec, assembly_spec, distribution),
+                )
                 from .attachment import dot
                 first, last = distribution.stations[0].position, distribution.stations[-1].position
                 bounds = []

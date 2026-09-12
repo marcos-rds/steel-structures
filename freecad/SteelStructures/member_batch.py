@@ -19,6 +19,9 @@ INPUTS = ("StartPoint", "EndPoint", "Profile", "ProfileCategory", "ProfileSeries
     prefix+suffix for prefix in ("Start", "End") for suffix in
     ("AdjustmentMode", "AdjustmentGeometryMode", "AdjustmentReference", "AdjustmentGap",
      "FixedReferenceOffset", "FixedPlaneNormal"))
+ADJUSTMENT_INPUTS = tuple(prefix+suffix for prefix in ("Start", "End") for suffix in
+    ("AdjustmentMode", "AdjustmentGeometryMode", "AdjustmentReference", "AdjustmentGap",
+     "FixedReferenceOffset", "FixedPlaneNormal"))
 OUTPUTS = ("EffectiveStartPoint", "EffectiveEndPoint", "AdjustedLength", "MemberLength", "TotalMass",
            "Manufacturer", "ProfileFamily", "MassPerMeter", "CatalogArea", "CatalogSource")
 CONTROLLED = ("StartPoint", "EndPoint", "ProfileCategory", "ProfileSeries", "Profile", "Insertion",
@@ -104,6 +107,15 @@ def item_values(item):
     return values
 
 
+def prepared_item(item, child=None, values=None):
+    values = dict(values) if values is not None else item_values(item)
+    from .fitting.freecad_adapter import fitting_inputs, attach_prepared_metadata
+    values, plan_text, state_text, status = fitting_inputs(item, child, values)
+    result = prepare_member(child, values)
+    attach_prepared_metadata(result, plan_text, state_text, status)
+    return result
+
+
 def signature(obj):
     values = []
     for name in INPUTS:
@@ -141,6 +153,9 @@ def apply_result(obj, result, color=None):
                 continue
             value = getattr(result, name)
             setattr(obj, name, getattr(value, "Value", value))
+        for name in ADJUSTMENT_INPUTS:
+            value = getattr(result, name)
+            setattr(obj, name, getattr(value, "Value", value))
         for name in OUTPUTS:
             setattr(obj, name, getattr(result, name))
         if hasattr(result, "AssemblySectionTransform"):
@@ -148,6 +163,16 @@ def apply_result(obj, result, color=None):
                 obj.addProperty("App::PropertyString", "AssemblySectionTransform", "Assembly")
             obj.AssemblySectionTransform = result.AssemblySectionTransform
             obj.setEditorMode("AssemblySectionTransform", 1)
+        if hasattr(result, "PhysicalFitPlan"):
+            for name, label in (("PhysicalFitPlan", "Plano de fitting"),
+                                ("PhysicalFitAutoState", "Estado automático"),
+                                ("PhysicalFitStatus", "Diagnóstico de fitting")):
+                if name not in obj.PropertiesList:
+                    obj.addProperty("App::PropertyString", name, "Ajuste físico", label)
+                setattr(obj, name, getattr(result, name))
+            obj.setEditorMode("PhysicalFitPlan", 2)
+            obj.setEditorMode("PhysicalFitAutoState", 2)
+            obj.setEditorMode("PhysicalFitStatus", 1)
         obj.Length = result.MemberLength
         obj.Shape = result.Shape
         obj.Placement = App.Placement(result.Placement)
@@ -196,7 +221,7 @@ def execute_generated_member(obj):
         App.Console.PrintWarning("Steel Structures: "+str(exc)+"\n")
 
 
-def controlled_state(child):
+def controlled_state(child, color=None):
     result = {}
     for name in CONTROLLED:
         value = getattr(child, name)
@@ -207,7 +232,9 @@ def controlled_state(child):
         else:
             value = str(value)
         result[name] = value
-    result["Color"] = [math.floor(v*255+.5) for v in child.ViewObject.ShapeColor]
+    if color is None:
+        color = child.ViewObject.ShapeColor
+    result["Color"] = [math.floor(v*255+.5) for v in color]
     # Placement is controlled as well; record numeric quaternion, never display text.
     result["Placement"] = [round(v, 8) for v in list(child.Placement.Base)+list(child.Placement.Rotation.Q)]
     if hasattr(child, "AssemblySectionTransform"):

@@ -4,7 +4,8 @@ from time import perf_counter
 import FreeCAD as App
 import FreeCADGui as Gui
 import Part
-from ..truss import (apply_truss, default_config, config_from_object, prepare_batch, bound_children)
+from ..truss import (apply_truss, default_config, config_from_object, prepare_batch, bound_children,
+                     resynchronize_accepted_snapshots)
 from ..trusses.models import EnvelopeDefinition
 from ..trusses.envelope import paths
 from ..trusses.realization import build_candidate
@@ -57,6 +58,8 @@ class TrussController:
     def __init__(self, document, obj=None):
         self.document = document
         self.object = obj
+        if obj is not None:
+            resynchronize_accepted_snapshots(obj)
         self._preview = None
         self._preview_signature = None
         self._point_callbacks = []

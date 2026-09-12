@@ -192,6 +192,10 @@ def make_panel():
 
 
 class TrussPanelContractTests(unittest.TestCase):
+    def test_nominal_lengths_collapse_numerically_equal_choices(self):
+        self.assertEqual(panel_module.distinct_nominal_lengths(
+            (1000., 1000.+5e-8, 1250., 1250.+5e-7)), (1000., 1250.))
+
     def test_get_config_uses_endpoint_distance_and_preserves_independent_physical_roles(self):
         panel = make_panel()
         panel.end_inputs = [Number(0), Number(6), Number(8)]
@@ -230,6 +234,7 @@ class TrussPanelContractTests(unittest.TestCase):
 
     def test_role_editor_keeps_profile_ref_and_maps_label_to_id(self):
         previous = config_fixture()["role_specs"]["TOP_CHORD"]
+        previous["physical_fit"], previous["physical_fit_gap"] = "ToChord", 4.5
         profile = profile_catalog.get(CHANNEL_DESIGNATION)
         geometry = profiles.build_section_geometry(profile.definition)
         insertion = next(item for item in profiles.section_insertion_references(geometry)
@@ -245,6 +250,7 @@ class TrussPanelContractTests(unittest.TestCase):
         self.assertEqual(result["rotation"], 90)
         self.assertEqual(result["assembly"], "Single")
         self.assertEqual(result["section_geometry_mode"], "Simplified")
+        self.assertEqual((result["physical_fit"], result["physical_fit_gap"]), ("ToChord", 4.5))
         self.assertEqual(previous["insertion"], "centroid")
 
     def test_profile_refs_from_other_families_are_supported(self):

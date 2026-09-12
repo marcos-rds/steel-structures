@@ -62,7 +62,7 @@ class TrussCoreBoundaryTests(unittest.TestCase):
             self.assertEqual(item.spec.rotation,90. if item.role=="DIAGONAL" else 0.)
 
     def test_scope_is_strict(self):
-        for field,value in (("assembly","DoubleAngle"),("physical_fit","ToChord"),
+        for field,value in (("assembly","DoubleAngle"),
                             ("section_geometry_mode","Unknown"),("color",[2,0,0])):
             data=config()
             data["role_specs"]["DIAGONAL"][field]=value

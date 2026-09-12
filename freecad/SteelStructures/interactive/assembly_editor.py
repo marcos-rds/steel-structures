@@ -1,6 +1,7 @@
 """Compact composition editor built on the existing role profile dialog."""
 from PySide import QtCore, QtGui, QtWidgets
-from .truss_task_panel import _RoleProfileDialog, role_spec_from_options
+from .truss_task_panel import (_RoleProfileDialog, distinct_nominal_lengths,
+                               role_spec_from_options)
 from .assembly_preview import AssemblyPreview
 from ..trusses.assemblies import (ASSEMBLY_MODES, compatible_modes,
                                  configure_assembly, role_assembly_spec)
@@ -8,13 +9,14 @@ from ..assemblies.transforms import SectionTransform
 
 
 class AssemblyEditor(_RoleProfileDialog):
-    def __init__(self, document, title, spec, parent=None, nominal_lengths=(1000.,)):
+    def __init__(self, document, title, spec, parent=None, nominal_lengths=(1000.,),
+                 fit_allowed=True):
         super().__init__(document, title, spec, parent)
         self._building = True
         self._last_mode = spec.get("assembly", "Single")
         self._notice = ""
         self._profile_choices = {}
-        self.nominal_lengths = tuple(sorted(set(nominal_lengths)))
+        self.nominal_lengths = distinct_nominal_lengths(nominal_lengths)
         self.mode = QtWidgets.QComboBox()
         for key, label in ASSEMBLY_MODES:
             self.mode.addItem(label, key)
@@ -55,6 +57,24 @@ class AssemblyEditor(_RoleProfileDialog):
             self.component_labels.append(label)
             self.composition_form.addRow(label, combo)
         self.layout().insertWidget(0, group)
+        fit_group = QtWidgets.QGroupBox("Ajuste físico")
+        fit_form = QtWidgets.QFormLayout(fit_group)
+        self.physical_fit = QtWidgets.QComboBox()
+        self.physical_fit.addItem("Nenhum", "None")
+        if fit_allowed:
+            self.physical_fit.addItem("Ajustar ao banzo", "ToChord")
+        selected_fit = spec.get("physical_fit", "None")
+        self.physical_fit.setCurrentIndex(max(0, self.physical_fit.findData(selected_fit)))
+        self.physical_fit_gap = QtWidgets.QDoubleSpinBox()
+        self.physical_fit_gap.setRange(0., 1e6)
+        self.physical_fit_gap.setDecimals(3)
+        self.physical_fit_gap.setSuffix(" mm")
+        self.physical_fit_gap.setValue(float(spec.get("physical_fit_gap", 0.)))
+        self.physical_fit_gap.setToolTip(
+            "Recuo axial ao longo do eixo do próprio membro; não representa folga normal nem espessura de chapa.")
+        fit_form.addRow("Modo:", self.physical_fit)
+        fit_form.addRow("Gap axial:", self.physical_fit_gap)
+        self.layout().insertWidget(1, fit_group)
         self.preview = AssemblyPreview()
         self.preview.setMaximumHeight(250)
         self.options.orientation_panel._preview_layout.insertWidget(0, self.preview, 1)
@@ -108,7 +128,8 @@ class AssemblyEditor(_RoleProfileDialog):
                        self.angle_arrangement.currentIndexChanged, self.options.profile.currentIndexChanged,
                        self.options.category.currentIndexChanged, self.options.series.currentIndexChanged,
                        self.options.insertion.currentTextChanged, self.options.rotation.valueChanged,
-                       self.options.colorChanged, self.options.sectionGeometryModeChanged):
+                       self.options.colorChanged, self.options.sectionGeometryModeChanged,
+                       self.physical_fit.currentIndexChanged, self.physical_fit_gap.valueChanged):
             signal.connect(self._queue_refresh)
         for combo in self.component_orientations:
             combo.currentIndexChanged.connect(self._queue_refresh)
@@ -166,6 +187,8 @@ class AssemblyEditor(_RoleProfileDialog):
 
     def role_spec(self):
         role = role_spec_from_options(self._previous, self.options)
+        role["physical_fit"] = self.physical_fit.currentData()
+        role["physical_fit_gap"] = float(self.physical_fit_gap.value())
         mode = self.mode.currentData()
         transforms = None
         if mode == "SpacedPair":
@@ -201,6 +224,7 @@ class AssemblyEditor(_RoleProfileDialog):
         self.options.orientation_panel.setTitle("Orientação do conjunto" if multiple else "Orientação da seção")
         self.options.orientation_panel._labels[0].setText("Rotação do conjunto:" if multiple else "Rotação da seção:")
         self.options.rotation.setToolTip("Gira o conjunto, incluindo os eixos dos componentes." if multiple else "Rotação da seção.")
+        self.physical_fit_gap.setEnabled(self.physical_fit.currentData() != "None")
         try:
             role = self.role_spec()
             from ..trusses.assembly_preview import role_realization

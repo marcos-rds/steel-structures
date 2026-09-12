@@ -149,12 +149,19 @@ def expand_run(item):
             end_global=component.end_global, section_u_global=frame.u,
             section_transform=asdict(component.section_transform),
             spec=replace(item.spec, rotation=0.)))
-    for connector in realization.interconnectors:
+    items.extend(interconnector_items(item, realization.interconnectors, assembly.assembly_key))
+    return tuple(items)
+
+
+def interconnector_items(item, connectors, assembly_key="ASSEMBLY"):
+    """Materialize connector members while preserving their C4 identities."""
+    items = []
+    for connector in connectors:
         identity = (item.key,)+connector.stable_identity
         # Rendered physical members have their own profile and frame, but no
         # new topology endpoints. start/end node keys remain run provenance.
         items.append(replace(item, key=json.dumps(identity, separators=(",", ":")),
-            run_key=item.key, assembly_key=assembly.assembly_key, component_key="",
+            run_key=item.key, assembly_key=assembly_key, component_key="",
             element_kind="Interconnector", interconnector_key=connector.interconnector_key,
             slot_key=connector.slot_key, generated_element_key=connector.generated_element_key,
             element_label=connector.label.split(" / Face")[0]+(" / 2" if identity[-1] == "SECONDARY" else ""),

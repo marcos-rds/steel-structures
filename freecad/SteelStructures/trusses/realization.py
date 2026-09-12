@@ -98,7 +98,8 @@ def build_candidate(config, applied=None):
     specs = {}
     for role in ROLES + ("END_POST_LEFT", "END_POST_RIGHT"):
         spec = MemberSpec(**config["role_specs"][role])
-        if (spec.physical_fit != "None"
+        if (spec.physical_fit not in ("None", "ToChord", "GussetAware", "Custom")
+                or not math.isfinite(spec.physical_fit_gap) or spec.physical_fit_gap < 0
                 or spec.section_geometry_mode not in ("Detailed", "Simplified")
                 or not math.isfinite(spec.rotation) or len(spec.color) != 3
                 or not all(math.isfinite(v) and 0 <= v <= 1 for v in spec.color)
@@ -129,7 +130,9 @@ def build_candidate(config, applied=None):
         items.extend(expand_run(RealizationItem(run.key, run.role, run.start_node_key, run.end_node_key,
                                      a, b, transform_point(a, frame), transform_point(b, frame),
                                      section_u, specs[spec_key])))
-    return Candidate(config, stations, graph, runs, tuple(items), warnings)
+    candidate = Candidate(config, stations, graph, runs, tuple(items), warnings)
+    from .fitting import apply_physical_fits
+    return replace(candidate, items=apply_physical_fits(candidate, frame))
 
 
 def structural_signature(candidate):

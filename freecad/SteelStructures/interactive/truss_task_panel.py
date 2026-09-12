@@ -112,6 +112,15 @@ def point_distance(start, end):
     return math.sqrt(sum((b - a) ** 2 for a, b in zip(start, end)))
 
 
+def distinct_nominal_lengths(values):
+    """Collapse numerically equivalent run lengths before choosing label/combo."""
+    result = []
+    for value in sorted(float(item) for item in values):
+        if not result or not math.isclose(value, result[-1], rel_tol=1e-9, abs_tol=1e-7):
+            result.append(value)
+    return tuple(result)
+
+
 def role_geometry(spec):
     ref = ProfileRef(**spec["profile_ref"])
     _category, _series, designation = profile_catalog.selection_for_ref(ref)
@@ -542,7 +551,8 @@ class TrussTaskPanel:
         )
         from ..trusses.assemblies import ASSEMBLY_MODES
         composition = dict(ASSEMBLY_MODES)[spec.get("assembly", "Single")]
-        text = f"{designation}\nComposição: {composition}  ..."
+        fit = " · ajuste ao banzo" if spec.get("physical_fit", "None") == "ToChord" else ""
+        text = f"{designation}\nComposição: {composition}{fit}  ..."
         button.setText(text)
         button.setToolTip(text + f"\n{insertion} · {spec['rotation']:g}°\nAbrir perfil, composição e orientação")
         if spec.get("assembly", "Single") == "Single":
@@ -572,7 +582,9 @@ class TrussTaskPanel:
         title = dict(ROLE_LABELS)[role]
         from .assembly_editor import AssemblyEditor
         dialog = AssemblyEditor(self.document, title, self._role_specs[role], self.form,
-                                nominal_lengths=self._role_nominal_lengths(role))
+                                nominal_lengths=self._role_nominal_lengths(role),
+                                fit_allowed=("END_POST" if role.startswith("END_POST_") else role)
+                                in ("DIAGONAL", "VERTICAL", "END_POST"))
         if dialog.exec() == QtWidgets.QDialog.Accepted:
             self._role_specs[role] = dialog.role_spec()
             self._update_role_button(role)
@@ -597,7 +609,7 @@ class TrussTaskPanel:
                 key += "_LEFT" if (a[0]+b[0])/2 < config["span"]/2 else "_RIGHT"
             if key == role:
                 lengths.append(math.dist(a, b))
-        return tuple(sorted(set(lengths))) or (config["span"],)
+        return distinct_nominal_lengths(lengths) or (config["span"],)
 
     def _vector_inputs(self, value, *, normal=False):
         container = QtWidgets.QWidget()
