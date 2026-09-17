@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from ..regeneration import RegenerationAction, RegenerationPlan
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 GENERATOR_VERSION = 1
 ROLES = ("TOP_CHORD", "BOTTOM_CHORD", "VERTICAL", "DIAGONAL", "END_POST")
 CONTINUITIES = ("Continuous", "SegmentAtBreaks", "SegmentAtEveryNode")

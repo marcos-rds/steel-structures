@@ -651,11 +651,10 @@ class StructuralMemberProxy:
         if assembly_transform:
             import json
             from .assemblies.transforms import SectionTransform, transform_section
-            from .profiles.geometry import Point2D
             transform = SectionTransform(**json.loads(assembly_transform))
-            geometry, _references = transform_section(geometry, transform)
-            translation = transform.point(Point2D(tx, ty))
-            tx, ty = translation.x, translation.y
+            geometry, references = transform_section(geometry, transform)
+            reference = next((r for r in references if str(obj.Insertion) in (r.id,r.label)), references[0])
+            tx, ty = -reference.point.x, -reference.point.y
         face = section_geometry_to_face(geometry)
         face.translate(App.Vector(tx + obj.OffsetX.Value, ty + obj.OffsetY.Value, 0.0))
 
@@ -699,6 +698,10 @@ class StructuralMemberProxy:
                 return
             if not is_orthogonal_plane(normal, LENGTH_TOLERANCE):
                 cuts.append(PlaneCutSpec(prefix, normal, point_local))
+        from .fitting.freecad_adapter import composed_plane_cuts
+        composed, composed_ends = composed_plane_cuts(obj, shape_placement)
+        if composed:
+            cuts = [cut for cut in cuts if cut.adjusted_end not in composed_ends] + list(composed)
         if cuts:
             cut_result = build_plane_cuts(
                 Part, App.Vector, face, total_length, cuts, LENGTH_TOLERANCE

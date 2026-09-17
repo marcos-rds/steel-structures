@@ -82,4 +82,8 @@ def transform_section(geometry, transform):
                           inner_paths=tuple(transform_path(p, transform) for p in geometry.inner_paths),
                           origin=transform.point(geometry.origin), bounds=_bounds(outer),
                           dimension_stations=())
+    bounds = transformed.bounds
+    references = tuple(replace(r, point=Point2D(
+        (bounds.min_x+bounds.max_x)/2., (bounds.min_y+bounds.max_y)/2.))
+        if r.id == "envelope_center" else r for r in references)
     return transformed, references

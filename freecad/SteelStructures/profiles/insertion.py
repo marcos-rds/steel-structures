@@ -37,6 +37,9 @@ def section_insertion_references(geometry: SectionGeometry2D):
         inner = geometry.outer_path.segments[3].start
         values = (
             ("centroid", "Centroide", geometry.origin),
+            ("envelope_center", "Centro do envelope", Point2D(
+                (bounds.min_x + bounds.max_x) / 2.0,
+                (bounds.min_y + bounds.max_y) / 2.0)),
             ("outer_corner", "Quina externa", Point2D(bounds.min_x, bounds.min_y)),
             ("top_tip", "Ponta superior", Point2D(bounds.min_x, bounds.max_y)),
             ("right_tip", "Ponta direita", Point2D(bounds.max_x, bounds.min_y)),

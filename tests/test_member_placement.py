@@ -169,12 +169,22 @@ def load_member():
     catalog.series_for_category = lambda _category: ["Perfis W"]
     catalog.insertion_options = lambda _profile: ("Centroide",)
     paths = types.ModuleType(f"{package_name}.paths"); paths.OBJECT_ICON = "member.svg"
+    fitting = types.ModuleType(f"{package_name}.fitting")
+    fitting.__path__ = []
+    fitting_adapter = types.ModuleType(f"{package_name}.fitting.freecad_adapter")
+    fitting_adapter.composed_plane_cuts = lambda _obj, _placement: ((), set())
     injected = {package_name: package, "FreeCAD": app, "Part": part,
-                f"{package_name}.profile_catalog": catalog, f"{package_name}.paths": paths}
+                f"{package_name}.profile_catalog": catalog, f"{package_name}.paths": paths,
+                f"{package_name}.fitting": fitting,
+                f"{package_name}.fitting.freecad_adapter": fitting_adapter}
     old = {name: sys.modules.get(name) for name in injected}; sys.modules.update(injected)
     spec = importlib.util.spec_from_file_location(f"{package_name}.member", MEMBER)
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    persistent = {package_name, f"{package_name}.fitting",
+                  f"{package_name}.fitting.freecad_adapter"}
     for name, previous in old.items():
+        if name in persistent:
+            continue
         if previous is None: sys.modules.pop(name, None)
         else: sys.modules[name] = previous
     return module

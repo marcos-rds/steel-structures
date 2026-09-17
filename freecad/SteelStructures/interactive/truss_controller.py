@@ -49,6 +49,11 @@ class TrussScenePreview:
         self.node.addChild(candidate)
         self.shape, self.colors = compound, list(colors)
 
+    def frame(self, view):
+        """Frame only this preview branch while preserving camera orientation."""
+        viewport = view.getViewer().getSoRenderManager().getViewportRegion()
+        view.getCameraNode().viewAll(self.node, viewport, 1.1)
+
     def remove(self):
         if self.scene_graph.findChild(self.node) >= 0:
             self.scene_graph.removeChild(self.node)
@@ -58,23 +63,35 @@ class TrussController:
     def __init__(self, document, obj=None):
         self.document = document
         self.object = obj
+        self.opening_warnings = []
         if obj is not None:
-            resynchronize_accepted_snapshots(obj)
+            try:
+                resynchronize_accepted_snapshots(obj)
+            except (ValueError, RuntimeError, ReferenceError) as exc:
+                # Snapshot repair is useful after Undo/Redo, but it is not a
+                # prerequisite for editing the truss definition. In particular,
+                # a temporarily unresolved associative manual override belongs
+                # to the generated child and must not prevent opening its owner.
+                message = "Override manual preservado: " + str(exc)
+                self.opening_warnings.append(message)
+                App.Console.PrintWarning("Steel Structures: "+message+"\n")
         self._preview = None
         self._preview_signature = None
+        self._initial_frame_pending = obj is None
         self._point_callbacks = []
         self._view = None
         self.timings = {}
         self.closed = False
-        self._station_config = None
         self.last_candidate = None
 
     def candidate(self, config):
         config = resolve_linked_reference(self.document, config, self.object)
-        applied = (decode_state(self.object.AppliedState)["candidate"]["config"]
-                   if self.object is not None else self._station_config)
+        if self.object is not None:
+            applied_config = decode_state(self.object.AppliedState)["candidate"]["config"]
+            applied = build_candidate(applied_config)
+        else:
+            applied = self.last_candidate
         candidate = build_candidate(config, applied)
-        self._station_config = candidate.config
         self.last_candidate = candidate
         return candidate
 
@@ -84,13 +101,24 @@ class TrussController:
         self.timings["pure_seconds"] = perf_counter()-started
         config = candidate.config
         definition = EnvelopeDefinition(config["envelope_type"], config["span"], config["height"], config["apex_position"])
+        from ..trusses.connections import resolve_truss_connections
+        resolutions, orphan_diagnostics, _canonical = resolve_truss_connections(
+            candidate, (0., 0., 1.))
+        connections = [dict(node_key=value.intent.node_key,
+                            form=value.intent.form.value,
+                            participants=[dict(run_key=p.run_key, role=p.role, end=p.end)
+                                          for p in value.participants],
+                            diagnostics=[d.message for d in value.diagnostics])
+                       for value in resolutions]
         return dict(nodes=[asdict(n) for n in candidate.graph.nodes],
                     edges=[asdict(e) for e in candidate.graph.edges],
                     stations=[asdict(s) for s in candidate.stations.stations],
                     envelope=paths(definition), warnings=list(candidate.warnings),
                     effective=candidate.config["panelization_result"], topology_mode=candidate.config["topology_mode"],
                     left_panels=candidate.stations.left_panels, right_panels=candidate.stations.right_panels,
-                    reference_base=config.get("reference_edge","") if config.get("reference_mode")=="DraftRectangle" else "")
+                    reference_base=config.get("reference_edge","") if config.get("reference_mode")=="DraftRectangle" else "",
+                    connections=connections,
+                    connection_diagnostics=[d.message for d in orphan_diagnostics])
 
     def preview3d(self, config, enabled=True):
         if not enabled:
@@ -115,9 +143,18 @@ class TrussController:
             shapes.append(shape)
             colors.append(tuple(item.spec.color))
         compound = Part.makeCompound(shapes)
+        view = Gui.activeDocument().activeView()
         if self._preview is None:
-            self._preview = TrussScenePreview(Gui.activeDocument().activeView().getSceneGraph())
+            self._preview = TrussScenePreview(view.getSceneGraph())
         self._preview.update(shapes, colors, compound)
+        if self._initial_frame_pending:
+            self._initial_frame_pending = False
+            try:
+                self._preview.frame(view)
+            except (AttributeError, RuntimeError) as exc:
+                App.Console.PrintWarning(
+                    "Steel Structures: nÃ£o foi possÃ­vel enquadrar a preview inicial: "
+                    +str(exc)+"\n")
         self._preview_signature = key
         self.timings["preview_seconds"] = perf_counter()-started
 

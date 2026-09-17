@@ -56,10 +56,13 @@ def snapshot(obj=None, values=None):
                          prefix+"FixedPlaneNormal": App.Vector()})
     defaults.update({name: "" for name in OUTPUTS})
     if obj is not None:
-        defaults.update({name: _copy(getattr(obj, name)) for name in INPUTS})
+        defaults.update({name: _copy(getattr(obj, name)) for name in INPUTS if hasattr(obj, name)})
         if hasattr(obj, "AssemblySectionTransform"):
             defaults["AssemblySectionTransform"] = str(obj.AssemblySectionTransform)
         defaults["ReferenceTarget"] = obj
+        for name in ("PhysicalFitPlan", "PhysicalFitAutoState", "PhysicalFitStatus"):
+            if hasattr(obj, name):
+                defaults[name] = str(getattr(obj, name))
     defaults.update(values or {})
     for name in ("Rotation", "OffsetX", "OffsetY", "StartExtension", "EndExtension"):
         if not hasattr(defaults[name], "Value"):
@@ -111,6 +114,8 @@ def prepared_item(item, child=None, values=None):
     values = dict(values) if values is not None else item_values(item)
     from .fitting.freecad_adapter import fitting_inputs, attach_prepared_metadata
     values, plan_text, state_text, status = fitting_inputs(item, child, values)
+    if plan_text is not None:
+        values.update(PhysicalFitPlan=plan_text, PhysicalFitAutoState=state_text)
     result = prepare_member(child, values)
     attach_prepared_metadata(result, plan_text, state_text, status)
     return result
@@ -129,7 +134,22 @@ def signature(obj):
         values.append(value)
     if hasattr(obj, "AssemblySectionTransform"):
         values.append(str(obj.AssemblySectionTransform))
+    values.append(getattr(obj, "PhysicalFitPlan", ""))
     return tuple(values)
+
+
+def apply_fit_properties(obj, result):
+    """Restore optional fitting output from current or legacy detached snapshots."""
+    if hasattr(result, "PhysicalFitPlan"):
+        for name, label in (("PhysicalFitPlan", "Plano de fitting"),
+                            ("PhysicalFitAutoState", "Estado automático"),
+                            ("PhysicalFitStatus", "Diagnóstico de fitting")):
+            if name not in obj.PropertiesList:
+                obj.addProperty("App::PropertyString", name, "Ajuste físico", label)
+            setattr(obj, name, getattr(result, name, ""))
+        obj.setEditorMode("PhysicalFitPlan", 2)
+        obj.setEditorMode("PhysicalFitAutoState", 2)
+        obj.setEditorMode("PhysicalFitStatus", 1)
 
 
 def apply_result(obj, result, color=None):
@@ -157,22 +177,13 @@ def apply_result(obj, result, color=None):
             value = getattr(result, name)
             setattr(obj, name, getattr(value, "Value", value))
         for name in OUTPUTS:
-            setattr(obj, name, getattr(result, name))
+            setattr(obj, name, getattr(result, name, ""))
         if hasattr(result, "AssemblySectionTransform"):
             if "AssemblySectionTransform" not in obj.PropertiesList:
                 obj.addProperty("App::PropertyString", "AssemblySectionTransform", "Assembly")
             obj.AssemblySectionTransform = result.AssemblySectionTransform
             obj.setEditorMode("AssemblySectionTransform", 1)
-        if hasattr(result, "PhysicalFitPlan"):
-            for name, label in (("PhysicalFitPlan", "Plano de fitting"),
-                                ("PhysicalFitAutoState", "Estado automático"),
-                                ("PhysicalFitStatus", "Diagnóstico de fitting")):
-                if name not in obj.PropertiesList:
-                    obj.addProperty("App::PropertyString", name, "Ajuste físico", label)
-                setattr(obj, name, getattr(result, name))
-            obj.setEditorMode("PhysicalFitPlan", 2)
-            obj.setEditorMode("PhysicalFitAutoState", 2)
-            obj.setEditorMode("PhysicalFitStatus", 1)
+        apply_fit_properties(obj, result)
         obj.Length = result.MemberLength
         obj.Shape = result.Shape
         obj.Placement = App.Placement(result.Placement)
@@ -250,8 +261,8 @@ def validate_adjustment_dependencies(children):
         for prefix in ("Start", "End"):
             if str(getattr(child, prefix+"AdjustmentMode")) != "Associative":
                 continue
-            if getattr(child.Proxy, "_last_generated_result", None) is None:
-                raise ValueError("Recompute o membro ajustado antes de Atualizar Treliça: "+child.Label)
+            # Python caches disappear on restore. Validate persisted references
+            # and geometry without requiring a previous detached result.
             reference = unpack_link_sub(getattr(child, prefix+"AdjustmentReference"))
             if reference is None:
                 raise ValueError("Referência de ajuste ausente: "+child.Label)

@@ -19,10 +19,10 @@ class SectionInsertionTests(unittest.TestCase):
 
     def test_equal_angle_references_use_real_centroidal_points(self):
         expected_ids = (
-            "centroid", "outer_corner", "top_tip", "right_tip", "inner_corner",
+            "centroid", "envelope_center", "outer_corner", "top_tip", "right_tip", "inner_corner",
         )
         expected_labels = (
-            "Centroide", "Quina externa", "Ponta superior", "Ponta direita", "Quina interna",
+            "Centroide", "Centro do envelope", "Quina externa", "Ponta superior", "Ponta direita", "Quina interna",
         )
         for designation in ("L40x3", "L100x9", "L1/2x1/8", "L2x1/4", "L6x1/2", "L8x3/4"):
             geometry = self.geometry(designation)
@@ -40,6 +40,10 @@ class SectionInsertionTests(unittest.TestCase):
                 self.assertEqual((points["right_tip"].x, points["right_tip"].y),
                                  (geometry.bounds.max_x, geometry.bounds.min_y))
                 self.assertEqual(points["inner_corner"], inner)
+                center = points["envelope_center"]
+                self.assertNotEqual(center, points["centroid"])
+                self.assertAlmostEqual(center.x, (geometry.bounds.min_x+geometry.bounds.max_x)/2.)
+                self.assertAlmostEqual(center.y, (geometry.bounds.min_y+geometry.bounds.max_y)/2.)
 
     def test_every_reference_translation_places_its_point_on_axis(self):
         for designation in ("L40x3", "L100x9"):

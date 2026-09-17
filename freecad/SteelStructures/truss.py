@@ -34,6 +34,7 @@ def default_config():
                 panel_count=6, topology_preset="Warren", top_continuity="Continuous",
                 bottom_continuity="Continuous", left_panels=None, right_panels=None,
                 start=[0.,0.,0.], end=[10000.,0.,0.], plane_normal=[0.,-1.,0.],
+                connection_intents={},
                 role_specs={role: dict(profile_ref=asdict(chord if role in ("TOP_CHORD","BOTTOM_CHORD") else angle),
                                       insertion="centroid", rotation=(-90. if role=="TOP_CHORD" else 90. if role=="BOTTOM_CHORD" else 180. if role=="END_POST_LEFT" else 0.),
                                       section_geometry_mode="Detailed", color=([.2,.45,.85] if role in ("TOP_CHORD","BOTTOM_CHORD") else [1.,.8,.15] if role=="DIAGONAL" else [1.,.5,.1]),
@@ -145,11 +146,12 @@ def conflicts_for(obj, children, candidate):
         if child.ExpressionEngine:
             conflicts[key] = "Expressões em membro gerado exigem revisão: "+child.Label
         if key not in after:
+            from .fitting.freecad_adapter import has_manual_adjustment
             if any(ref not in groups for ref in child.InList):
                 conflicts[key] = "Filho removido possui referências externas: "+child.Label
             if (child.StartExtension.Value or child.EndExtension.Value
                     or child.OffsetX.Value or child.OffsetY.Value
-                    or str(child.StartAdjustmentMode) != "None" or str(child.EndAdjustmentMode) != "None"):
+                    or has_manual_adjustment(child)):
                 conflicts[key] = "Remoção descartaria extensões/ajustes manuais: "+child.Label
     return conflicts
 
@@ -280,7 +282,7 @@ class StructuralTrussProxy:
             return
         self._updating = True
         try:
-            if obj.SchemaVersion not in (1, 2, 3, SCHEMA_VERSION):
+            if obj.SchemaVersion not in (1, 2, 3, 4, SCHEMA_VERSION):
                 raise ValueError("SchemaVersion não suportada.")
             state = decode_state(obj.AppliedState)
             applied = build_candidate(state["candidate"]["config"])
@@ -322,7 +324,7 @@ class StructuralTrussProxy:
         for name in ("TopologyPreset", "EnvelopeType", "PanelCount", "TopChordContinuity",
                      "BottomChordContinuity", "PanelizationMode", "LeftPanels", "RightPanels"):
             obj.setEditorMode(name, 1)
-        if obj.SchemaVersion not in (1, 2, 3, SCHEMA_VERSION):
+        if obj.SchemaVersion not in (1, 2, 3, 4, SCHEMA_VERSION):
             obj.GenerationState = "UnsupportedSchema"
             obj.NeedsRegeneration = True
 
@@ -387,7 +389,16 @@ class StructuralTrussViewProvider:
 
     def doubleClicked(self, view):
         from .interactive.truss_controller import open_truss_panel
-        open_truss_panel(view.Object.Document, view.Object)
+        try:
+            open_truss_panel(view.Object.Document, view.Object)
+        except Exception as exc:
+            # FreeCAD falls back to the default Label editor when an object
+            # double-click handler escapes or returns false. A truss always
+            # owns this gesture, including when its candidate has a diagnostic.
+            App.Console.PrintWarning(
+                "Steel Structures: não foi possível abrir o Gerador de Treliças: "
+                + str(exc) + "\n"
+            )
         return True
 
     def setupContextMenu(self, view, menu):

@@ -217,6 +217,17 @@ class MemberPlaneCutTests(unittest.TestCase):
         self.assertEqual((forward.pre_start, forward.pre_end),
                          (reverse.pre_start, reverse.pre_end))
 
+    def test_composed_same_end_planes_keep_their_individual_axis_stations(self):
+        cuts = (PlaneCutSpec("End", (1,0,1), axis_station=900.),
+                PlaneCutSpec("End", (-1,0,1), axis_station=950.))
+        result = build_plane_cuts(FakePart, Vector, SectionFace(), 900., cuts)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.shape.common_count, 2)
+        for clipped, normal, station in ((result.shape,(-1,0,1),950.),
+                                        (result.shape.prism,(1,0,1),900.)):
+            for point in clipped.cap_vertices:
+                self.assertAlmostEqual(normal[0]*point.x+normal[2]*(point.z-station),0.)
+
 
 if __name__ == "__main__":
     unittest.main()

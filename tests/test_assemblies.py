@@ -182,6 +182,11 @@ class SectionTransformTests(unittest.TestCase):
                     self.assertAlmostEqual(changed.outer_path.signed_area, geometry.outer_path.signed_area, places=6)
                     self.assertEqual(changed.origin, transform.point(geometry.origin))
                     for old, new in zip(section_insertion_references(geometry), refs):
+                        if old.id == "envelope_center":
+                            self.assertEqual(new.id, old.id)
+                            self.assertAlmostEqual(new.point.x,(changed.bounds.min_x+changed.bounds.max_x)/2.)
+                            self.assertAlmostEqual(new.point.y,(changed.bounds.min_y+changed.bounds.max_y)/2.)
+                            continue
                         self.assertEqual(new.point, transform.point(old.point))
                         self.assertEqual(new.id, old.id)
                         # T(point - insertion) == T(point) - T(insertion)

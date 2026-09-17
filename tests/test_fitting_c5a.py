@@ -76,7 +76,7 @@ class PhysicalFitCoreTests(unittest.TestCase):
         encoded = dumps(plan)
         self.assertEqual(loads(encoded), plan)
         self.assertEqual(dumps(loads(encoded)), encoded)
-        self.assertIn('"schema_version":1', encoded)
+        self.assertIn('"schema_version":2', encoded)
 
     def test_face_and_edge_adapt_to_the_same_pure_primitives(self):
         policy = FittingPolicy(PhysicalFitMode.TO_CHORD)

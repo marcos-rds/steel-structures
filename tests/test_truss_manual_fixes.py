@@ -175,6 +175,143 @@ class ManualFixTests(unittest.TestCase):
         view.Visibility = True; proxy.onChanged(view, "Visibility")
         self.assertEqual([c.ViewObject.Visibility for c in children], [True, False, True])
 
+    def test_truss_controller_opening_does_not_require_resolved_manual_override(self):
+        warnings = []
+        app = SimpleNamespace(Console=SimpleNamespace(
+            PrintWarning=lambda value: warnings.append(value)))
+        controller_type = definition(
+            "interactive/truss_controller.py", "TrussController",
+            dict(App=app, Gui=SimpleNamespace()),
+        )
+        owner = object()
+        for problem in (None, "Referência de ajuste ausente: Diagonal",
+                        "Referência associativa removida: Diagonal"):
+            with self.subTest(problem=problem):
+                namespace = controller_type.__init__.__globals__
+                namespace["resynchronize_accepted_snapshots"] = (
+                    (lambda _obj: 0) if problem is None else
+                    (lambda _obj, message=problem: (_ for _ in ()).throw(ValueError(message)))
+                )
+                controller = controller_type("document", owner)
+                self.assertEqual(controller.object, owner)
+                self.assertEqual(controller.opening_warnings, [] if problem is None else [
+                    "Override manual preservado: " + problem])
+        self.assertEqual(len(warnings), 2)
+
+    def test_new_truss_frames_only_its_first_coin_preview(self):
+        camera_calls = []
+        camera = SimpleNamespace(viewAll=lambda node, viewport, slack:
+                                 camera_calls.append((node, viewport, slack)))
+        viewport = object()
+        view = SimpleNamespace(
+            getCameraNode=lambda: camera,
+            getViewer=lambda: SimpleNamespace(getSoRenderManager=lambda:
+                SimpleNamespace(getViewportRegion=lambda: viewport)))
+        preview_type = definition(
+            "interactive/truss_controller.py", "TrussScenePreview", {})
+        preview = object.__new__(preview_type)
+        preview.node = object()
+        preview.frame(view)
+        self.assertEqual(camera_calls, [(preview.node, viewport, 1.1)])
+
+        class Shape:
+            Placement = None
+            def copy(self):
+                return Shape()
+        class ScenePreview:
+            instances = []
+            def __init__(self, scene_graph):
+                self.node = object()
+                self.scene_graph = scene_graph
+                self.frames = []
+                ScenePreview.instances.append(self)
+            def update(self, shapes, colors, compound):
+                self.shape, self.colors = compound, colors
+            def frame(self, current_view):
+                self.frames.append(current_view)
+        active_view = SimpleNamespace(getSceneGraph=lambda: object())
+        gui = SimpleNamespace(activeDocument=lambda:
+                              SimpleNamespace(activeView=lambda: active_view))
+        app = SimpleNamespace(Console=SimpleNamespace(PrintWarning=lambda _text: None))
+        controller_type = definition(
+            "interactive/truss_controller.py", "TrussController",
+            dict(App=app, Gui=gui, resynchronize_accepted_snapshots=lambda _obj: None))
+        globals_ = controller_type.preview3d.__globals__
+        globals_.update(
+            dumps=lambda candidate: candidate.signature,
+            bound_children=lambda *_args: {}, decode_state=lambda _value: {},
+            prepare_batch=lambda candidate, _children: {
+                item.key: SimpleNamespace(Shape=Shape(), Placement=None)
+                for item in candidate.items},
+            Part=SimpleNamespace(makeCompound=lambda shapes: tuple(shapes)),
+            TrussScenePreview=ScenePreview, perf_counter=lambda: 0.)
+        item = SimpleNamespace(key="MEMBER", spec=SimpleNamespace(color=(1., .5, 0.)))
+        make_candidate = lambda signature: SimpleNamespace(signature=signature, items=(item,))
+        document = SimpleNamespace(Objects=[])
+
+        created = controller_type(document)
+        created.candidate = lambda config: make_candidate(config["signature"])
+        created.preview3d({"signature": "initial"})
+        created.preview3d({"signature": "changed"})
+        self.assertEqual(ScenePreview.instances[-1].frames, [active_view])
+        self.assertEqual(document.Objects, [])
+
+        owner = SimpleNamespace(AppliedState="state")
+        edited = controller_type(document, owner)
+        edited.candidate = lambda config: make_candidate(config["signature"])
+        edited.preview3d({"signature": "existing"})
+        self.assertEqual(ScenePreview.instances[-1].frames, [])
+        self.assertEqual(document.Objects, [])
+
+    def test_truss_double_click_is_always_consumed_even_when_opening_fails(self):
+        import sys
+        app_warnings = []
+        app = SimpleNamespace(Console=SimpleNamespace(
+            PrintWarning=lambda value: app_warnings.append(value)))
+        provider = definition(
+            "truss.py", "StructuralTrussViewProvider",
+            dict(App=app, TRUSS_ICON="icon",
+                 __name__="freecad.SteelStructures.truss",
+                 __package__="freecad.SteelStructures"),
+        )
+        view = SimpleNamespace(Object=SimpleNamespace(Document="document"))
+        def fail(*_args):
+            raise ValueError("referência temporariamente inválida")
+        module = SimpleNamespace(open_truss_panel=fail)
+        with patch.dict(sys.modules, {
+                "freecad.SteelStructures.interactive.truss_controller": module}):
+            self.assertTrue(provider.doubleClicked(object.__new__(provider), view))
+        self.assertIn("não foi possível abrir", app_warnings[0])
+        self.assertIn("referência temporariamente inválida", app_warnings[0])
+
+    def test_adjustments_are_outside_controlled_state_but_real_external_edits_remain(self):
+        app = SimpleNamespace(Vector=tuple)
+        controlled = (
+            "StartPoint", "EndPoint", "ProfileCategory", "ProfileSeries", "Profile",
+            "Insertion", "Rotation", "SectionGeometryMode", "AxisDefinitionMode", "AxisSource",
+        )
+        controlled_state = definition(
+            "member_batch.py", "controlled_state",
+            dict(App=app, CONTROLLED=controlled, math=math, json=__import__("json")),
+        )
+        child = SimpleNamespace(
+            StartPoint=(0., 0., 0.), EndPoint=(1000., 0., 0.),
+            ProfileCategory="A", ProfileSeries="B", Profile="C",
+            Insertion="Centroide", Rotation=0., SectionGeometryMode="Detailed",
+            AxisDefinitionMode="Independent", AxisSource=None,
+            StartAdjustmentMode="Fixed", StartAdjustmentReference=None,
+            EndAdjustmentMode="None", EndAdjustmentReference=None,
+            ViewObject=SimpleNamespace(ShapeColor=(1., .5, 0.)),
+            Placement=SimpleNamespace(
+                Base=(0., 0., 0.), Rotation=SimpleNamespace(Q=(0., 0., 0., 1.))),
+        )
+        accepted = controlled_state(child)
+        child.StartAdjustmentMode = "Associative"
+        child.StartAdjustmentReference = object()
+        self.assertEqual(controlled_state(child), accepted)
+        child.Profile = "external edit"
+        self.assertNotEqual(controlled_state(child), accepted)
+
     def test_role_controls_follow_candidate_edges(self):
         panel = make_panel()
         panel.role_buttons = {key: Number(0) for key in panel._role_specs}

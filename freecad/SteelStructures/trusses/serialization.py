@@ -14,11 +14,12 @@ def loads(text):
 
 
 def encode_state(candidate, bindings=None):
+    connected = bool(candidate.config.get("connection_intents"))
     fitted = any(s.get("physical_fit", "None") != "None"
                  for s in candidate.config["role_specs"].values())
     assembled = any(s.get("assembly", "Single") != "Single"
                     for s in candidate.config["role_specs"].values())
-    version = SCHEMA_VERSION if fitted else 3 if assembled else 2
+    version = SCHEMA_VERSION if connected else 4 if fitted else 3 if assembled else 2
     return dumps({"schema_version": version, "generator_version": GENERATOR_VERSION,
                   "candidate": asdict(candidate), "bindings": bindings or {}})
 
@@ -26,6 +27,6 @@ def encode_state(candidate, bindings=None):
 def decode_state(text):
     result = loads(text)
     if (type(result.get("schema_version")) is not int or type(result.get("generator_version")) is not int
-            or result["schema_version"] not in (1, 2, 3, SCHEMA_VERSION) or result["generator_version"] != GENERATOR_VERSION):
+            or result["schema_version"] not in (1, 2, 3, 4, SCHEMA_VERSION) or result["generator_version"] != GENERATOR_VERSION):
         raise ValueError("Versão de treliça não suportada; definição aplicada preservada.")
     return result

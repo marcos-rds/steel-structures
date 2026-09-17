@@ -500,6 +500,18 @@ class TrussTaskPanel:
         if before.get("panelization_mode")=="ByTargetDiagonalAngle":
             self.message.setText("Topologia Custom: mantida a quantidade efetiva de painéis; ângulo-alvo desativado.")
 
+    def set_connection_intent(self, node_key, value):
+        """Update the candidate-only stable node mapping; document apply stays transactional."""
+        if value.get("form") == "Direct" and value.get("direct_policy") == "BalancedMiter":
+            from ..trusses.connections import connection_participants
+            from ..connections.resolver import WEB_ROLES
+            candidate = self.controller.candidate(self.get_config())
+            webs = [p for p in connection_participants(candidate, node_key) if p.role in WEB_ROLES]
+            if len(webs) != 2 or webs[0].geometry_key != webs[1].geometry_key:
+                raise ValueError("Meia-esquadria equilibrada requer exatamente duas barras da alma equivalentes.")
+        self._initial.setdefault("connection_intents", {})[node_key] = deepcopy(value)
+        self._refresh()
+
     def _open_topology_editor(self):
         if not self._refresh(): return
         from .truss_topology_editor import TopologyEditor
@@ -907,6 +919,8 @@ class TrussTaskPanel:
             candidate=getattr(self.controller,"last_candidate",None)
             if candidate is not None:
                 effective=candidate.config
+                if "connection_intents" in effective:
+                    self._initial["connection_intents"] = deepcopy(effective["connection_intents"])
                 self._initial.update({k:effective[k] for k in ("topology_mode","topology_preset","base_preset","custom_topology","left_panels","right_panels") if k in effective})
                 self._set_preset_value(effective["topology_preset"])
                 for name,spins in (("start",self.start_inputs),("end",self.end_inputs),("plane_normal",self.normal_inputs)):
@@ -950,6 +964,7 @@ class TrussTaskPanel:
             self.closure.setText(text)
         from ..trusses.validation import human_diagnostics
         warnings = human_diagnostics(model.get("warnings", ()))
+        warnings.extend(getattr(self.controller, "opening_warnings", ()))
         if self._preset_notice: warnings.append(self._preset_notice)
         if hasattr(self,"topology_state") and config.get("topology_mode")=="Custom":
             from ..trusses.preset_contracts import PRESETS

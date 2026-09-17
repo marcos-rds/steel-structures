@@ -322,6 +322,11 @@ def schematic_section_for_geometry(geometry):
         return None
     outline, positions, segments = definition
     real_references = section_insertion_references(geometry)
+    positions = dict(positions)
+    if any(r.id == "envelope_center" for r in real_references):
+        positions["envelope_center"] = (
+            (min(p.x for p in outline)+max(p.x for p in outline))/2.,
+            (min(p.y for p in outline)+max(p.y for p in outline))/2.)
     if any(reference.id not in positions for reference in real_references):
         return None
     references = tuple(

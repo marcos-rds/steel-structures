@@ -22,6 +22,7 @@ class PlaneCutSpec:
     adjusted_end: str
     normal: tuple[float, float, float]
     point: tuple[float, float, float] | None = None
+    axis_station: float | None = None
 
 
 @dataclass(frozen=True)
@@ -281,7 +282,8 @@ def _build_plane_cuts(part_module, vector_type, section_face, axial_length: floa
         normal = normalized_vector(cut.normal, tolerance)
         if normal is None or cut.adjusted_end not in ("Start", "End"):
             return None
-        station = 0.0 if cut.adjusted_end == "Start" else length
+        station = (cut.axis_station if cut.axis_station is not None
+                   else 0.0 if cut.adjusted_end == "Start" else length)
         span = plane_axial_span(
             station, normal, (bounds.XMin, bounds.XMax),
             (bounds.YMin, bounds.YMax), tolerance,
@@ -316,7 +318,7 @@ def _build_plane_cuts(part_module, vector_type, section_face, axial_length: floa
 
 def build_plane_cuts(part_module, vector_type, section_face, axial_length: float,
                      cuts, tolerance: float = 1e-7) -> PlaneCutResult | None:
-    """Defensively clip a member by zero, one, or two independent planes."""
+    """Defensively intersect the planar constraints of member extremities."""
     try:
         return _build_plane_cuts(
             part_module, vector_type, section_face, axial_length,

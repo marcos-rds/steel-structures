@@ -132,7 +132,8 @@ def build_candidate(config, applied=None):
                                      section_u, specs[spec_key])))
     candidate = Candidate(config, stations, graph, runs, tuple(items), warnings)
     from .fitting import apply_physical_fits
-    return replace(candidate, items=apply_physical_fits(candidate, frame))
+    return replace(candidate, items=apply_physical_fits(candidate, frame,
+                                                        applied if isinstance(applied, Candidate) else None))
 
 
 def structural_signature(candidate):

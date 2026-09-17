@@ -37,17 +37,20 @@ def validate_reference(reference):
 
 
 def validate_plan(plan: PhysicalFitPlan):
-    if plan.schema_version != FIT_PLAN_SCHEMA_VERSION:
+    if plan.schema_version not in (1, FIT_PLAN_SCHEMA_VERSION):
         raise ValueError("Versão de PhysicalFitPlan não suportada.")
     if not plan.plan_key or not plan.member_key or not plan.run_key:
         raise ValueError("PhysicalFitPlan requer identidades estáveis.")
-    for expected, action in ((FitEnd.START, plan.start_action), (FitEnd.END, plan.end_action)):
+    for expected, action in ((FitEnd.START, plan.start_action), (FitEnd.END, plan.end_action)) + tuple(
+            (action.end, action) for action in plan.additional_actions):
         if action is None:
             continue
         if action.end != expected:
             raise ValueError("A ação de fitting foi atribuída à ponta incorreta.")
         if not math.isfinite(action.gap) or action.gap < 0:
             raise ValueError("O gap axial deve ser maior ou igual a zero.")
+        if not math.isfinite(action.reference_offset):
+            raise ValueError("A estação axial do plano deve ser finita.")
         if action.reference_key == plan.member_key:
             raise ValueError("Uma referência de fitting não pode ser circular.")
         if action.mode == FitActionMode.PLANE_CUT:

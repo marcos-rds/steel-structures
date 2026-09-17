@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 
-FIT_PLAN_SCHEMA_VERSION = 1
+FIT_PLAN_SCHEMA_VERSION = 2
 
 
 class PhysicalFitMode(str, Enum):
@@ -95,3 +95,4 @@ class PhysicalFitPlan:
     end_action: FitAction | None = None
     diagnostics: tuple[FitDiagnostic, ...] = ()
     schema_version: int = FIT_PLAN_SCHEMA_VERSION
+    additional_actions: tuple[FitAction, ...] = ()
