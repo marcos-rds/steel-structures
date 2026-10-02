@@ -282,10 +282,6 @@ def resolve_connection(intent, participants, node_position, truss_plane_normal):
             directives, extra = _priority(intent, participants)
         return ConnectionResolution(intent, tuple(participants), directives,
                                     tuple(diagnostics)+tuple(extra))
-    if intent.gusset.side != GussetSide.CENTER:
-        return ConnectionResolution(intent, tuple(participants), diagnostics=(ConnectionDiagnostic(
-            "GUSSET_SIDE_NOT_IMPLEMENTED", "Warning",
-            "Somente Gusset Center está implementado nesta etapa; último fitting válido preservado."),))
     directives = tuple(ConnectionFitDirective(
         item.run_key, item.end, "GussetSetback", intent.intent_key,
         reference_offset=intent.gusset.axial_clearance)
@@ -295,4 +291,5 @@ def resolve_connection(intent, participants, node_position, truss_plane_normal):
         return ConnectionResolution(intent, tuple(participants), diagnostics=(ConnectionDiagnostic(
             "GUSSET_PLANE_INVALID", "Warning", "O plano central da chapa é degenerado."),))
     return ConnectionResolution(intent, tuple(participants), directives, gusset_plane=GussetPlane(
-        tuple(node_position), normal, intent.gusset.plate_thickness, intent.gusset.normal_clearance))
+        tuple(node_position), normal, intent.gusset.plate_thickness,
+        intent.gusset.normal_clearance, intent.gusset.side))

@@ -141,10 +141,13 @@ class AssemblyRefinementTests(unittest.TestCase):
         value['role_specs']['DIAGONAL'] = configure_assembly(value['role_specs']['DIAGONAL'], 'Single')
         namespace = dict(__package__='freecad.SteelStructures', resolve_linked_reference=lambda d,c,o:c,
             decode_state=decode_state, build_candidate=build_candidate, bound_children=lambda *args:children,
+            bound_gusset_plates=lambda *args:{}, prepare_gusset_plates=lambda candidate:{},
             conflicts_for=lambda *args:{}, plan_regeneration=plan_regeneration,
             prepare_batch=lambda c,ch:{i.key:None for i in c.items}, set_config=lambda *args:None,
             apply_result=lambda *args:None, controlled_state=lambda c:'state', ROLES=(),
-            accept_state=lambda o,c,result:setattr(o,'GeneratedMembers',list(result.values())))
+            ensure_gusset_registry=lambda obj:None,
+            create_gusset_plate=lambda *args:None, apply_gusset_result=lambda *args:None,
+            accept_state=lambda o,c,result,plates=None:setattr(o,'GeneratedMembers',list(result.values())))
         apply = definition('truss.py', 'apply_truss', namespace)
         apply(document, value, obj)
         after = build_candidate(value)

@@ -243,6 +243,8 @@ class ManualFixTests(unittest.TestCase):
             prepare_batch=lambda candidate, _children: {
                 item.key: SimpleNamespace(Shape=Shape(), Placement=None)
                 for item in candidate.items},
+            preliminary_gusset_outlines=lambda candidate: ((), ()),
+            build_gusset_shape=lambda outline: Shape(),
             Part=SimpleNamespace(makeCompound=lambda shapes: tuple(shapes)),
             TrussScenePreview=ScenePreview, perf_counter=lambda: 0.)
         item = SimpleNamespace(key="MEMBER", spec=SimpleNamespace(color=(1., .5, 0.)))
@@ -352,7 +354,9 @@ class ManualFixTests(unittest.TestCase):
         from freecad.SteelStructures.trusses.preset_contracts import PRESETS
         from freecad.SteelStructures.trusses.drivers import DRIVERS
         namespace = dict(SCHEMA_VERSION=SCHEMA_VERSION, CONTINUITIES=CONTINUITIES,
-                         PRESETS=PRESETS, DRIVERS=DRIVERS)
+                         PRESETS=PRESETS, DRIVERS=DRIVERS,
+                         ensure_gusset_registry=lambda obj: None,
+                         ensure_gusset_defaults=lambda obj: None)
         definition("truss.py", "ensure_c2_properties", namespace)
         proxy_type = definition("truss.py", "StructuralTrussProxy", namespace)
         modes = {}

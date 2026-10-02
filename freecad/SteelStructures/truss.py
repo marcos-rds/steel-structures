@@ -17,13 +17,16 @@ from .trusses.serialization import encode_state, decode_state, dumps, loads
 from .trusses.preset_contracts import PRESETS
 from .trusses.drivers import DRIVERS
 from .truss_reference import resolve_linked_reference, reference_containers
+from .gusset_plate import (apply_gusset_result, create_gusset_plate,
+                           outline_signature)
 
 ROLE_LABELS = {"TOP_CHORD": "Banzo superior", "BOTTOM_CHORD": "Banzo inferior",
                "VERTICAL": "Montantes", "DIAGONAL": "Diagonais", "END_POST": "Fechamentos"}
 PROPERTY_CONFIG = {"EnvelopeType": "envelope_type", "Span": "span", "Height": "height",
                    "ApexPosition": "apex_position", "PanelCount": "panel_count",
                    "TopologyPreset": "topology_preset", "TopChordContinuity": "top_continuity",
-                   "BottomChordContinuity": "bottom_continuity"}
+                   "BottomChordContinuity": "bottom_continuity",
+                   "DefaultGussetThickness": "default_gusset_thickness"}
 
 
 def default_config():
@@ -34,7 +37,7 @@ def default_config():
                 panel_count=6, topology_preset="Warren", top_continuity="Continuous",
                 bottom_continuity="Continuous", left_panels=None, right_panels=None,
                 start=[0.,0.,0.], end=[10000.,0.,0.], plane_normal=[0.,-1.,0.],
-                connection_intents={},
+                connection_intents={}, default_gusset_thickness=10.,
                 role_specs={role: dict(profile_ref=asdict(chord if role in ("TOP_CHORD","BOTTOM_CHORD") else angle),
                                       insertion="centroid", rotation=(-90. if role=="TOP_CHORD" else 90. if role=="BOTTOM_CHORD" else 180. if role=="END_POST_LEFT" else 0.),
                                       section_geometry_mode="Detailed", color=([.2,.45,.85] if role in ("TOP_CHORD","BOTTOM_CHORD") else [1.,.8,.15] if role=="DIAGONAL" else [1.,.5,.1]),
@@ -93,6 +96,21 @@ def ensure_c2_properties(obj):
         obj.setEditorMode(name,2)
 
 
+def ensure_gusset_registry(obj):
+    """Additive C6-B ownership migration; never materializes missing plates."""
+    if "GeneratedGussetPlates" not in obj.PropertiesList:
+        obj.addProperty("App::PropertyLinkListHidden", "GeneratedGussetPlates", "Interno")
+    obj.setEditorMode("GeneratedGussetPlates", 2)
+
+
+def ensure_gusset_defaults(obj):
+    """Additive owner migration for the last accepted per-truss plate default."""
+    if "DefaultGussetThickness" not in obj.PropertiesList:
+        obj.addProperty("App::PropertyLength", "DefaultGussetThickness", "Gusset")
+        obj.DefaultGussetThickness = 10.
+    obj.setEditorMode("DefaultGussetThickness", 1)
+
+
 def set_config(obj, config):
     origin,x,y,z = reference_frame(config)
     proxy = obj.Proxy
@@ -100,6 +118,7 @@ def set_config(obj, config):
     proxy._updating = True
     try:
         ensure_c2_properties(obj)
+        ensure_gusset_defaults(obj)
         for prop,key in PROPERTY_CONFIG.items():
             setattr(obj, prop, config[key])
         obj.Placement = App.Placement(App.Vector(*origin), App.Rotation(
@@ -131,6 +150,46 @@ def bound_children(obj, state):
         result[key] = child
     if set(state["bindings"].values()) != {child.Name for child in members}:
         raise ValueError("Registro e bindings discordam.")
+    return result
+
+
+def bound_gusset_plates(obj):
+    plates = (list(obj.GeneratedGussetPlates)
+              if "GeneratedGussetPlates" in obj.PropertiesList else [])
+    # Recover generated children whose hidden registry was lost/corrupted. The
+    # explicit next apply will either re-register or remove them transactionally.
+    for candidate in getattr(getattr(obj, "Document", None), "Objects", ()):
+        if (candidate not in plates and getattr(candidate, "ParentTruss", None) == obj
+                and getattr(candidate, "GeneratedByTruss", False)
+                and "NodeKey" in getattr(candidate, "PropertiesList", ())):
+            plates.append(candidate)
+    if len({plate.Name for plate in plates}) != len(plates):
+        raise ValueError("Registro contém chapas Gusset duplicadas.")
+    result = {}
+    for plate in plates:
+        node_key = getattr(plate, "NodeKey", "")
+        if (not node_key or node_key in result or getattr(plate, "ParentTruss", None) != obj
+                or getattr(plate, "StableKey", "") != node_key+":gusset-plate"):
+            raise ValueError("Binding inconsistente de chapa Gusset: "+getattr(plate, "Name", ""))
+        result[node_key] = plate
+    return result
+
+
+def prepare_gusset_plates(candidate):
+    """Resolve every pure outline and OCC solid before document mutation."""
+    from .trusses.gussets import preliminary_gusset_outlines
+    from .trusses.gusset_freecad import build_gusset_shape
+    outlines, diagnostics = preliminary_gusset_outlines(candidate)
+    if diagnostics:
+        raise ValueError(" ".join(dict.fromkeys(value.message for value in diagnostics)))
+    result = {}
+    for outline in outlines:
+        if (outline.attachment is not None
+                and outline.attachment.kind == "NominalFallback"):
+            continue
+        if outline.spec.node_key in result:
+            raise ValueError("Mais de uma chapa preliminar foi resolvida para o mesmo NodeKey.")
+        result[outline.spec.node_key] = (outline, build_gusset_shape(outline))
     return result
 
 
@@ -202,15 +261,27 @@ def prepare_batch(candidate, children):
     return prepared
 
 
-def apply_existing_batch(obj, candidate, children, prepared):
+def apply_existing_batch(obj, candidate, children, prepared,
+                         gusset_plates=None, prepared_gussets=None):
     """No OCC after the first mutation. Rebuild backups from inputs, never child.Shape."""
+    gusset_plates = gusset_plates or {}
+    prepared_gussets = prepared_gussets or {}
     backups = {key: getattr(child.Proxy, "_last_generated_result", None) or prepare_member(child)
                for key,child in children.items()}
     colors = {key: tuple(child.ViewObject.ShapeColor) for key,child in children.items()}
     fit_fields = ("PhysicalFitPlan", "PhysicalFitAutoState", "PhysicalFitStatus")
     fit_backups = {key: {name: getattr(child, name) for name in fit_fields
                          if name in child.PropertiesList} for key, child in children.items()}
-    owner_fields = ("AppliedState", "LeftPanels", "RightPanels", "GeneratedMembers", "NeedsRegeneration",
+    plate_fields = ("SchemaVersion", "StableKey", "NodeKey", "GeneratedByTruss", "Thickness",
+                    "EdgeMargin", "MemberOverlap", "Side", "AttachmentMode",
+                    "ChordContact", "TransversePlacement", "AttachmentOffset",
+                    "AttachmentStatus", "AttachmentSurface", "PlateArea", "Volume", "ParentTruss",
+                    "GenerationStatus", "SourceSignature")
+    plate_backups = {key: dict(Shape=plate.Shape.copy(), **{
+        name: getattr(plate, name) for name in plate_fields if name in plate.PropertiesList})
+        for key, plate in gusset_plates.items()}
+    owner_fields = ("AppliedState", "LeftPanels", "RightPanels", "GeneratedMembers",
+                    "GeneratedGussetPlates", "NeedsRegeneration",
                     "GenerationState", "GenerationMessage", "SchemaVersion", "Placement", "RoleSpecs") + tuple(PROPERTY_CONFIG)
     owner_fields += tuple(name for name in ("C2Configuration", "TopologyMode", "ReferenceMode", "ReferenceLinked",
                                            "ReferenceSource", "ReferenceContainers", "PanelizationMode") if hasattr(obj,name))
@@ -220,14 +291,26 @@ def apply_existing_batch(obj, candidate, children, prepared):
             apply_result(children[item.key], prepared[item.key], item.spec.color)
         for child in children.values():
             child.ControlledState = controlled_state(child)
+        for node_key, plate in gusset_plates.items():
+            outline, shape = prepared_gussets[node_key]
+            apply_gusset_result(plate, obj, outline, shape)
         set_config(obj, candidate.config)
-        accept_state(obj, candidate, children)
+        accept_state(obj, candidate, children, gusset_plates)
     except Exception:
         for key,child in children.items():
             apply_result(child, backups[key], colors[key])
             for name, value in fit_backups[key].items():
                 setattr(child, name, value)
             child.ControlledState = controlled_state(child)
+        for key, plate in gusset_plates.items():
+            proxy = plate.Proxy
+            previous = getattr(proxy, "_updating", False)
+            proxy._updating = True
+            try:
+                for name, value in plate_backups[key].items():
+                    setattr(plate, name, value)
+            finally:
+                proxy._updating = previous
         for name,value in owner_backup.items():
             setattr(obj, name, value)
         raise
@@ -275,6 +358,8 @@ class StructuralTrussProxy:
         for name in ("RoleSpecs", "AppliedState", "GeneratedMembers", "RoleGroups"):
             obj.setEditorMode(name, 2)
         ensure_c2_properties(obj)
+        ensure_gusset_registry(obj)
+        ensure_gusset_defaults(obj)
         self._updating = False
 
     def execute(self, obj):
@@ -288,6 +373,14 @@ class StructuralTrussProxy:
             applied = build_candidate(state["candidate"]["config"])
             candidate = build_candidate(config_from_object(obj), applied)
             children = bound_children(obj, state)
+            gusset_plates = bound_gusset_plates(obj)
+            from .trusses.gussets import preliminary_gusset_outlines
+            outlines, plate_diagnostics = preliminary_gusset_outlines(candidate)
+            if plate_diagnostics:
+                raise ValueError(" ".join(dict.fromkeys(d.message for d in plate_diagnostics)))
+            desired_gussets = {value.spec.node_key: value for value in outlines
+                               if (value.attachment is None
+                                   or value.attachment.kind != "NominalFallback")}
             plan = plan_regeneration(candidate, applied, state["bindings"], conflicts_for(obj, children, candidate))
             if plan.conflicts:
                 raise ValueError("; ".join(action.reason for action in plan.conflicts))
@@ -296,9 +389,18 @@ class StructuralTrussProxy:
                 obj.GenerationState = "Pending"
                 obj.GenerationMessage = "Alteração estrutural pendente. Dê duplo clique na treliça e confirme no Gerador."
                 return
-            if any(action.action != "UNCHANGED" for action in plan.actions):
+            if set(gusset_plates) != set(desired_gussets):
+                obj.NeedsRegeneration = True
+                obj.GenerationState = "Pending"
+                obj.GenerationMessage = "Alteração de chapas pendente. Confirme no Gerador."
+                return
+            plates_changed = any(gusset_plates[key].SourceSignature != outline_signature(outline)
+                                 for key, outline in desired_gussets.items())
+            if any(action.action != "UNCHANGED" for action in plan.actions) or plates_changed:
                 prepared = prepare_batch(candidate, children)
-                apply_existing_batch(obj, candidate, children, prepared)
+                prepared_gussets = prepare_gusset_plates(candidate)
+                apply_existing_batch(obj, candidate, children, prepared,
+                                     gusset_plates, prepared_gussets)
             obj.NeedsRegeneration = False
             obj.GenerationState = "Valid"
             obj.GenerationMessage = "; ".join(candidate.warnings)
@@ -319,6 +421,8 @@ class StructuralTrussProxy:
         self._updating = True
         try:
             ensure_c2_properties(obj)
+            ensure_gusset_registry(obj)
+            ensure_gusset_defaults(obj)
         finally:
             self._updating = False
         for name in ("TopologyPreset", "EnvelopeType", "PanelCount", "TopChordContinuity",
@@ -365,7 +469,8 @@ class StructuralTrussViewProvider:
             return
         self._visibility_updating = True
         try:
-            children = list(getattr(view.Object, "GeneratedMembers", ()))
+            children = (list(getattr(view.Object, "GeneratedMembers", ()))+
+                        list(getattr(view.Object, "GeneratedGussetPlates", ())))
             if not view.Visibility:
                 if not hasattr(self, "_hidden_children"):
                     self._hidden_children = {}
@@ -385,7 +490,8 @@ class StructuralTrussViewProvider:
         return TRUSS_ICON
 
     def claimChildren(self):
-        return list(self.Object.RoleGroups)
+        return (list(self.Object.RoleGroups)+
+                list(getattr(self.Object, "GeneratedGussetPlates", ())))
 
     def doubleClicked(self, view):
         from .interactive.truss_controller import open_truss_panel
@@ -413,8 +519,11 @@ class StructuralTrussViewProvider:
         self._visibility_updating = False
 
 
-def accept_state(obj, candidate, children):
+def accept_state(obj, candidate, children, gusset_plates=None):
     obj.GeneratedMembers = [children[key] for key in sorted(children)]
+    if gusset_plates is not None:
+        ensure_gusset_registry(obj)
+        obj.GeneratedGussetPlates = [gusset_plates[key] for key in sorted(gusset_plates)]
     encoded = encode_state(candidate, {key: children[key].Name for key in sorted(children)})
     obj.SchemaVersion = decode_state(encoded)["schema_version"]
     obj.AppliedState = encoded
@@ -431,11 +540,13 @@ def apply_truss(document, config, obj=None):
     applied = build_candidate(state["candidate"]["config"]) if state else None
     candidate = build_candidate(config, applied)
     children = bound_children(obj, state) if state else {}
+    gusset_plates = bound_gusset_plates(obj) if state else {}
     conflicts = conflicts_for(obj, children, candidate) if obj else {}
     plan = plan_regeneration(candidate, applied, state["bindings"] if state else {}, conflicts)
     if plan.conflicts:
         raise ValueError("; ".join(a.reason for a in plan.conflicts))
     prepared = prepare_batch(candidate, children)
+    prepared_gussets = prepare_gusset_plates(candidate)
     source = document.getObject(config.get("reference_source", "")) if config.get("reference_source") else None
     source_visibility = bool(source.ViewObject.Visibility) if source is not None else None
     document.openTransaction("Atualizar Treliça" if obj else "Criar Treliça")
@@ -445,6 +556,7 @@ def apply_truss(document, config, obj=None):
             StructuralTrussProxy(obj)
             StructuralTrussViewProvider(obj.ViewObject)
             obj.DisplayName = obj.Label = "Treliça"+obj.Name.removeprefix("StructuralTruss")
+        ensure_gusset_registry(obj)
         obj.Proxy._updating = True
         set_config(obj, candidate.config)
         result = {}
@@ -479,6 +591,14 @@ def apply_truss(document, config, obj=None):
             apply_result(child, prepared[item.key], item.spec.color)
             child.ControlledState = controlled_state(child)
             result[item.key] = child
+        plate_result = {}
+        for node_key, (outline, shape) in prepared_gussets.items():
+            plate = gusset_plates.get(node_key)
+            if plate is None:
+                plate = create_gusset_plate(document, obj, outline, shape)
+            else:
+                apply_gusset_result(plate, obj, outline, shape)
+            plate_result[node_key] = plate
         groups = {getattr(group, "TrussRole", ""): group for group in obj.RoleGroups}
         for role in ROLES:
             members = [result[i.key] for i in candidate.items if i.role == role]
@@ -514,7 +634,10 @@ def apply_truss(document, config, obj=None):
         for key,child in children.items():
             if key not in result:
                 document.removeObject(child.Name)
-        accept_state(obj, candidate, result)
+        for node_key, plate in gusset_plates.items():
+            if node_key not in plate_result:
+                document.removeObject(plate.Name)
+        accept_state(obj, candidate, result, plate_result)
         if not obj.ViewObject.Visibility:
             obj.ViewObject.Proxy.onChanged(obj.ViewObject, "Visibility")
         document.recompute()
@@ -522,6 +645,13 @@ def apply_truss(document, config, obj=None):
             if ("Invalid" in child.State or child.Shape.isNull() or not child.Shape.isValid()
                     or child.Shape.Volume <= 0 or child.GenerationStatus != "Valid"):
                 raise ValueError("Falha ao aplicar membro: "+child.Name)
+        for plate in plate_result.values():
+            expected_volume = _value(plate.PlateArea)*_value(plate.Thickness)
+            if ("Invalid" in plate.State or plate.Shape.isNull() or not plate.Shape.isValid()
+                    or plate.Shape.Volume <= 0 or plate.GenerationStatus != "Valid"
+                    or abs(plate.Shape.Volume-expected_volume) > max(1e-5, expected_volume*1e-9)
+                    or abs(_value(plate.Volume)-plate.Shape.Volume) > max(1e-5, plate.Shape.Volume*1e-9)):
+                raise ValueError("Falha ao aplicar chapa Gusset: "+plate.Name)
         obj.Proxy._updating = False
         if source is not None:
             source.ViewObject.Visibility = False

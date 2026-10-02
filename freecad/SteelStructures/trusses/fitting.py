@@ -327,7 +327,9 @@ def apply_physical_fits(candidate, frame, applied=None):
                         "Mais de um banzo não colinear chega ao nó; ajuste físico não aplicado nesta ponta."),))
                     continue
                 from .realization import transform_point
-                from .fitting_geometry import chord_contact_reference
+                from .fitting_geometry import (chord_contact_reference,
+                                                component_chord_contact_reference,
+                                                component_match_distance)
                 node_global = transform_point(candidate.graph.node(node_key).position_local, frame)
                 end = "Start" if node_key == item.start_node_key else "End"
                 references = []
@@ -337,8 +339,12 @@ def apply_physical_fits(candidate, frame, applied=None):
                                 or target_item.element_kind != "Component"):
                             continue
                         try:
-                            references.append(chord_contact_reference(
-                                item, target_item, node_global, tuple(frame[3]), end))
+                            reference, parameter = component_chord_contact_reference(
+                                item, target_item, node_global, tuple(frame[3]), end)
+                            references.append((reference, parameter,
+                                               component_match_distance(
+                                                   item, target_item, tuple(frame[3])),
+                                               target_item.run_key))
                         except ValueError:
                             continue
                 if not references:
@@ -346,7 +352,25 @@ def apply_physical_fits(candidate, frame, applied=None):
                         "INVALID_CHORD_GEOMETRY", "Warning",
                         "A geometria física do banzo não fornece uma face de contato estável."),))
                     continue
-                chosen = references if ridge else [min(references, key=lambda value: value[1])]
+                if ridge:
+                    # Each chord branch is independent at a ridge.  Within a
+                    # branch retain only the physically nearest component(s);
+                    # equal-distance components are legitimate simultaneous
+                    # contacts and remain composable C5 restrictions.
+                    chosen = []
+                    for run_key in dict.fromkeys(value[3] for value in references):
+                        branch = [value for value in references if value[3] == run_key]
+                        nearest = min(value[2] for value in branch)
+                        chosen.extend((value[0], value[1]) for value in branch
+                                      if value[2] <= nearest+1e-7)
+                else:
+                    nearest = min(value[2] for value in references)
+                    compatible = [value for value in references
+                                  if value[2] <= nearest+1e-7]
+                    chosen = [(value[0], value[1]) for value in compatible]
+                    # Parallel component contacts collapse to the strictest
+                    # (most inward) plane while preserving one end action.
+                    chosen = [min(chosen, key=lambda value: value[1])]
                 if ridge and item.role == "DIAGONAL":
                     from .fitting_geometry import cut_needs_clearance
                     other_keys = {k for p in ridge for k in p.physical_run_keys}-{t.key for t in targets}

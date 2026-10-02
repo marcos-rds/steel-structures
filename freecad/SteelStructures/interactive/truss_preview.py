@@ -62,12 +62,25 @@ class TrussPreview2D(QtWidgets.QGraphicsView):
 
     def set_model(self, model):
         nodes, edges, envelope = graph_presentation(model)
+        gussets = tuple(tuple((float(x), -float(y)) for x, y in item["points"])
+                        for item in model.get("gussets", ())
+                        if item.get("materializable", True))
+        if any(not all(math.isfinite(value) for point in polygon for value in point)
+               for polygon in gussets):
+            raise ValueError("Contorno inválido no preview da chapa.")
         scene = self.scene()
         scene.clear()
         envelope_pen = self._pen((160, 165, 170), 3.4, True)
         for path in envelope:
             for start, end in zip(path, path[1:]):
                 scene.addLine(*start, *end, envelope_pen)
+        gusset_pen = self._pen((112, 65, 160), 1.4)
+        gusset_brush = QtGui.QBrush(QtGui.QColor(142, 90, 190, 85))
+        for polygon in gussets:
+            item = scene.addPolygon(QtGui.QPolygonF(
+                [QtCore.QPointF(*point) for point in polygon]), gusset_pen, gusset_brush)
+            item.setData(0, "gusset")
+            item.setZValue(-1)
         for start, end, role, key in edges:
             item = scene.addLine(
                 *start, *end, self._pen(ROLE_COLORS.get(role, (75, 75, 75)), 1.6)

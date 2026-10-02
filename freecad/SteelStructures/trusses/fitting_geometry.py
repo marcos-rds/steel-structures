@@ -45,6 +45,26 @@ def _section_at_insertion(item):
     return geometry, (tx, ty)
 
 
+def _section_interval(item, direction):
+    """Return the occupied global interval of an item's transformed section."""
+    frame = assembly_frame(
+        (item.start_global, item.end_global), item.section_u_global, item.spec.rotation)
+    geometry, translation = _section_at_insertion(item)
+    projected = (_dot(direction, frame.u), _dot(direction, frame.v))
+    low, high = support(geometry, projected)
+    shift = (_dot(item.start_global, direction)
+             + translation[0]*projected[0]+translation[1]*projected[1])
+    return low+shift, high+shift
+
+
+def component_match_distance(member_item, target_item, transverse_direction):
+    """Distance between occupied transverse bands (zero means overlap)."""
+    direction = _unit(tuple(transverse_direction))
+    member = _section_interval(member_item, direction)
+    target = _section_interval(target_item, direction)
+    return max(0., member[0]-target[1], target[0]-member[1])
+
+
 def _line_path_parameters(origin, direction, path, extent):
     """Return exact parameters where an infinite line meets a section path."""
     start = Point2D(origin[0]-extent*direction[0], origin[1]-extent*direction[1])
@@ -67,16 +87,40 @@ def _line_path_parameters(origin, direction, path, extent):
 
 
 def member_contact_reference(member_item, target_item, node_global, truss_plane_normal, end):
-    """Resolve the first physical target boundary reached from a member interior."""
+    """Resolve the first physical target boundary reached from a component axis.
+
+    ``node_global`` is the nominal topology junction.  It is deliberately not
+    used as the ray origin: assembly components have translated physical axes,
+    and tracing every component through the nominal node makes an assembly
+    chord look like one blind envelope (or makes the ray pass through its
+    central void).  Target components are first matched by actual transverse
+    material overlap.  A ray through that overlap then resolves the contact
+    boundary from the complete transformed target contour.
+    """
     member_direction = _unit(_sub(member_item.end_global, member_item.start_global))
     outward = tuple(-value for value in member_direction) if end == "Start" else member_direction
+    component_node = (tuple(member_item.start_global) if end == "Start"
+                      else tuple(member_item.end_global))
+    transverse = _unit(tuple(truss_plane_normal))
+    member_interval = _section_interval(member_item, transverse)
+    target_interval = _section_interval(target_item, transverse)
+    overlap = (max(member_interval[0], target_interval[0]),
+               min(member_interval[1], target_interval[1]))
+    # Direct material overlap is preferred.  A separated component may still
+    # need its end aligned to the nearest chord component (the established
+    # DoubleAngle -> single-chord case); use a stable interior target slice and
+    # let the caller rank component pairs by the interval distance above.
+    probe = ((overlap[0]+overlap[1])/2. if overlap[1]-overlap[0] > TOLERANCE
+             else (target_interval[0]+target_interval[1])/2.)
+    component_node = tuple(point+(probe-_dot(component_node, transverse))*axis
+                           for point, axis in zip(component_node, transverse))
     chord_direction = _unit(_sub(target_item.end_global, target_item.start_global))
     frame = assembly_frame(
         (target_item.start_global, target_item.end_global),
         target_item.section_u_global, target_item.spec.rotation,
     )
     geometry, translation = _section_at_insertion(target_item)
-    relative = _sub(node_global, target_item.start_global)
+    relative = _sub(component_node, target_item.start_global)
     section_origin = (_dot(relative, frame.u)-translation[0],
                       _dot(relative, frame.v)-translation[1])
     section_direction = (_dot(outward, frame.u), _dot(outward, frame.v))
@@ -91,11 +135,13 @@ def member_contact_reference(member_item, target_item, node_global, truss_plane_
                                        geometry.outer_path, radius*3.)
     if not parameters:
         raise ValueError("O eixo físico da web não encontra o contorno do banzo.")
-    # The first outer-contour crossing seen while travelling from the member
-    # interior toward/beyond its topology node is the contact face.
+    # The first crossing toward the member interior defines the chord face
+    # that trims the web.  The component-matched probe above ensures this ray
+    # passes through the corresponding physical chord component rather than
+    # through an assembly gap.
     axial_parameter = min(parameters)/projected_length
     contact = tuple(point+axial_parameter*direction
-                    for point, direction in zip(node_global, outward))
+                    for point, direction in zip(component_node, outward))
     normal = (
         chord_direction[1]*truss_plane_normal[2]-chord_direction[2]*truss_plane_normal[1],
         chord_direction[2]*truss_plane_normal[0]-chord_direction[0]*truss_plane_normal[2],
@@ -108,6 +154,26 @@ def chord_contact_reference(member_item, chord_item, node_global, truss_plane_no
     """Backward-compatible C5-A name for member-to-chord contact."""
     return member_contact_reference(member_item, chord_item, node_global,
                                     truss_plane_normal, end)
+
+
+def component_chord_contact_reference(member_item, chord_item, node_global,
+                                      truss_plane_normal, end):
+    """Resolve a safe physical face for one matched chord component.
+
+    A single open chord retains its useful recessed contact face.  For a
+    component of a chord assembly, the full component envelope governs: an
+    axis ray through an L/U component can hit a recessed leg while another
+    part of the web component still penetrates the other leg.
+    """
+    if chord_item.spec.assembly == "Single":
+        return chord_contact_reference(
+            member_item, chord_item, node_global, truss_plane_normal, end)
+    reference = chord_envelope_reference(
+        member_item, chord_item, node_global, truss_plane_normal, end)
+    direction = _unit(_sub(member_item.end_global, member_item.start_global))
+    outward = tuple(-value for value in direction) if end == "Start" else direction
+    parameter = _dot(_sub(reference.origin, node_global), outward)
+    return reference, parameter
 
 
 def cut_needs_clearance(item, end, contact, clearance):

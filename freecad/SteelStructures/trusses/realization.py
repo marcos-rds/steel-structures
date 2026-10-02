@@ -45,6 +45,12 @@ def build_candidate(config, applied=None):
     config.setdefault("panelization_mode", "ByPanelCount")
     config.setdefault("reference_mode", "TwoPoints")
     config.setdefault("reference_linked", False)
+    config.setdefault("default_gusset_thickness", 10.)
+    if (not isinstance(config["default_gusset_thickness"], (int, float))
+            or isinstance(config["default_gusset_thickness"], bool)
+            or not math.isfinite(config["default_gusset_thickness"])
+            or config["default_gusset_thickness"] <= 0.):
+        raise ValueError("Espessura padrão de Gusset deve ser maior que zero.")
     from .editing import custom_state
     config=custom_state(config)
     if config.get("reference_defined", True) is not True:
@@ -131,6 +137,10 @@ def build_candidate(config, applied=None):
                                      a, b, transform_point(a, frame), transform_point(b, frame),
                                      section_u, specs[spec_key])))
     candidate = Candidate(config, stations, graph, runs, tuple(items), warnings)
+    if isinstance(applied, Candidate):
+        from .connections import reconcile_topology_connection_intents
+        config["connection_intents"] = reconcile_topology_connection_intents(
+            candidate, applied)
     from .fitting import apply_physical_fits
     return replace(candidate, items=apply_physical_fits(candidate, frame,
                                                         applied if isinstance(applied, Candidate) else None))

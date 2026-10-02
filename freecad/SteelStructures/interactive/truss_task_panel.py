@@ -502,6 +502,7 @@ class TrussTaskPanel:
 
     def set_connection_intent(self, node_key, value):
         """Update the candidate-only stable node mapping; document apply stays transactional."""
+        previous = self._initial.setdefault("connection_intents", {}).get(node_key)
         if value.get("form") == "Direct" and value.get("direct_policy") == "BalancedMiter":
             from ..trusses.connections import connection_participants
             from ..connections.resolver import WEB_ROLES
@@ -509,7 +510,11 @@ class TrussTaskPanel:
             webs = [p for p in connection_participants(candidate, node_key) if p.role in WEB_ROLES]
             if len(webs) != 2 or webs[0].geometry_key != webs[1].geometry_key:
                 raise ValueError("Meia-esquadria equilibrada requer exatamente duas barras da alma equivalentes.")
-        self._initial.setdefault("connection_intents", {})[node_key] = deepcopy(value)
+        from ..trusses.connections import gusset_default_after_edit
+        self._initial["default_gusset_thickness"] = gusset_default_after_edit(
+            node_key, previous, value,
+            self._initial.get("default_gusset_thickness", 10.))
+        self._initial["connection_intents"][node_key] = deepcopy(value)
         self._refresh()
 
     def _open_topology_editor(self):
@@ -971,7 +976,9 @@ class TrussTaskPanel:
             base=config.get("base_preset","Custom")
             self.topology_state.setText("Base para restaurar: "+PRESETS[base].label)
         self.message.setStyleSheet("")
-        self.message.setText("\n".join(warnings + ["Preview 2D atualizado."]))
+        from ..connections import compact_connection_messages
+        warnings.extend(model.get("connection_diagnostics", ()))
+        self.message.setText("\n".join(compact_connection_messages(warnings)))
         if self.show_3d.isChecked():
             self._preview_timer.start()
         return True

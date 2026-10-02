@@ -120,7 +120,10 @@ class BlockerTests(unittest.TestCase):
                                         for a in actions(item)))
                 restored = build_candidate(decode_state(encode_state(candidate))['candidate']['config'])
                 self.assertEqual(restored.config['connection_intents'][NODE]['gusset'],
-                                 dict(plate_thickness=8.,normal_clearance=200.,axial_clearance=200.,side='Center'))
+                                 dict(plate_thickness=8.,normal_clearance=200.,axial_clearance=200.,
+                                      side='Center',edge_margin=25.,member_overlap=150.,
+                                      attachment_mode='Auto', chord_contact='Auto',
+                                      transverse_placement=''))
                 self.assertEqual({i.component_key for i in node_webs(candidate)}, {'A','B'})
             value['role_specs']['DIAGONAL'] = configure_assembly(value['role_specs']['DIAGONAL'],'Single')
             back = build_candidate(value,candidate)

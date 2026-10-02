@@ -16,7 +16,9 @@ def validate_intent(intent: ConnectionIntent):
         raise ValueError("Participantes da ligação não podem ser duplicados.")
     for name, value in (("espessura da chapa", intent.gusset.plate_thickness),
                         ("clearance normal", intent.gusset.normal_clearance),
-                        ("clearance axial", intent.gusset.axial_clearance)):
+                        ("clearance axial", intent.gusset.axial_clearance),
+                        ("margem de borda", intent.gusset.edge_margin),
+                        ("sobreposição nos membros", intent.gusset.member_overlap)):
         if not math.isfinite(value) or value < 0:
             raise ValueError(name.capitalize()+" deve ser finito e maior ou igual a zero.")
     return intent

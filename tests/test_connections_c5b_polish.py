@@ -140,14 +140,24 @@ class PolishTests(unittest.TestCase):
         c=build_candidate(value)
         editor.panel=SimpleNamespace(get_config=lambda:c.config,controller=SimpleNamespace(last_candidate=c))
         for name in ('connection_box','connection_type','fastening','direct_policy','priority_member',
-                     'gusset_plate','gusset_normal','gusset_axial','participants','message'):
+                     'gusset_plate','gusset_normal','gusset_axial','gusset_margin','gusset_overlap',
+                     'gusset_region','gusset_position','participants','message'):
             setattr(editor,name,Widget())
         for form in ('GeometricOnly','Direct','Gusset'): editor.connection_type.addItem(form,form)
         editor.fastening.addItem('Unspecified','Unspecified')
+        editor.gusset_region.addItem('Automática','')
+        editor.gusset_position.addItem('Resolvida automaticamente','')
         editor._connection_tooltips=dict.fromkeys(('GeometricOnly','Direct','Gusset'),'help')
         labels={widget:Widget() for widget in (editor.direct_policy,editor.priority_member,
-                                             editor.gusset_plate,editor.gusset_normal,editor.gusset_axial)}
-        editor._connection_form=SimpleNamespace(labelForField=labels.__getitem__)
+                                             editor.gusset_plate,editor.gusset_normal,editor.gusset_axial,
+                                             editor.gusset_margin,editor.gusset_overlap,
+                                             editor.gusset_region,editor.gusset_position)}
+        transverse_labels = {widget: labels[widget] for widget in (
+            editor.gusset_region, editor.gusset_position)}
+        connection_labels = {widget: label for widget, label in labels.items()
+                             if widget not in transverse_labels}
+        editor._connection_form=SimpleNamespace(labelForField=connection_labels.__getitem__)
+        editor._transverse_form=SimpleNamespace(labelForField=transverse_labels.__getitem__)
         editor.select_node(node)
         self.assertEqual(editor.direct_policy.findData('BalancedMiter'),-1)
         self.assertEqual(editor.direct_policy.findData('Independent'),-1)
@@ -163,6 +173,10 @@ class PolishTests(unittest.TestCase):
             for widget,expected in zip((editor.direct_policy,editor.priority_member,editor.gusset_plate),visible):
                 self.assertEqual(widget.visible,expected)
                 self.assertEqual(labels[widget].visible,expected)
+            for widget in (editor.gusset_margin,editor.gusset_overlap,
+                           editor.gusset_region,editor.gusset_position):
+                self.assertEqual(widget.visible,form=='Gusset')
+                self.assertEqual(labels[widget].visible,form=='Gusset')
         c.config['connection_intents'][node]['direct_policy']='Independent'
         before=copy.deepcopy(c.config)
         editor.select_node(node)
