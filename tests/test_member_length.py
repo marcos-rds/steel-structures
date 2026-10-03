@@ -161,8 +161,51 @@ class EditableLengthTests(unittest.TestCase):
 
     def test_restore_migrates_and_synchronizes_length(self):
         source = MEMBER.read_text(encoding="utf-8")
-        self.assertIn('or "Length" not in obj.PropertiesList', source)
+        self.assertIn('"StartAdjustmentMode", "StartAdjustmentGeometryMode"', source)
+        self.assertIn('"EndAdjustmentMode", "EndAdjustmentGeometryMode"', source)
+        self.assertIn("required_properties.issubset", source)
         self.assertIn("self._sync_length_from_points(obj)", source)
+
+    def test_linked_axis_updates_nominal_points_and_length(self):
+        obj = FakeObject((0, 0, 0), (0, 0, 10))
+        obj.AxisDefinitionMode = "Linked"
+        obj.AxisSource = object()
+        proxy = self.proxy()
+        proxy._syncing_axis_source = False
+        proxy._placement_from_points_pending = False
+        original = self.module.resolve_axis_source
+        self.module.resolve_axis_source = lambda _value: types.SimpleNamespace(
+            start=Vector(10, 20, 30), end=Vector(110, 220, 330)
+        )
+        try:
+            self.assertTrue(proxy._sync_axis_from_source(obj))
+        finally:
+            self.module.resolve_axis_source = original
+        self.assertVector(obj.StartPoint, (10.0, 20.0, 30.0))
+        self.assertVector(obj.EndPoint, (110.0, 220.0, 330.0))
+        self.assertAlmostEqual(obj.MemberLength, math.sqrt(140000))
+        self.assertTrue(proxy._placement_from_points_pending)
+
+    def test_invalid_linked_axis_preserves_last_nominal_points(self):
+        obj = FakeObject((1, 2, 3), (4, 5, 6))
+        obj.AxisDefinitionMode = "Linked"
+        obj.AxisSource = None
+        proxy = self.proxy()
+        original = self.module.resolve_axis_source
+        self.module.resolve_axis_source = lambda _value: None
+        try:
+            self.assertFalse(proxy._sync_axis_from_source(obj))
+        finally:
+            self.module.resolve_axis_source = original
+        self.assertVector(obj.StartPoint, (1.0, 2.0, 3.0))
+        self.assertVector(obj.EndPoint, (4.0, 5.0, 6.0))
+
+    def test_linked_axis_rejects_direct_endpoint_edit(self):
+        obj = FakeObject((0, 0, 0), (0, 0, 10))
+        obj.AxisDefinitionMode = "Linked"
+        proxy = self.proxy()
+        proxy.onChanged(obj, "EndPoint")
+        self.assertEqual(obj.MemberLength, 0.0)
 
 
 if __name__ == "__main__":

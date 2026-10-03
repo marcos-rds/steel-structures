@@ -1,0 +1,256 @@
+"""Compact composition editor built on the existing role profile dialog."""
+from PySide import QtCore, QtGui, QtWidgets
+from .truss_task_panel import (_RoleProfileDialog, distinct_nominal_lengths,
+                               role_spec_from_options)
+from .assembly_preview import AssemblyPreview
+from ..trusses.assemblies import (ASSEMBLY_MODES, compatible_modes,
+                                 configure_assembly, role_assembly_spec)
+from ..assemblies.transforms import SectionTransform
+
+
+class AssemblyEditor(_RoleProfileDialog):
+    def __init__(self, document, title, spec, parent=None, nominal_lengths=(1000.,),
+                 fit_allowed=True):
+        super().__init__(document, title, spec, parent)
+        self._building = True
+        self._last_mode = spec.get("assembly", "Single")
+        self._notice = ""
+        self._profile_choices = {}
+        self.nominal_lengths = distinct_nominal_lengths(nominal_lengths)
+        self.mode = QtWidgets.QComboBox()
+        for key, label in ASSEMBLY_MODES:
+            self.mode.addItem(label, key)
+        self.mode.setCurrentIndex(self.mode.findData(self._last_mode))
+        self.spacing = QtWidgets.QDoubleSpinBox()
+        self.spacing.setRange(0., 1e6)
+        self.spacing.setDecimals(3)
+        self.spacing.setSuffix(" mm")
+        self.spacing.setToolTip("Distância entre os eixos de inserção dos componentes; não é folga entre faces.")
+        self.assembly_insertion = QtWidgets.QComboBox()
+        self.assembly_insertion.addItem("Centro", "Center")
+        self.assembly_insertion.addItem("Par simétrico", "SymmetricPair")
+        self.angle_arrangement = QtWidgets.QComboBox()
+        self.angle_arrangement.addItem("Abas para fora", "outward")
+        self.angle_arrangement.addItem("Abas para dentro", "inward")
+        self.component_orientations = []
+        for _ in range(2):
+            combo = QtWidgets.QComboBox()
+            for mirrored in (False, True):
+                for angle in (0, 90, 180, 270):
+                    label = ("Invertida lateralmente" if mirrored else "Original")
+                    if angle:
+                        label += f" · giro {angle}°"
+                    combo.addItem(label, (angle, mirrored))
+            self.component_orientations.append(combo)
+        group = QtWidgets.QGroupBox("Composição")
+        self.composition_form = QtWidgets.QFormLayout(group)
+        self.composition_form.addRow("Composição:", self.mode)
+        self.spacing_label = QtWidgets.QLabel("Distância entre eixos:")
+        self.insertion_label = QtWidgets.QLabel("Inserção do conjunto:")
+        self.angle_label = QtWidgets.QLabel("Disposição das cantoneiras:")
+        self.composition_form.addRow(self.spacing_label, self.spacing)
+        self.composition_form.addRow(self.insertion_label, self.assembly_insertion)
+        self.composition_form.addRow(self.angle_label, self.angle_arrangement)
+        self.component_labels = []
+        for key, combo in zip(("A", "B"), self.component_orientations):
+            label = QtWidgets.QLabel("Disposição "+key+":")
+            self.component_labels.append(label)
+            self.composition_form.addRow(label, combo)
+        self.layout().insertWidget(0, group)
+        fit_group = QtWidgets.QGroupBox("Ajuste físico")
+        fit_form = QtWidgets.QFormLayout(fit_group)
+        self.physical_fit = QtWidgets.QComboBox()
+        self.physical_fit.addItem("Nenhum", "None")
+        if fit_allowed:
+            self.physical_fit.addItem("Ajustar ao banzo", "ToChord")
+        selected_fit = spec.get("physical_fit", "None")
+        self.physical_fit.setCurrentIndex(max(0, self.physical_fit.findData(selected_fit)))
+        self.physical_fit_gap = QtWidgets.QDoubleSpinBox()
+        self.physical_fit_gap.setRange(0., 1e6)
+        self.physical_fit_gap.setDecimals(3)
+        self.physical_fit_gap.setSuffix(" mm")
+        self.physical_fit_gap.setValue(float(spec.get("physical_fit_gap", 0.)))
+        self.physical_fit_gap.setToolTip(
+            "Recuo axial ao longo do eixo do próprio membro; não representa folga normal nem espessura de chapa.")
+        fit_form.addRow("Modo:", self.physical_fit)
+        fit_form.addRow("Gap axial:", self.physical_fit_gap)
+        self.layout().insertWidget(1, fit_group)
+        self.preview = AssemblyPreview()
+        self.preview.setMaximumHeight(250)
+        self.options.orientation_panel._preview_layout.insertWidget(0, self.preview, 1)
+        self.message = QtWidgets.QLabel()
+        self.message.setWordWrap(True)
+        self.layout().insertWidget(self.layout().count()-1, self.message)
+        self.buttons = self.findChild(QtWidgets.QDialogButtonBox)
+        current = role_assembly_spec(spec)
+        from .interconnector_editor import InterconnectorEditor
+        from .assembly_longitudinal_preview import AssemblyLongitudinalPreview
+        self.connectors = InterconnectorEditor(current.interconnectors, self)
+        self.longitudinal = AssemblyLongitudinalPreview(self)
+        self._setup_run_length()
+        self.side_panel = QtWidgets.QWidget()
+        side_layout = QtWidgets.QVBoxLayout(self.side_panel)
+        side_layout.setContentsMargins(0, 0, 0, 0)
+        side_layout.addWidget(self.connectors)
+        side_layout.addWidget(self.run_length)
+        side_layout.addWidget(self.longitudinal)
+        side_layout.addStretch(1)
+        self.side_panel.setMinimumWidth(320)
+        body = QtWidgets.QWidget()
+        columns = QtWidgets.QHBoxLayout(body)
+        columns.setContentsMargins(0, 0, 0, 0)
+        left = QtWidgets.QWidget()
+        left_layout = QtWidgets.QVBoxLayout(left)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        layout = self.layout()
+        widgets = [layout.itemAt(i).widget() for i in range(layout.count())]
+        for widget in widgets:
+            if widget is not None and widget not in (self.message, self.buttons):
+                layout.removeWidget(widget)
+                left_layout.addWidget(widget)
+        columns.addWidget(left, 3)
+        columns.addWidget(self.side_panel, 2)
+        layout.insertWidget(0, body)
+        self.spacing.setValue(current.component_spacing if current.component_spacing is not None else 100.)
+        self.assembly_insertion.setCurrentIndex(self.assembly_insertion.findData(
+            current.assembly_insertion.value if self._last_mode != "Single" else "SymmetricPair"))
+        self._set_transforms(tuple(c.section_transform for c in current.components))
+        if self._last_mode == "DoubleAngle":
+            a = next(c for c in current.components if c.component_key == "A")
+            self.angle_arrangement.setCurrentIndex(0 if a.section_transform.reflect_x else 1)
+        self._refresh_timer = QtCore.QTimer(self)
+        self._refresh_timer.setSingleShot(True)
+        self._refresh_timer.setInterval(0)
+        self._refresh_timer.timeout.connect(self._refresh_composition)
+        self.connectors.changed.connect(self._queue_refresh)
+        self.mode.currentIndexChanged.connect(self._mode_changed)
+        for signal in (self.spacing.valueChanged, self.assembly_insertion.currentIndexChanged,
+                       self.angle_arrangement.currentIndexChanged, self.options.profile.currentIndexChanged,
+                       self.options.category.currentIndexChanged, self.options.series.currentIndexChanged,
+                       self.options.insertion.currentTextChanged, self.options.rotation.valueChanged,
+                       self.options.colorChanged, self.options.sectionGeometryModeChanged,
+                       self.physical_fit.currentIndexChanged, self.physical_fit_gap.valueChanged):
+            signal.connect(self._queue_refresh)
+        for combo in self.component_orientations:
+            combo.currentIndexChanged.connect(self._queue_refresh)
+        self._filter_profiles()
+        self._building = False
+        self._refresh_composition()
+        self.adjustSize()
+        self.resize(900 if self._last_mode != "Single" else 510, self.sizeHint().height())
+
+    def _set_transforms(self, transforms):
+        for combo, transform in zip(self.component_orientations, transforms):
+            data = (transform.rotation_degrees, transform.reflect_x)
+            # Qt converts tuple userData to QVariantList on some PySide versions.
+            index = next((i for i in range(combo.count()) if tuple(combo.itemData(i)) == data), -1)
+            if index < 0:
+                combo.addItem(f"Giro {transform.rotation_degrees:g}°"+(
+                    " · invertida lateralmente" if transform.reflect_x else ""), data)
+                index = combo.count()-1
+            combo.setCurrentIndex(index)
+
+    def _queue_refresh(self, *_):
+        if not self._building:
+            self._refresh_timer.start()
+
+    def _filter_profiles(self):
+        mode = self.mode.currentData()
+        self.options.set_profile_filter(
+            lambda profile: mode in compatible_modes(profile), self._profile_choices.get(mode))
+
+    def _setup_run_length(self):
+        if len(self.nominal_lengths) == 1:
+            self.run_length = QtWidgets.QLabel(f"Comprimento nominal: {self.nominal_lengths[0]:g} mm")
+        else:
+            self.run_length = QtWidgets.QComboBox()
+            for i, length in enumerate(self.nominal_lengths):
+                self.run_length.addItem(f"Comprimento nominal {i+1}: {length:g} mm", length)
+            self.run_length.setToolTip("Prévia de um comprimento deste role; todos são validados ao confirmar.")
+            self.run_length.currentIndexChanged.connect(self._queue_refresh)
+
+    def _mode_changed(self, *_):
+        self._profile_choices[self._last_mode] = self.options.profile_designation
+        self._filter_profiles()
+        mode = self.mode.currentData()
+        if mode != self._last_mode:
+            if mode == "SpacedPair":
+                self._set_transforms((SectionTransform(), SectionTransform()))
+            elif mode == "DoubleAngle":
+                self.angle_arrangement.setCurrentIndex(0)
+        if mode != "Single" and self._last_mode == "Single":
+            self.options.rotation.setValue(0.)
+            self._notice = "Orientação inicial do conjunto: 0°. Ajuste a rotação se necessário."
+            self.assembly_insertion.setCurrentIndex(self.assembly_insertion.findData("SymmetricPair"))
+        self._last_mode = mode
+        self._queue_refresh()
+
+    def role_spec(self):
+        role = role_spec_from_options(self._previous, self.options)
+        role["physical_fit"] = self.physical_fit.currentData()
+        role["physical_fit_gap"] = float(self.physical_fit_gap.value())
+        mode = self.mode.currentData()
+        transforms = None
+        if mode == "SpacedPair":
+            transforms = tuple(SectionTransform(*combo.currentData()) for combo in self.component_orientations)
+        elif mode == "DoubleAngle":
+            transforms = (SectionTransform(reflect_x=True), SectionTransform())
+            if self.angle_arrangement.currentData() == "inward":
+                transforms = transforms[::-1]
+        return configure_assembly(role, mode, self.spacing.value(),
+                                  self.assembly_insertion.currentData(), transforms,
+                                  self.connectors.values() if mode != "Single" else ())
+
+    def _refresh_composition(self):
+        mode = self.mode.currentData()
+        multiple = mode != "Single"
+        self.side_panel.setVisible(multiple)
+        for widget in (self.spacing_label, self.spacing, self.insertion_label, self.assembly_insertion):
+            widget.setVisible(multiple)
+        for widget in (self.angle_label, self.angle_arrangement):
+            widget.setVisible(mode == "DoubleAngle")
+        for widget in self.component_labels+self.component_orientations:
+            widget.setVisible(mode == "SpacedPair")
+        self.preview.setVisible(multiple)
+        self.options.orientation_preview.setVisible(not multiple)
+        # Do not reserve the hidden single-profile preview's vertical space.
+        layout = self.options.orientation_panel._preview_layout
+        active = self.preview if multiple else self.options.orientation_preview
+        hidden = self.options.orientation_preview if multiple else self.preview
+        layout.removeWidget(hidden)
+        if layout.indexOf(active) < 0:
+            layout.insertWidget(0, active, 1)
+        self.options.orientation_panel.preview = active
+        self.options.orientation_panel.setTitle("Orientação do conjunto" if multiple else "Orientação da seção")
+        self.options.orientation_panel._labels[0].setText("Rotação do conjunto:" if multiple else "Rotação da seção:")
+        self.options.rotation.setToolTip("Gira o conjunto, incluindo os eixos dos componentes." if multiple else "Rotação da seção.")
+        self.physical_fit_gap.setEnabled(self.physical_fit.currentData() != "None")
+        try:
+            role = self.role_spec()
+            from ..trusses.assembly_preview import role_realization
+            for length in self.nominal_lengths:
+                role_realization(role, length)
+            length = self.nominal_lengths[0] if len(self.nominal_lengths) == 1 else self.run_length.currentData()
+            self.preview.set_role(role, length)
+            self.longitudinal.set_role(role, length)
+            distributions = self.longitudinal.model["distributions"]
+            self.connectors.effective.setText("\n".join(
+                f"Espaçamento efetivo: {d.effective_spacing:g} mm · {d.effective_count} estações"
+                for _, d in distributions))
+            self.message.setText(self._notice)
+            self.message.setStyleSheet("")
+            self.buttons.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(True)
+            self._valid_composition = True
+        except (ValueError, KeyError, TypeError) as exc:
+            self.message.setText(str(exc))
+            self.message.setStyleSheet("color: #c44;")
+            self.preview.set_error("Composição incompatível. Selecione um perfil compatível ou Simples.")
+            self.longitudinal.clear()
+            self.connectors.effective.setText("")
+            self.buttons.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
+            self._valid_composition = False
+
+    def accept(self):
+        self._refresh_composition()
+        if self._valid_composition:
+            super().accept()

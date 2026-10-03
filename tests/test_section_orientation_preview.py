@@ -60,7 +60,7 @@ class SectionOrientationPreviewGeometryTests(unittest.TestCase):
                 "lip_top_tip", "lip_bottom_tip", "outer_top_mid",
                 "outer_bottom_mid", "outer_lip_top_corner", "outer_lip_bottom_corner",
             },
-            "L50x5": {"centroid", "outer_corner", "top_tip", "right_tip",
+            "L50x5": {"centroid", "envelope_center", "outer_corner", "top_tip", "right_tip",
                        "inner_corner"},
             "T2x1/4": {"centroid", "top", "bottom", "top_left", "top_right"},
         }

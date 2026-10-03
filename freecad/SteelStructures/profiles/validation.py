@@ -17,8 +17,10 @@ from .models import (
     PhysicalProperties,
     ProfileDefinition,
     ProfileRef,
+    ProfileSourceMetadata,
     SectionPropertyOverride,
     SeriesDefinition,
+    SupplyConditionDefinition,
     immutable_mapping,
 )
 
@@ -55,7 +57,10 @@ SECTION_PROPERTY_QUANTITIES = {
     "slenderness_web": "dimensionless",
 }
 
-AVAILABILITY_STATUSES = {"standard", "made_to_order"}
+AVAILABILITY_STATUSES = {
+    "standard", "made_to_order", "consultation", "development_fixture",
+    "normative_table",
+}
 
 
 class CatalogError(Exception):
@@ -110,6 +115,14 @@ def _number(value, path, catalog_id, field, positive=False):
     if positive and result <= 0.0:
         raise _error(path, catalog_id, f"{field} deve ser positivo")
     return result
+
+
+def _optional_positive_integer(value, path, catalog_id, field):
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise _error(path, catalog_id, f"{field} deve ser inteiro positivo")
+    return value
 
 
 def convert_to_canonical(value, quantity: str, unit: str) -> float:
@@ -177,15 +190,60 @@ def validate_catalog_payload(payload, path: Path):
         )
     if manufacturer is None and issuer is None:
         raise _error(path, catalog_id, "catálogo requer manufacturer ou issuer")
+    region = _string(raw_catalog.get("region"), path, catalog_id, "catalog.region", True)
+    if region is not None and re.fullmatch(r"[A-Z]{2}", region) is None:
+        raise _error(path, catalog_id, "catalog.region deve conter duas letras ASCII maiúsculas")
+    catalog_pack = raw_catalog.get("catalog_pack")
+    if catalog_pack is not None:
+        catalog_pack = _id(catalog_pack, path, catalog_id, "catalog.catalog_pack")
     source_raw = _mapping(raw_catalog.get("source"), path, catalog_id, "catalog.source")
+    source_density = source_raw.get("density_kg_m3")
+    if source_density is not None:
+        source_density = _number(
+            source_density, path, catalog_id, "source.density_kg_m3", True,
+        )
     source = CatalogSource(
         source_name=_string(source_raw.get("source_name"), path, catalog_id, "source.source_name"),
         source_revision=_string(source_raw.get("source_revision"), path, catalog_id, "source.source_revision", True),
         source_url=_string(source_raw.get("source_url"), path, catalog_id, "source.source_url", True),
         source_date=_string(source_raw.get("source_date"), path, catalog_id, "source.source_date", True),
         notes=_string(source_raw.get("notes"), path, catalog_id, "source.notes", True),
+        source_type=_string(source_raw.get("source_type"), path, catalog_id, "source.source_type", True),
+        density_kg_m3=source_density,
     )
     units = _validate_units(payload.get("units"), path, catalog_id)
+    supply_conditions = []
+    supply_codes = set()
+    for index, value in enumerate(_list(
+        raw_catalog.get("supply_condition_definitions", []), path, catalog_id,
+        "catalog.supply_condition_definitions",
+    )):
+        value = _mapping(
+            value, path, catalog_id,
+            f"catalog.supply_condition_definitions[{index}]",
+        )
+        code = _string(value.get("code"), path, catalog_id, f"supply condition {index}.code")
+        if code in supply_codes:
+            raise _error(path, catalog_id, f"código de condição de fornecimento duplicado: {code}")
+        supply_codes.add(code)
+        availability = _string(
+            value.get("availability"), path, catalog_id,
+            f"supply condition {code}.availability",
+        )
+        if availability not in {"normal", "special_consultation"}:
+            raise _error(path, catalog_id, f"condição de fornecimento {code}: disponibilidade inválida")
+        source_page = value.get("source_page")
+        if isinstance(source_page, bool) or not isinstance(source_page, int) or source_page <= 0:
+            raise _error(path, catalog_id, f"condição de fornecimento {code}: source_page inválida")
+        supply_conditions.append(SupplyConditionDefinition(
+            code=code,
+            description=_string(
+                value.get("description"), path, catalog_id,
+                f"supply condition {code}.description",
+            ),
+            availability=availability,
+            source_page=source_page,
+        ))
     metadata = CatalogMetadata(
         id=catalog_id,
         name=_string(raw_catalog.get("name"), path, catalog_id, "catalog.name"),
@@ -199,6 +257,10 @@ def validate_catalog_payload(payload, path: Path):
         ),
         material_notes=_string(raw_catalog.get("material_notes"), path, catalog_id, "catalog.material_notes", True),
         issuer=issuer,
+        supply_condition_definitions=tuple(supply_conditions),
+        region=region,
+        country=_string(raw_catalog.get("country"), path, catalog_id, "catalog.country", True),
+        catalog_pack=catalog_pack,
     )
 
     categories = []
@@ -235,6 +297,7 @@ def validate_catalog_payload(payload, path: Path):
     profiles = []
     profile_ids = set()
     designations_by_series = set()
+    canonical_rhs_dimensions = set()
     for index, raw in enumerate(_list(payload.get("profiles"), path, catalog_id, "profiles")):
         raw = _mapping(raw, path, catalog_id, f"profiles[{index}]")
         profile_id = _id(raw.get("id"), path, catalog_id, f"profiles[{index}].id")
@@ -251,6 +314,8 @@ def validate_catalog_payload(payload, path: Path):
             raise _error(path, catalog_id, f"designação duplicada na série {series_id}: {designation!r}")
         designations_by_series.add(designation_key)
         geometry_type = _string(raw.get("geometry_type"), path, catalog_id, f"profiles[{index}].geometry_type")
+        if geometry_type != series_definition.geometry_type:
+            raise _error(path, catalog_id, f"perfil {profile_id}: geometry_type diverge da série")
         geometry_raw = _mapping(raw.get("geometry"), path, catalog_id, f"profiles[{index}].geometry")
         geometry = {}
         if geometry_type in {"i_section", "channel_section", "tee_section"}:
@@ -338,6 +403,52 @@ def validate_catalog_payload(payload, path: Path):
                 )
             if geometry["t"] >= geometry["b"]:
                 raise _error(path, catalog_id, f"perfil {profile_id}: t deve ser menor que b")
+        elif geometry_type == "solid_section":
+            from .solid_sections import (
+                SOLID_SECTION_FAMILIES, SOLID_SECTION_PARAMETERS, solid_section_dimensions,
+            )
+            variant = series_definition.geometry_variant
+            if (variant not in SOLID_SECTION_FAMILIES
+                    or series_definition.family != SOLID_SECTION_FAMILIES[variant]):
+                raise _error(path, catalog_id, f"perfil {profile_id}: família/variante maciça incompatível")
+            keys = SOLID_SECTION_PARAMETERS[variant]
+            if set(geometry_raw) != set(keys):
+                raise _error(path, catalog_id, f"perfil {profile_id}: dimensões esperadas: {', '.join(keys)}")
+            geometry = {name: _number(geometry_raw[name], path, catalog_id,
+                                     f"geometry.{name}", True) for name in keys}
+            try:
+                solid_section_dimensions(variant, geometry)
+            except ValueError as exc:
+                raise _error(path, catalog_id, f"perfil {profile_id}: {exc}") from exc
+        elif geometry_type == "hollow_section":
+            variant = series_definition.geometry_variant
+            expected_family = {"square": "SHS", "rectangular": "RHS", "circular": "CHS"}
+            if variant not in expected_family or series_definition.family.upper() != expected_family[variant]:
+                raise _error(path, catalog_id, f"perfil {profile_id}: família/variante tubular incompatível")
+            keys = ("d", "t") if variant == "circular" else (("b", "t") if variant == "square" else ("h", "b", "t"))
+            if set(geometry_raw) != set(keys):
+                raise _error(path, catalog_id, f"perfil {profile_id}: dimensões esperadas: {', '.join(keys)}")
+            for parameter in keys:
+                geometry[parameter] = convert_to_canonical(
+                    _number(geometry_raw.get(parameter), path, catalog_id,
+                            f"profiles[{index}].geometry.{parameter}", True),
+                    "length", units["length"],
+                )
+            t = geometry["t"]
+            if variant == "circular" and geometry["d"] <= 2.0 * t:
+                raise _error(path, catalog_id, f"perfil {profile_id}: CHS exige d > 2*t")
+            if variant == "square" and geometry["b"] <= 4.0 * t:
+                raise _error(path, catalog_id, f"perfil {profile_id}: SHS exige b > 4*t")
+            if variant == "rectangular":
+                h, b = geometry["h"], geometry["b"]
+                key = (max(h, b), min(h, b), t)
+                if key in canonical_rhs_dimensions:
+                    raise _error(path, catalog_id, f"perfil {profile_id}: dimensões RHS duplicadas após normalização")
+                canonical_rhs_dimensions.add(key)
+                if h <= b:
+                    raise _error(path, catalog_id, f"perfil {profile_id}: RHS exige H > B")
+                if b <= 4.0 * t:
+                    raise _error(path, catalog_id, f"perfil {profile_id}: RHS exige B > 4*t")
         else:
             raise _error(path, catalog_id, f"geometry_type não suportado: {geometry_type!r}")
 
@@ -429,12 +540,118 @@ def validate_catalog_payload(payload, path: Path):
         availability = _string(raw.get("availability_status"), path, catalog_id, f"profiles[{index}].availability_status")
         if availability not in AVAILABILITY_STATUSES:
             raise _error(path, catalog_id, f"perfil {profile_id}: availability_status inválido: {availability!r}")
+        if availability == "normative_table" and source.source_type != "normative":
+            raise _error(path, catalog_id,
+                         f"perfil {profile_id}: availability_status normative_table exige origem normativa")
         geometry_status = _string(
             raw.get("geometry_status", "released"), path, catalog_id,
             f"profiles[{index}].geometry_status",
         )
         if geometry_status not in {"released", "pending_technical_review"}:
             raise _error(path, catalog_id, f"perfil {profile_id}: geometry_status inválido: {geometry_status!r}")
+        source_metadata_raw = raw.get("source_metadata")
+        source_metadata = None
+        if source_metadata_raw is not None:
+            source_metadata_raw = _mapping(
+                source_metadata_raw, path, catalog_id,
+                f"profiles[{index}].source_metadata",
+            )
+            source_dimensions_raw = _mapping(
+                source_metadata_raw.get("source_dimensions", {}), path, catalog_id,
+                f"profiles[{index}].source_metadata.source_dimensions",
+            )
+            source_dimensions = {
+                _string(name, path, catalog_id, "source dimension name"):
+                _number(value, path, catalog_id, f"source_dimensions.{name}", True)
+                for name, value in source_dimensions_raw.items()
+            }
+            source_locations = {
+                name: _optional_positive_integer(
+                    source_metadata_raw.get(name), path, catalog_id,
+                    f"perfil {profile_id}: {name}",
+                ) for name in ("source_page", "source_pdf_page", "source_row")
+            }
+            def optional_number(name):
+                value = source_metadata_raw.get(name)
+                return None if value is None else _number(
+                    value, path, catalog_id, f"source_metadata.{name}", True,
+                )
+            weight = optional_number("source_weight_p_kg_per_6m")
+            basis = optional_number("source_weight_basis_mm")
+            published_mass = optional_number("source_mass_per_length_kg_m")
+            density = optional_number("density_kg_m3")
+            mass_type = _string(source_metadata_raw.get("mass_type"), path, catalog_id,
+                                "source_metadata.mass_type", True)
+            if mass_type not in {None, "published", "derived", "calculated_fixture"}:
+                raise _error(path, catalog_id, f"perfil {profile_id}: mass_type inválido")
+            mass_basis = _string(
+                source_metadata_raw.get("mass_basis"), path, catalog_id,
+                "source_metadata.mass_basis", True,
+            )
+            if mass_basis not in {None, "normative_table"}:
+                raise _error(path, catalog_id, f"perfil {profile_id}: mass_basis inválido")
+            if mass_basis == "normative_table" and (
+                source.source_type != "normative"
+                or mass_type not in {None, "published"}
+                or (published_mass is None and (
+                    mass_type != "published" or physical.mass_per_length_kg_m is None
+                ))
+            ):
+                raise _error(path, catalog_id,
+                             f"perfil {profile_id}: normative_table exige origem normativa e massa publicada")
+            if (weight is None) != (basis is None) or (basis is not None and basis != 6000):
+                raise _error(path, catalog_id, f"perfil {profile_id}: peso por 6 m requer peso e base 6000 mm")
+            if weight is not None:
+                if mass_type not in {None, "derived"} or published_mass is not None:
+                    raise _error(path, catalog_id, f"perfil {profile_id}: origens de massa incompatíveis")
+                if physical.mass_per_length_kg_m is None or not math.isclose(
+                    physical.mass_per_length_kg_m, weight / 6.0, rel_tol=1e-12,
+                ):
+                    raise _error(path, catalog_id, f"perfil {profile_id}: massa deve ser p/6")
+            if mass_type == "derived" and weight is None:
+                raise _error(path, catalog_id, f"perfil {profile_id}: massa derivada requer peso de origem")
+            if published_mass is not None and (
+                mass_type not in {None, "published"}
+                or (physical.mass_per_length_kg_m is not None and not math.isclose(
+                    published_mass, physical.mass_per_length_kg_m, rel_tol=1e-12))
+            ):
+                raise _error(path, catalog_id, f"perfil {profile_id}: massa publicada conflitante")
+            if mass_type == "calculated_fixture":
+                if (source.source_type != "development_fixture"
+                        or availability != "development_fixture" or density is None
+                        or published_mass is not None or weight is not None
+                        or geometry_type != "solid_section"):
+                    raise _error(path, catalog_id, f"perfil {profile_id}: massa de fixture exige origem dev, seção maciça e densidade")
+            elif density is not None:
+                raise _error(path, catalog_id, f"perfil {profile_id}: densidade de cálculo exige calculated_fixture")
+            source_metadata = ProfileSourceMetadata(
+                source_page=source_locations["source_page"],
+                source_pdf_page=source_locations["source_pdf_page"],
+                source_row=source_locations["source_row"],
+                source_table=_string(
+                    source_metadata_raw.get("source_table"), path, catalog_id,
+                    "source_metadata.source_table", True,
+                ),
+                mass_basis=mass_basis,
+                source_weight_p_kg_per_6m=weight,
+                source_weight_basis_mm=basis,
+                mass_type=mass_type,
+                source_mass_per_length_kg_m=published_mass,
+                density_kg_m3=density,
+                source_designation=_string(
+                    source_metadata_raw.get("source_designation"), path, catalog_id,
+                    f"profiles[{index}].source_metadata.source_designation", True,
+                ),
+                source_inches=_string(
+                    source_metadata_raw.get("source_inches"), path, catalog_id,
+                    f"profiles[{index}].source_metadata.source_inches", True,
+                ),
+                source_dimensions=immutable_mapping(source_dimensions),
+                availability_note=_string(
+                    source_metadata_raw.get("availability_note"), path, catalog_id,
+                    f"profiles[{index}].source_metadata.availability_note", True,
+                ),
+            )
         profiles.append(ProfileDefinition(
             ref=ProfileRef(catalog_id, profile_id),
             designation=designation,
@@ -458,5 +675,6 @@ def validate_catalog_payload(payload, path: Path):
             centroid_from_top_flange_face=centroid_from_top_flange_face,
             centroid=immutable_mapping(centroid),
             catalog=metadata,
+            source_metadata=source_metadata,
         ))
     return metadata, tuple(categories), tuple(series), tuple(profiles)

@@ -6,6 +6,8 @@ from __future__ import annotations
 import math
 import numbers
 
+from .grid_geometry import build_grid_geometry, grid_label_anchors
+
 try:
     from pivy import coin
 except ImportError:  # Allows headless unit tests and delayed GUI loading.
@@ -137,29 +139,6 @@ def _setup_font_property(view):
     return options, selected
 
 
-def _bottom_label_offset(label_offset, font_size):
-    """Effective bottom offset including provisional SoText2 baseline space."""
-    offset = max(0.0, float(label_offset))
-    size = max(0.0, float(font_size))
-    bottom_extra = max(0.75 * offset, (size / 14.0) * 200.0)
-    return offset + bottom_extra
-
-
-def _label_justification(side):
-    return "RIGHT" if side == "left" else "LEFT" if side == "right" else "CENTER"
-
-
-def _label_position(side, axis_coordinate, boundary, label_offset, font_size):
-    offset = max(0.0, float(label_offset))
-    if side == "bottom":
-        offset = _bottom_label_offset(offset, font_size)
-    if side in ("bottom", "left"):
-        return ((axis_coordinate, boundary - offset) if side == "bottom"
-                else (boundary - offset, axis_coordinate))
-    return ((axis_coordinate, boundary + offset) if side == "top"
-            else (boundary + offset, axis_coordinate))
-
-
 def _safe_draw_style(view, value="Dashdot"):
     """Select a supported draw style without making grid creation fail."""
     try:
@@ -180,16 +159,28 @@ class StructuralGridViewProvider:
 
     def __init__(self, view_object=None):
         self._root = None
+        self._visibility = None
         self._labels = None
         self._points = None
         self._visible_point_size = 5.0
         self._changing = False
         if view_object is not None:
-            self.attach(view_object)
+            # FreeCAD invokes attach() when Proxy is assigned. Calling attach()
+            # first and assigning Proxy from inside it re-enters the callback
+            # and leaves the native ViewObject without its Python provider.
+            self.ViewObject = None
+            view_object.Proxy = self
+            # Lightweight test doubles do not implement FreeCAD's callback.
+            if self.ViewObject is None:
+                self.attach(view_object)
 
     def attach(self, view):
         self.ViewObject = view
-        view.Proxy = self
+        data_proxy = getattr(getattr(view, "Object", None), "Proxy", None)
+        if data_proxy is not None:
+            # ViewObject.Proxy is weak while a newly-created transaction is
+            # open. Keep the viewport adapter alive with its data proxy.
+            data_proxy._view_provider = self
         created = {
             "ShowIntersections": _add_property(view, "App::PropertyBool", "ShowIntersections", "Exibir ou ocultar os pontos de interseção do grid"),
             "IntersectionPointColor": _add_property(view, "App::PropertyColor", "IntersectionPointColor", "Cor dos pontos de interseção do grid."),
@@ -201,7 +192,7 @@ class StructuralGridViewProvider:
             "LabelOffset": _add_property(view, "App::PropertyLength", "LabelOffset", "Afastamento dos identificadores."),
         }
         if created["IntersectionPointColor"]:
-            view.IntersectionPointColor = ((0.96, 0.75, 0.24) if created["ShowIntersections"]
+            view.IntersectionPointColor = ((0.0, 170.0 / 255.0, 1.0) if created["ShowIntersections"]
                                            else getattr(view, "PointColor", (0.96, 0.75, 0.24)))
         if created["IntersectionPointSize"]:
             old_size = getattr(view, "PointSize", 5.0)
@@ -216,7 +207,7 @@ class StructuralGridViewProvider:
         if created["TextColor"]: view.TextColor = (0.95, 0.95, 0.95)
         if created["LabelOffset"]: view.LabelOffset = 250.0
         if created["ShowIntersections"]:
-            try: view.LineColor = (0.31, 0.59, 0.90)
+            try: view.LineColor = (127.0 / 255.0,) * 3
             except Exception: pass
             try: view.LineWidth = 1.0
             except Exception: pass
@@ -239,6 +230,9 @@ class StructuralGridViewProvider:
 
     def detach(self, _view=None):
         view = getattr(self, "ViewObject", None)
+        data_proxy = getattr(getattr(view, "Object", None), "Proxy", None)
+        if data_proxy is not None and getattr(data_proxy, "_view_provider", None) is self:
+            data_proxy._view_provider = None
         if self._root is not None:
             scene_root = getattr(view, "RootNode", None)
             if scene_root is not None:
@@ -247,6 +241,7 @@ class StructuralGridViewProvider:
                 except Exception:
                     pass
         self._root = None
+        self._visibility = None
         self._labels = None
         self._points = None
         if view is not None and getattr(view, "Proxy", None) is self:
@@ -260,10 +255,12 @@ class StructuralGridViewProvider:
         if coin is None:
             return
         self._root = coin.SoSeparator()
+        self._visibility = coin.SoSwitch()
         self._points = coin.SoSeparator()
         self._labels = coin.SoSeparator()
-        self._root.addChild(self._points)
-        self._root.addChild(self._labels)
+        self._visibility.addChild(self._points)
+        self._visibility.addChild(self._labels)
+        self._root.addChild(self._visibility)
         # Add to the existing FeaturePython scene so its normal line rendering
         # remains active; labels are not a replacement display mode.
         scene_root = getattr(self.ViewObject, "RootNode", None)
@@ -274,30 +271,28 @@ class StructuralGridViewProvider:
         obj = getattr(self.ViewObject, "Object", None)
         if not _data_schema_ready(obj):
             return []
-        xs, ys = [0.0], [0.0]
-        for value in obj.XSpacings: xs.append(xs[-1] + _number(value))
-        for value in obj.YSpacings: ys.append(ys[-1] + _number(value))
-        x0, x1 = -_number(obj.XStartExtension), xs[-1] + _number(obj.XEndExtension)
-        y0, y1 = -_number(obj.YStartExtension), ys[-1] + _number(obj.YEndExtension)
-        offset = _number(self.ViewObject.LabelOffset)
-        positions = str(self.ViewObject.LabelPosition)
-        font_size = float(self.ViewObject.FontSize)
-        specs = []
-        for x, label in zip(xs, obj.XAxisLabels):
-            if positions in ("Start", "Both"):
-                px, py = _label_position("bottom", x, y0, offset, font_size)
-                specs.append((px, py, str(label), _label_justification("bottom"), "bottom"))
-            if positions in ("End", "Both"):
-                px, py = _label_position("top", x, y1, offset, font_size)
-                specs.append((px, py, str(label), _label_justification("top"), "top"))
-        for y, label in zip(ys, obj.YAxisLabels):
-            if positions in ("Start", "Both"):
-                px, py = _label_position("left", y, x0, offset, font_size)
-                specs.append((px, py, str(label), _label_justification("left"), "left"))
-            if positions in ("End", "Both"):
-                px, py = _label_position("right", y, x1, offset, font_size)
-                specs.append((px, py, str(label), _label_justification("right"), "right"))
-        return specs
+        x_scheme = str(obj.XAxisIdentification).lower()
+        y_scheme = str(obj.YAxisIdentification).lower()
+        geometry = build_grid_geometry(
+            [_number(value) for value in obj.XSpacings],
+            [_number(value) for value in obj.YSpacings],
+            _number(obj.XStartExtension), _number(obj.XEndExtension),
+            _number(obj.YStartExtension), _number(obj.YEndExtension),
+            x_scheme, y_scheme,
+            list(obj.XAxisLabels) if x_scheme == "custom" else None,
+            list(obj.YAxisLabels) if y_scheme == "custom" else None,
+        )
+        return grid_label_anchors(
+            geometry, str(self.ViewObject.LabelPosition),
+            _number(self.ViewObject.LabelOffset),
+        )
+
+    def _update_visibility(self, view):
+        if self._visibility is not None:
+            self._visibility.whichChild = (
+                coin.SO_SWITCH_ALL if bool(getattr(view, "Visibility", True))
+                else coin.SO_SWITCH_NONE
+            )
 
     def _update_points(self, view):
         if self._points is None:
@@ -334,6 +329,7 @@ class StructuralGridViewProvider:
             return
         self._changing = True
         try:
+            self._update_visibility(view)
             self._update_points(view)
             if self._labels is None:
                 return
@@ -348,14 +344,17 @@ class StructuralGridViewProvider:
                 _view_warning(f"cor de texto inválida; usando padrão seguro ({exc}).")
             color.rgb.setValue(*rgb)
             self._labels.addChild(color)
-            for x, y, text, justification, _side in self._label_specs():
+            for spec in self._label_specs():
                 separator = coin.SoSeparator()
-                translation = coin.SoTranslation(); translation.translation.setValue(x, y, 0.0)
+                translation = coin.SoTranslation()
+                translation.translation.setValue(*spec.anchor_point_local)
                 font = coin.SoFont(); font.size = float(view.FontSize)
                 if str(view.FontName): font.name = str(view.FontName)
-                label = coin.SoText2(); label.string = text
-                label.justification = getattr(coin.SoText2, justification)
-                for node in (translation, font, label): separator.addChild(node)
+                label = coin.SoText2(); label.string = spec.text
+                label.justification = coin.SoText2.CENTER
+                separator.addChild(translation)
+                separator.addChild(font)
+                separator.addChild(label)
                 self._labels.addChild(separator)
         finally:
             self._changing = False
@@ -367,8 +366,9 @@ class StructuralGridViewProvider:
             self._update_scene()
 
     def onChanged(self, view, prop):
-        if prop in {"ShowIntersections", "ShowLabels", "LabelPosition", "FontName", "FontSize",
-                    "TextColor", "LabelOffset", "IntersectionPointSize", "IntersectionPointColor"}:
+        if prop in {"Visibility", "ShowIntersections", "ShowLabels", "LabelPosition",
+                    "FontName", "FontSize", "TextColor", "LabelOffset",
+                    "IntersectionPointSize", "IntersectionPointColor"}:
             self._update_scene()
 
     def onDocumentRestored(self, view):
@@ -384,7 +384,7 @@ class StructuralGridViewProvider:
 
     def __getstate__(self): return None
     def __setstate__(self, _state):
-        self._root = self._labels = self._points = None
+        self._root = self._visibility = self._labels = self._points = None
         self._visible_point_size = 5.0
         self._changing = False
 

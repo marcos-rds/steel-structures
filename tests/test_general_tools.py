@@ -68,6 +68,7 @@ class GeneralToolsTests(unittest.TestCase):
         paths.MEMBER_ICON = "member.svg"
         paths.COLUMN_ICON = "column.svg"
         paths.GRID_COMMAND_ICON = "grid.svg"
+        paths.ADJUST_MEMBER_ICON = "adjust.svg"
         draft_tools = types.ModuleType("DraftTools")
         draft_tools.Move = Move
         draftutils = types.ModuleType("draftutils")
@@ -146,7 +147,9 @@ class GeneralToolsTests(unittest.TestCase):
         self.assertIn(expected, [(title, tuple(items)) for title, items in workbench.toolbars])
         self.assertIn(expected, [(title, tuple(items)) for title, items in workbench.menus])
         self.assertIn(("Steel Structures", [
-            "SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_CreateGrid"
+            "SteelStructures_CreateMember", "SteelStructures_CreateColumn",
+            "SteelStructures_AdjustMember", "SteelStructures_CreateGrid",
+            "SteelStructures_CreateTruss"
         ]), workbench.menus)
 
     def test_repeated_activation_does_not_duplicate_bars(self):

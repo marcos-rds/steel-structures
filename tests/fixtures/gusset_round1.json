@@ -1,0 +1,5995 @@
+{
+  "source_sha256": "d7e7170104010f8ed265a834b56dde1e5b767c8e5544539bbb45ced27b46405c",
+  "owners": {
+    "StructuralTruss": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "B_S_END": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_END:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_END:connection",
+          "node_key": "B_S_END",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "B_S_MAIN_1_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_MAIN_1_3:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_MAIN_1_3:connection",
+          "node_key": "B_S_MAIN_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "B_S_MAIN_2_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_MAIN_2_3:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_MAIN_2_3:connection",
+          "node_key": "B_S_MAIN_2_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "B_S_START": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_START:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_START:connection",
+          "node_key": "B_S_START",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_MAIN_1_2": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_MAIN_1_2:TC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_MAIN_1_2:connection",
+          "node_key": "T_S_MAIN_1_2",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_MAIN_1_6": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": ""
+          },
+          "intent_key": "T_S_MAIN_1_6:connection",
+          "node_key": "T_S_MAIN_1_6",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_MAIN_5_6": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_MAIN_5_6:TC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_MAIN_5_6:connection",
+          "node_key": "T_S_MAIN_5_6",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "Parallel",
+      "height": 2000.0,
+      "left_panels": 0,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 0,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "Warren",
+      "x_connection": "Disconnected"
+    },
+    "StructuralTruss001": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "B_S_MAIN_1_2": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_MAIN_1_2:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_MAIN_1_2:connection",
+          "node_key": "B_S_MAIN_1_2",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "B_S_MAIN_1_3": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_MAIN_1_3:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_MAIN_1_3:connection",
+          "node_key": "B_S_MAIN_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "B_S_START": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_START:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_START:connection",
+          "node_key": "B_S_START",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_MAIN_1_2": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_MAIN_1_2:TC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_MAIN_1_2:connection",
+          "node_key": "T_S_MAIN_1_2",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_MAIN_1_6": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_MAIN_1_6:TC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_MAIN_1_6:connection",
+          "node_key": "T_S_MAIN_1_6",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_START": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_START:TC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_START:connection",
+          "node_key": "T_S_START",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "Parallel",
+      "height": 2000.0,
+      "left_panels": 0,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 0,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "WarrenVerticals",
+      "x_connection": "Disconnected"
+    },
+    "StructuralTruss002": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "B_S_MAIN_1_2": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_MAIN_1_2:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_MAIN_1_2:connection",
+          "node_key": "B_S_MAIN_1_2",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "B_S_MAIN_1_6": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_MAIN_1_6:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_MAIN_1_6:connection",
+          "node_key": "B_S_MAIN_1_6",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_MAIN_1_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_MAIN_1_3:TC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_MAIN_1_3:connection",
+          "node_key": "T_S_MAIN_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_START": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_START:TC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_START:connection",
+          "node_key": "T_S_START",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "Parallel",
+      "height": 2000.0,
+      "left_panels": 0,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 0,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "Pratt",
+      "x_connection": "Disconnected"
+    },
+    "StructuralTruss003": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "T_S_MAIN_1_3": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_MAIN_1_3:TC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_MAIN_1_3:connection",
+          "node_key": "T_S_MAIN_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "Parallel",
+      "height": 2000.0,
+      "left_panels": 0,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 0,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "X",
+      "x_connection": "Disconnected"
+    },
+    "StructuralTruss004": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "B_S_MAIN_1_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_MAIN_1_3:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_MAIN_1_3:connection",
+          "node_key": "B_S_MAIN_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "B_S_START": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_START:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_START:connection",
+          "node_key": "B_S_START",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "I_K_S_MAIN_1_2": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "I_K_S_MAIN_1_2:DIAGONAL:B_S_MAIN_1_3>I_K_S_MAIN_1_2:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "I_K_S_MAIN_1_2:connection",
+          "node_key": "I_K_S_MAIN_1_2",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_MAIN_1_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_MAIN_1_3:TC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_MAIN_1_3:connection",
+          "node_key": "T_S_MAIN_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "Parallel",
+      "height": 2000.0,
+      "left_panels": 0,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 0,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "K",
+      "x_connection": "Disconnected"
+    },
+    "StructuralTruss005": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "B_S_LEFT_2_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_LEFT_2_3:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_LEFT_2_3:connection",
+          "node_key": "B_S_LEFT_2_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_APEX": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_APEX:chord-break:TC_LEFT|TC_RIGHT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_APEX:connection",
+          "node_key": "T_S_APEX",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_LEFT_1_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_LEFT_1_3:TC_LEFT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_LEFT_1_3:connection",
+          "node_key": "T_S_LEFT_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "DuoPitch",
+      "height": 2000.0,
+      "left_panels": 3,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 3,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "Warren",
+      "x_connection": "Disconnected"
+    },
+    "StructuralTruss006": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "B_S_LEFT_2_3": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_LEFT_2_3:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_LEFT_2_3:connection",
+          "node_key": "B_S_LEFT_2_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_APEX": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_APEX:chord-break:TC_LEFT|TC_RIGHT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_APEX:connection",
+          "node_key": "T_S_APEX",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_LEFT_1_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_LEFT_1_3:TC_LEFT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_LEFT_1_3:connection",
+          "node_key": "T_S_LEFT_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "DuoPitch",
+      "height": 2000.0,
+      "left_panels": 3,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 3,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "WarrenVerticals",
+      "x_connection": "Disconnected"
+    },
+    "StructuralTruss007": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "B_S_LEFT_2_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_LEFT_2_3:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_LEFT_2_3:connection",
+          "node_key": "B_S_LEFT_2_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_APEX": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_APEX:chord-break:TC_LEFT|TC_RIGHT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_APEX:connection",
+          "node_key": "T_S_APEX",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_LEFT_2_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_LEFT_2_3:TC_LEFT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_LEFT_2_3:connection",
+          "node_key": "T_S_LEFT_2_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "DuoPitch",
+      "height": 2000.0,
+      "left_panels": 3,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 3,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "Howe",
+      "x_connection": "Disconnected"
+    },
+    "StructuralTruss008": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "B_S_APEX": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_APEX:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_APEX:connection",
+          "node_key": "B_S_APEX",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "B_S_LEFT_1_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_LEFT_1_3:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_LEFT_1_3:connection",
+          "node_key": "B_S_LEFT_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "B_S_LEFT_2_3": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_LEFT_2_3:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_LEFT_2_3:connection",
+          "node_key": "B_S_LEFT_2_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_APEX": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_APEX:chord-break:TC_LEFT|TC_RIGHT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_APEX:connection",
+          "node_key": "T_S_APEX",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_LEFT_1_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_LEFT_1_3:TC_LEFT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_LEFT_1_3:connection",
+          "node_key": "T_S_LEFT_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_LEFT_2_3": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_LEFT_2_3:TC_LEFT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_LEFT_2_3:connection",
+          "node_key": "T_S_LEFT_2_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "DuoPitch",
+      "height": 2000.0,
+      "left_panels": 3,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 3,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "X",
+      "x_connection": "Disconnected"
+    },
+    "StructuralTruss009": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "B_S_APEX": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "B_S_APEX:BC_MAIN:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "B_S_APEX:connection",
+          "node_key": "B_S_APEX",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_RIGHT_1_3": {
+          "direct_policy": "Priority",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_RIGHT_1_3:TC_RIGHT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_RIGHT_1_3:connection",
+          "node_key": "T_S_RIGHT_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "DuoPitch",
+      "height": 2000.0,
+      "left_panels": 3,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 3,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "Fan",
+      "x_connection": "Disconnected"
+    },
+    "StructuralTruss010": {
+      "apex_position": 0.5,
+      "bottom_continuity": "Continuous",
+      "connection_intents": {
+        "T_S_LEFT_2_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_LEFT_2_3:TC_LEFT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_LEFT_2_3:connection",
+          "node_key": "T_S_LEFT_2_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        },
+        "T_S_RIGHT_1_3": {
+          "direct_policy": "BalancedMiter",
+          "fastening": "Unspecified",
+          "form": "Gusset",
+          "gusset": {
+            "attachment_mode": "Auto",
+            "axial_clearance": 0.0,
+            "chord_contact": "TrussInterior",
+            "edge_margin": 25.0,
+            "member_overlap": 150.0,
+            "normal_clearance": 0.0,
+            "plate_thickness": 10.0,
+            "side": "Center",
+            "transverse_placement": "T_S_RIGHT_1_3:TC_RIGHT:OuterHalfspace:longitudinal:Outer:A:0:NearA"
+          },
+          "intent_key": "T_S_RIGHT_1_3:connection",
+          "node_key": "T_S_RIGHT_1_3",
+          "participant_run_keys": [],
+          "priority_member": "Automatic",
+          "priority_run_key": "",
+          "schema_version": 4
+        }
+      },
+      "custom_spacings": [
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667,
+        1666.6666666666667
+      ],
+      "default_gusset_thickness": 10.0,
+      "end": [
+        10000.0,
+        0.0,
+        0.0
+      ],
+      "envelope_type": "DuoPitch",
+      "height": 2000.0,
+      "left_panels": 3,
+      "panel_count": 6,
+      "panelization_mode": "ByPanelCount",
+      "panelization_result": {
+        "maximum_spacing": 1666.666666666667,
+        "minimum_spacing": 1666.666666666666,
+        "panel_count": 6,
+        "spacing": 1666.6666666666667,
+        "total": 10000.0
+      },
+      "plane_normal": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "reference_edge": "Edge1",
+      "reference_linked": false,
+      "reference_mode": "TwoPoints",
+      "right_panels": 3,
+      "role_specs": {
+        "BOTTOM_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": 90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "DIAGONAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.8,
+            0.14901960784313725
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_LEFT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 180.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "END_POST_RIGHT": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "TOP_CHORD": {
+          "assembly": "Single",
+          "color": [
+            0.2,
+            0.45098039215686275,
+            0.8509803921568627
+          ],
+          "insertion": "centroid",
+          "physical_fit": "None",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "u-4x8.04"
+          },
+          "rotation": -90.0,
+          "section_geometry_mode": "Detailed"
+        },
+        "VERTICAL": {
+          "assembly": "Single",
+          "color": [
+            1.0,
+            0.5019607843137255,
+            0.10196078431372549
+          ],
+          "insertion": "centroid",
+          "physical_fit": "ToChord",
+          "physical_fit_gap": 0.0,
+          "profile_ref": {
+            "catalog_id": "gerdau-construcao-metalica-2023-01",
+            "profile_id": "equal-angle-metric-40x4"
+          },
+          "rotation": 0.0,
+          "section_geometry_mode": "Detailed"
+        }
+      },
+      "span": 10000.0,
+      "start": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "target_angle": 45.0,
+      "target_spacing": 1000.0,
+      "top_continuity": "Continuous",
+      "topology_mode": "Preset",
+      "topology_preset": "QueenPost",
+      "x_connection": "Disconnected"
+    }
+  },
+  "cases": [
+    {
+      "owner": "StructuralTruss",
+      "node": "B_S_END",
+      "group": "F07_01",
+      "variant": "L",
+      "before": [
+        [
+          -37.8540188618,
+          -11.59
+        ],
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          0.0,
+          175.0
+        ],
+        [
+          -28.5,
+          175.0
+        ],
+        [
+          -90.1379634727,
+          152.68397932
+        ],
+        [
+          -140.0723466466,
+          111.0719933418
+        ]
+      ],
+      "saved": [
+        [
+          -37.8540188618,
+          -11.59
+        ],
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          0.0,
+          175.0
+        ],
+        [
+          -28.5,
+          175.0
+        ],
+        [
+          -90.1379634727,
+          152.68397932
+        ],
+        [
+          -140.0723466466,
+          111.0719933418
+        ]
+      ],
+      "expected": [
+        [
+          -129.862204665,
+          -11.59
+        ],
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          0.0,
+          175.0
+        ],
+        [
+          -63.3587386567,
+          175.0
+        ],
+        [
+          -129.862204665,
+          119.5804449931
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss",
+      "node": "B_S_MAIN_1_3",
+      "group": "F03_01",
+      "variant": "L",
+      "before": [
+        [
+          37.8540188618,
+          -11.59
+        ],
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          83.1846018607,
+          158.47844733
+        ],
+        [
+          -83.1846018607,
+          158.47844733
+        ],
+        [
+          -140.0723466466,
+          111.0719933418
+        ],
+        [
+          -37.8540188618,
+          -11.59
+        ]
+      ],
+      "saved": [
+        [
+          37.8540188618,
+          -11.59
+        ],
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          83.1846018607,
+          158.47844733
+        ],
+        [
+          -83.1846018607,
+          158.47844733
+        ],
+        [
+          -140.0723466466,
+          111.0719933418
+        ],
+        [
+          -37.8540188618,
+          -11.59
+        ]
+      ],
+      "expected": [
+        [
+          -129.862204665,
+          -11.59
+        ],
+        [
+          129.862204665,
+          -11.59
+        ],
+        [
+          129.862204665,
+          119.5804449931
+        ],
+        [
+          83.1846018607,
+          158.47844733
+        ],
+        [
+          -83.1846018607,
+          158.47844733
+        ],
+        [
+          -129.862204665,
+          119.5804449931
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss",
+      "node": "B_S_MAIN_2_3",
+      "group": "F03_01",
+      "variant": "L",
+      "before": [
+        [
+          37.8540188618,
+          -11.59
+        ],
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          83.1846018607,
+          158.47844733
+        ],
+        [
+          -83.1846018607,
+          158.47844733
+        ],
+        [
+          -140.0723466466,
+          111.0719933418
+        ],
+        [
+          -37.8540188618,
+          -11.59
+        ]
+      ],
+      "saved": [
+        [
+          37.8540188618,
+          -11.59
+        ],
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          83.1846018607,
+          158.47844733
+        ],
+        [
+          -83.1846018607,
+          158.47844733
+        ],
+        [
+          -140.0723466466,
+          111.0719933418
+        ],
+        [
+          -37.8540188618,
+          -11.59
+        ]
+      ],
+      "expected": [
+        [
+          -129.862204665,
+          -11.59
+        ],
+        [
+          129.862204665,
+          -11.59
+        ],
+        [
+          129.862204665,
+          119.5804449931
+        ],
+        [
+          83.1846018607,
+          158.47844733
+        ],
+        [
+          -83.1846018607,
+          158.47844733
+        ],
+        [
+          -129.862204665,
+          119.5804449931
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss",
+      "node": "B_S_START",
+      "group": "F07_02",
+      "variant": "L",
+      "before": [
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          37.8540188618,
+          -11.59
+        ],
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          90.1379634727,
+          152.68397932
+        ],
+        [
+          28.5,
+          175.0
+        ],
+        [
+          -0.0,
+          175.0
+        ]
+      ],
+      "saved": [
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          37.8540188618,
+          -11.59
+        ],
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          90.1379634727,
+          152.68397932
+        ],
+        [
+          28.5,
+          175.0
+        ],
+        [
+          -0.0,
+          175.0
+        ]
+      ],
+      "expected": [
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          129.862204665,
+          -11.59
+        ],
+        [
+          129.862204665,
+          119.5804449931
+        ],
+        [
+          63.3587386567,
+          175.0
+        ],
+        [
+          0.0,
+          175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss",
+      "node": "T_S_MAIN_1_2",
+      "group": "F03_02",
+      "variant": "L",
+      "before": [
+        [
+          96.2443636138,
+          -147.5953125357
+        ],
+        [
+          153.1321083997,
+          -100.1888585475
+        ],
+        [
+          59.9830596102,
+          11.59
+        ],
+        [
+          -59.9830596102,
+          11.59
+        ],
+        [
+          -153.1321083997,
+          -100.1888585475
+        ],
+        [
+          -96.2443636138,
+          -147.5953125357
+        ]
+      ],
+      "saved": [
+        [
+          96.2443636138,
+          -147.5953125357
+        ],
+        [
+          153.1321083997,
+          -100.1888585475
+        ],
+        [
+          59.9830596102,
+          11.59
+        ],
+        [
+          -59.9830596102,
+          11.59
+        ],
+        [
+          -153.1321083997,
+          -100.1888585475
+        ],
+        [
+          -96.2443636138,
+          -147.5953125357
+        ]
+      ],
+      "expected": [
+        [
+          -142.9219664182,
+          -108.6973101988
+        ],
+        [
+          -96.2443636138,
+          -147.5953125357
+        ],
+        [
+          96.2443636138,
+          -147.5953125357
+        ],
+        [
+          142.9219664182,
+          -108.6973101988
+        ],
+        [
+          142.9219664182,
+          11.59
+        ],
+        [
+          -142.9219664182,
+          11.59
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss",
+      "node": "T_S_MAIN_1_6",
+      "group": "F03_03",
+      "variant": "L",
+      "before": [
+        [
+          96.2443636138,
+          -147.5953125357
+        ],
+        [
+          153.1321083997,
+          -100.1888585475
+        ],
+        [
+          63.8747262768,
+          6.92
+        ],
+        [
+          -63.8747262769,
+          6.92
+        ],
+        [
+          -153.1321083997,
+          -100.1888585475
+        ],
+        [
+          -96.2443636138,
+          -147.5953125357
+        ]
+      ],
+      "saved": [
+        [
+          96.2443636138,
+          -147.5953125357
+        ],
+        [
+          153.1321083997,
+          -100.1888585475
+        ],
+        [
+          63.8747262768,
+          6.92
+        ],
+        [
+          -63.8747262769,
+          6.92
+        ],
+        [
+          -153.1321083997,
+          -100.1888585475
+        ],
+        [
+          -96.2443636138,
+          -147.5953125357
+        ]
+      ],
+      "expected": [
+        [
+          -142.9219664182,
+          -108.6973101988
+        ],
+        [
+          -96.2443636138,
+          -147.5953125357
+        ],
+        [
+          96.2443636138,
+          -147.5953125357
+        ],
+        [
+          142.9219664182,
+          -108.6973101988
+        ],
+        [
+          142.9219664182,
+          6.92
+        ],
+        [
+          -142.9219664182,
+          6.92
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss",
+      "node": "T_S_MAIN_5_6",
+      "group": "F03_02",
+      "variant": "L",
+      "before": [
+        [
+          96.2443636138,
+          -147.5953125357
+        ],
+        [
+          153.1321083997,
+          -100.1888585475
+        ],
+        [
+          59.9830596102,
+          11.59
+        ],
+        [
+          -59.9830596102,
+          11.59
+        ],
+        [
+          -153.1321083997,
+          -100.1888585475
+        ],
+        [
+          -96.2443636138,
+          -147.5953125357
+        ]
+      ],
+      "saved": [
+        [
+          96.2443636138,
+          -147.5953125357
+        ],
+        [
+          153.1321083997,
+          -100.1888585475
+        ],
+        [
+          59.9830596102,
+          11.59
+        ],
+        [
+          -59.9830596102,
+          11.59
+        ],
+        [
+          -153.1321083997,
+          -100.1888585475
+        ],
+        [
+          -96.2443636138,
+          -147.5953125357
+        ]
+      ],
+      "expected": [
+        [
+          -142.9219664182,
+          -108.6973101988
+        ],
+        [
+          -96.2443636138,
+          -147.5953125357
+        ],
+        [
+          96.2443636138,
+          -147.5953125357
+        ],
+        [
+          142.9219664182,
+          -108.6973101988
+        ],
+        [
+          142.9219664182,
+          11.59
+        ],
+        [
+          -142.9219664182,
+          11.59
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss001",
+      "node": "B_S_MAIN_1_2",
+      "group": "F01_01",
+      "variant": "Mantida",
+      "before": [
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          36.5,
+          -11.59
+        ],
+        [
+          36.5,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ]
+      ],
+      "saved": [
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          36.5,
+          -11.59
+        ],
+        [
+          36.5,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ]
+      ],
+      "expected": [
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          36.5,
+          -11.59
+        ],
+        [
+          36.5,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss001",
+      "node": "B_S_MAIN_1_3",
+      "group": "F04_01",
+      "variant": "Mantida",
+      "before": [
+        [
+          175.0,
+          -11.59
+        ],
+        [
+          175.0,
+          81.9656155473
+        ],
+        [
+          63.3587386567,
+          175.0
+        ],
+        [
+          -63.3587386567,
+          175.0
+        ],
+        [
+          -175.0,
+          81.9656155473
+        ],
+        [
+          -175.0,
+          -11.59
+        ]
+      ],
+      "saved": [
+        [
+          175.0,
+          -11.59
+        ],
+        [
+          175.0,
+          81.9656155473
+        ],
+        [
+          63.3587386567,
+          175.0
+        ],
+        [
+          -63.3587386567,
+          175.0
+        ],
+        [
+          -175.0,
+          81.9656155473
+        ],
+        [
+          -175.0,
+          -11.59
+        ]
+      ],
+      "expected": [
+        [
+          175.0,
+          -11.59
+        ],
+        [
+          175.0,
+          81.9656155473
+        ],
+        [
+          63.3587386567,
+          175.0
+        ],
+        [
+          -63.3587386567,
+          175.0
+        ],
+        [
+          -175.0,
+          81.9656155473
+        ],
+        [
+          -175.0,
+          -11.59
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss001",
+      "node": "B_S_START",
+      "group": "F07_02",
+      "variant": "L",
+      "before": [
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          37.8540188618,
+          -11.59
+        ],
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          90.1379634727,
+          152.68397932
+        ],
+        [
+          28.5,
+          175.0
+        ],
+        [
+          -0.0,
+          175.0
+        ]
+      ],
+      "saved": [
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          37.8540188618,
+          -11.59
+        ],
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          90.1379634727,
+          152.68397932
+        ],
+        [
+          28.5,
+          175.0
+        ],
+        [
+          -0.0,
+          175.0
+        ]
+      ],
+      "expected": [
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          129.862204665,
+          -11.59
+        ],
+        [
+          129.862204665,
+          119.5804449931
+        ],
+        [
+          63.3587386567,
+          175.0
+        ],
+        [
+          0.0,
+          175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss001",
+      "node": "T_S_MAIN_1_2",
+      "group": "F04_02",
+      "variant": "Mantida",
+      "before": [
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          175.0,
+          -81.9656155472
+        ],
+        [
+          175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          -81.9656155472
+        ],
+        [
+          -63.3587386567,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          175.0,
+          -81.9656155472
+        ],
+        [
+          175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          -81.9656155472
+        ],
+        [
+          -63.3587386567,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          175.0,
+          -81.9656155472
+        ],
+        [
+          175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          -81.9656155472
+        ],
+        [
+          -63.3587386567,
+          -175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss001",
+      "node": "T_S_MAIN_1_6",
+      "group": "F04_02",
+      "variant": "Mantida",
+      "before": [
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          175.0,
+          -81.9656155472
+        ],
+        [
+          175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          -81.9656155472
+        ],
+        [
+          -63.3587386567,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          175.0,
+          -81.9656155472
+        ],
+        [
+          175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          -81.9656155472
+        ],
+        [
+          -63.3587386567,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          175.0,
+          -81.9656155472
+        ],
+        [
+          175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          -81.9656155472
+        ],
+        [
+          -63.3587386567,
+          -175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss001",
+      "node": "T_S_START",
+      "group": "F07_03",
+      "variant": "Mantida",
+      "before": [
+        [
+          53.5,
+          11.59
+        ],
+        [
+          0.0,
+          11.59
+        ],
+        [
+          0.0,
+          -175.0
+        ],
+        [
+          53.5,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          53.5,
+          11.59
+        ],
+        [
+          0.0,
+          11.59
+        ],
+        [
+          0.0,
+          -175.0
+        ],
+        [
+          53.5,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          53.5,
+          11.59
+        ],
+        [
+          0.0,
+          11.59
+        ],
+        [
+          0.0,
+          -175.0
+        ],
+        [
+          53.5,
+          -175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss002",
+      "node": "B_S_MAIN_1_2",
+      "group": "F04_01",
+      "variant": "Mantida",
+      "before": [
+        [
+          175.0,
+          -11.59
+        ],
+        [
+          175.0,
+          81.9656155473
+        ],
+        [
+          63.3587386567,
+          175.0
+        ],
+        [
+          -63.3587386567,
+          175.0
+        ],
+        [
+          -175.0,
+          81.9656155473
+        ],
+        [
+          -175.0,
+          -11.59
+        ]
+      ],
+      "saved": [
+        [
+          175.0,
+          -11.59
+        ],
+        [
+          175.0,
+          81.9656155473
+        ],
+        [
+          63.3587386567,
+          175.0
+        ],
+        [
+          -63.3587386567,
+          175.0
+        ],
+        [
+          -175.0,
+          81.9656155473
+        ],
+        [
+          -175.0,
+          -11.59
+        ]
+      ],
+      "expected": [
+        [
+          175.0,
+          -11.59
+        ],
+        [
+          175.0,
+          81.9656155473
+        ],
+        [
+          63.3587386567,
+          175.0
+        ],
+        [
+          -63.3587386567,
+          175.0
+        ],
+        [
+          -175.0,
+          81.9656155473
+        ],
+        [
+          -175.0,
+          -11.59
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss002",
+      "node": "B_S_MAIN_1_6",
+      "group": "F02_01",
+      "variant": "L",
+      "before": [
+        [
+          -37.8540188618,
+          -11.59
+        ],
+        [
+          36.5,
+          -11.59
+        ],
+        [
+          36.5,
+          175.0
+        ],
+        [
+          -63.3587386567,
+          175.0
+        ],
+        [
+          -140.0723466466,
+          111.0719933418
+        ]
+      ],
+      "saved": [
+        [
+          -37.8540188618,
+          -11.59
+        ],
+        [
+          36.5,
+          -11.59
+        ],
+        [
+          36.5,
+          175.0
+        ],
+        [
+          -63.3587386567,
+          175.0
+        ],
+        [
+          -140.0723466466,
+          111.0719933418
+        ]
+      ],
+      "expected": [
+        [
+          -129.862204665,
+          -11.59
+        ],
+        [
+          36.5,
+          -11.59
+        ],
+        [
+          36.5,
+          175.0
+        ],
+        [
+          -63.3587386567,
+          175.0
+        ],
+        [
+          -129.862204665,
+          119.5804449931
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss002",
+      "node": "T_S_MAIN_1_3",
+      "group": "F02_02",
+      "variant": "L",
+      "before": [
+        [
+          59.9830596102,
+          11.59
+        ],
+        [
+          -53.5,
+          11.59
+        ],
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          153.1321083997,
+          -100.1888585475
+        ]
+      ],
+      "saved": [
+        [
+          59.9830596102,
+          11.59
+        ],
+        [
+          -53.5,
+          11.59
+        ],
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          153.1321083997,
+          -100.1888585475
+        ]
+      ],
+      "expected": [
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          142.9219664182,
+          -108.6973101988
+        ],
+        [
+          142.9219664182,
+          11.59
+        ],
+        [
+          -53.5,
+          11.59
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss002",
+      "node": "T_S_START",
+      "group": "F07_04",
+      "variant": "L",
+      "before": [
+        [
+          59.9830596102,
+          11.59
+        ],
+        [
+          0.0,
+          11.59
+        ],
+        [
+          0.0,
+          -175.0
+        ],
+        [
+          28.5,
+          -175.0
+        ],
+        [
+          103.1977252259,
+          -141.8008445257
+        ],
+        [
+          153.1321083998,
+          -100.1888585475
+        ]
+      ],
+      "saved": [
+        [
+          59.9830596102,
+          11.59
+        ],
+        [
+          0.0,
+          11.59
+        ],
+        [
+          0.0,
+          -175.0
+        ],
+        [
+          28.5,
+          -175.0
+        ],
+        [
+          103.1977252259,
+          -141.8008445257
+        ],
+        [
+          153.1321083998,
+          -100.1888585475
+        ]
+      ],
+      "expected": [
+        [
+          0.0,
+          -175.0
+        ],
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          142.9219664182,
+          -108.6973101988
+        ],
+        [
+          142.9219664182,
+          11.59
+        ],
+        [
+          0.0,
+          11.59
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss003",
+      "node": "T_S_MAIN_1_3",
+      "group": "F04_02",
+      "variant": "Mantida",
+      "before": [
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          175.0,
+          -81.9656155472
+        ],
+        [
+          175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          -81.9656155472
+        ],
+        [
+          -63.3587386567,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          175.0,
+          -81.9656155472
+        ],
+        [
+          175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          -81.9656155472
+        ],
+        [
+          -63.3587386567,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          63.3587386567,
+          -175.0
+        ],
+        [
+          175.0,
+          -81.9656155472
+        ],
+        [
+          175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          11.59
+        ],
+        [
+          -175.0,
+          -81.9656155472
+        ],
+        [
+          -63.3587386567,
+          -175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss004",
+      "node": "B_S_MAIN_1_3",
+      "group": "F02_03",
+      "variant": "L",
+      "before": [
+        [
+          99.0833163196,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ],
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          51.6265813873,
+          -11.59
+        ],
+        [
+          168.8403570728,
+          58.7382654113
+        ]
+      ],
+      "saved": [
+        [
+          99.0833163196,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ],
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          51.6265813873,
+          -11.59
+        ],
+        [
+          168.8403570728,
+          58.7382654113
+        ]
+      ],
+      "expected": [
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          159.5406400443,
+          -11.59
+        ],
+        [
+          159.5406400443,
+          74.2377937921
+        ],
+        [
+          99.0833163196,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss004",
+      "node": "B_S_START",
+      "group": "F07_05",
+      "variant": "L",
+      "before": [
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          51.6265813873,
+          -11.59
+        ],
+        [
+          168.8403570728,
+          58.7382654113
+        ],
+        [
+          135.39813297,
+          114.4753055826
+        ],
+        [
+          28.5,
+          175.0
+        ],
+        [
+          0.0,
+          175.0
+        ]
+      ],
+      "saved": [
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          51.6265813873,
+          -11.59
+        ],
+        [
+          168.8403570728,
+          58.7382654113
+        ],
+        [
+          135.39813297,
+          114.4753055826
+        ],
+        [
+          28.5,
+          175.0
+        ],
+        [
+          0.0,
+          175.0
+        ]
+      ],
+      "expected": [
+        [
+          0.0,
+          -11.59
+        ],
+        [
+          159.5406400443,
+          -11.59
+        ],
+        [
+          159.5406400443,
+          74.2377937921
+        ],
+        [
+          99.0833163196,
+          175.0
+        ],
+        [
+          0.0,
+          175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss004",
+      "node": "I_K_S_MAIN_1_2",
+      "group": "F08_01",
+      "variant": "Mantida",
+      "before": [
+        [
+          39.6631290297,
+          175.0
+        ],
+        [
+          -99.0833163195,
+          175.0
+        ],
+        [
+          -204.0833163196,
+          1e-10
+        ],
+        [
+          -99.0833163197,
+          -175.0
+        ],
+        [
+          39.6631290297,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          39.6631290297,
+          175.0
+        ],
+        [
+          -99.0833163195,
+          175.0
+        ],
+        [
+          -204.0833163196,
+          1e-10
+        ],
+        [
+          -99.0833163197,
+          -175.0
+        ],
+        [
+          39.6631290297,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          39.6631290297,
+          175.0
+        ],
+        [
+          -99.0833163195,
+          175.0
+        ],
+        [
+          -204.0833163196,
+          1e-10
+        ],
+        [
+          -99.0833163197,
+          -175.0
+        ],
+        [
+          39.6631290297,
+          -175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss004",
+      "node": "T_S_MAIN_1_3",
+      "group": "F02_04",
+      "variant": "L",
+      "before": [
+        [
+          99.0833163196,
+          -175.0
+        ],
+        [
+          177.5867849151,
+          -44.1608856742
+        ],
+        [
+          84.6686421247,
+          11.59
+        ],
+        [
+          -53.5,
+          11.59
+        ],
+        [
+          -53.5,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          99.0833163196,
+          -175.0
+        ],
+        [
+          177.5867849151,
+          -44.1608856742
+        ],
+        [
+          84.6686421247,
+          11.59
+        ],
+        [
+          -53.5,
+          11.59
+        ],
+        [
+          -53.5,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          99.0833163196,
+          -175.0
+        ],
+        [
+          168.2870678866,
+          -59.660414055
+        ],
+        [
+          168.2870678866,
+          11.59
+        ],
+        [
+          -53.5,
+          11.59
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss005",
+      "node": "B_S_LEFT_2_3",
+      "group": "F03_04",
+      "variant": "L",
+      "before": [
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          83.1846018608,
+          158.47844733
+        ],
+        [
+          -125.0893893177,
+          158.47844733
+        ],
+        [
+          -176.0391805919,
+          31.1039691446
+        ],
+        [
+          -69.3042577302,
+          -11.59
+        ],
+        [
+          37.8540188618,
+          -11.59
+        ]
+      ],
+      "saved": [
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          83.1846018608,
+          158.47844733
+        ],
+        [
+          -125.0893893177,
+          158.47844733
+        ],
+        [
+          -176.0391805919,
+          31.1039691446
+        ],
+        [
+          -69.3042577302,
+          -11.59
+        ],
+        [
+          37.8540188618,
+          -11.59
+        ]
+      ],
+      "expected": [
+        [
+          -168.5424964109,
+          -11.59
+        ],
+        [
+          129.862204665,
+          -11.59
+        ],
+        [
+          129.862204665,
+          119.5804449931
+        ],
+        [
+          83.1846018607,
+          158.47844733
+        ],
+        [
+          -125.0893893177,
+          158.47844733
+        ],
+        [
+          -168.5424964109,
+          49.8456795971
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss005",
+      "node": "T_S_APEX",
+      "group": "F05_01",
+      "variant": "C",
+      "before": [
+        [
+          -153.1321083997,
+          -100.1888585475
+        ],
+        [
+          -96.2443636139,
+          -147.5953125357
+        ],
+        [
+          96.2443636139,
+          -147.5953125357
+        ],
+        [
+          153.1321083997,
+          -100.1888585475
+        ],
+        [
+          88.8585743866,
+          -23.0606177317
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -88.8585743866,
+          -23.0606177317
+        ]
+      ],
+      "saved": [
+        [
+          -153.1321083997,
+          -100.1888585475
+        ],
+        [
+          -0.0,
+          -227.7989488808
+        ],
+        [
+          153.1321083997,
+          -100.1888585475
+        ],
+        [
+          88.8585743866,
+          -23.0606177317
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -88.8585743866,
+          -23.0606177317
+        ]
+      ],
+      "expected": [
+        [
+          -142.9219664182,
+          -147.5953125357
+        ],
+        [
+          142.9219664182,
+          -147.5953125357
+        ],
+        [
+          142.9219664182,
+          -44.6859745443
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -142.9219664182,
+          -44.6859745443
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss005",
+      "node": "T_S_LEFT_1_3",
+      "group": "F02_05",
+      "variant": "L",
+      "before": [
+        [
+          118.4807682497,
+          -175.0
+        ],
+        [
+          182.3528220899,
+          -15.3198653996
+        ],
+        [
+          56.4230642668,
+          35.0520377296
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ],
+        [
+          -53.5,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          137.9409983755,
+          -126.3494246855
+        ],
+        [
+          182.3528220899,
+          -15.3198653996
+        ],
+        [
+          56.4230642668,
+          35.0520377296
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ],
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          16.3145600892,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          118.4807682497,
+          -175.0
+        ],
+        [
+          174.8561379089,
+          -34.0615758521
+        ],
+        [
+          174.8561379089,
+          82.4252671865
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss006",
+      "node": "B_S_LEFT_2_3",
+      "group": "F04_03",
+      "variant": "Mantida",
+      "before": [
+        [
+          -193.1167682497,
+          -11.59
+        ],
+        [
+          287.2667386567,
+          -11.59
+        ],
+        [
+          63.3587386568,
+          175.0
+        ],
+        [
+          -118.4807682497,
+          175.0
+        ]
+      ],
+      "saved": [
+        [
+          -193.1167682497,
+          -11.59
+        ],
+        [
+          287.2667386567,
+          -11.59
+        ],
+        [
+          63.3587386568,
+          175.0
+        ],
+        [
+          -118.4807682497,
+          175.0
+        ]
+      ],
+      "expected": [
+        [
+          -193.1167682497,
+          -11.59
+        ],
+        [
+          287.2667386567,
+          -11.59
+        ],
+        [
+          63.3587386568,
+          175.0
+        ],
+        [
+          -118.4807682497,
+          175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss006",
+      "node": "T_S_APEX",
+      "group": "F06_01",
+      "variant": "Mantida",
+      "before": [
+        [
+          63.3587386568,
+          -175.0
+        ],
+        [
+          146.0417830462,
+          -106.0974630087
+        ],
+        [
+          166.7878388439,
+          -54.2323235146
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -166.7878388439,
+          -54.2323235146
+        ],
+        [
+          -146.0417830462,
+          -106.0974630087
+        ],
+        [
+          -63.3587386568,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          63.3587386568,
+          -175.0
+        ],
+        [
+          146.0417830462,
+          -106.0974630087
+        ],
+        [
+          166.7878388439,
+          -54.2323235146
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -166.7878388439,
+          -54.2323235146
+        ],
+        [
+          -146.0417830462,
+          -106.0974630087
+        ],
+        [
+          -63.3587386568,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          63.3587386568,
+          -175.0
+        ],
+        [
+          146.0417830462,
+          -106.0974630087
+        ],
+        [
+          166.7878388439,
+          -54.2323235146
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -166.7878388439,
+          -54.2323235146
+        ],
+        [
+          -146.0417830462,
+          -106.0974630087
+        ],
+        [
+          -63.3587386568,
+          -175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss006",
+      "node": "T_S_LEFT_1_3",
+      "group": "F02_05",
+      "variant": "L",
+      "before": [
+        [
+          118.4807682497,
+          -175.0
+        ],
+        [
+          182.3528220899,
+          -15.3198653996
+        ],
+        [
+          56.4230642668,
+          35.0520377296
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ],
+        [
+          -53.5,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          137.9409983755,
+          -126.3494246855
+        ],
+        [
+          182.3528220899,
+          -15.3198653996
+        ],
+        [
+          56.4230642668,
+          35.0520377296
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ],
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          16.3145600892,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          118.4807682497,
+          -175.0
+        ],
+        [
+          174.8561379089,
+          -34.0615758521
+        ],
+        [
+          174.8561379089,
+          82.4252671865
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss007",
+      "node": "B_S_LEFT_2_3",
+      "group": "F02_06",
+      "variant": "L",
+      "before": [
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          37.8540188618,
+          -11.59
+        ],
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          63.3587386567,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ]
+      ],
+      "saved": [
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          37.8540188618,
+          -11.59
+        ],
+        [
+          140.0723466466,
+          111.0719933418
+        ],
+        [
+          90.1379634727,
+          152.68397932
+        ],
+        [
+          11.5,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ]
+      ],
+      "expected": [
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          129.862204665,
+          -11.59
+        ],
+        [
+          129.862204665,
+          119.5804449931
+        ],
+        [
+          63.3587386567,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss007",
+      "node": "T_S_APEX",
+      "group": "F06_01",
+      "variant": "Mantida",
+      "before": [
+        [
+          63.3587386568,
+          -175.0
+        ],
+        [
+          146.0417830462,
+          -106.0974630087
+        ],
+        [
+          166.7878388439,
+          -54.2323235146
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -166.7878388439,
+          -54.2323235146
+        ],
+        [
+          -146.0417830462,
+          -106.0974630087
+        ],
+        [
+          -63.3587386568,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          63.3587386568,
+          -175.0
+        ],
+        [
+          146.0417830462,
+          -106.0974630087
+        ],
+        [
+          166.7878388439,
+          -54.2323235146
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -166.7878388439,
+          -54.2323235146
+        ],
+        [
+          -146.0417830462,
+          -106.0974630087
+        ],
+        [
+          -63.3587386568,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          63.3587386568,
+          -175.0
+        ],
+        [
+          146.0417830462,
+          -106.0974630087
+        ],
+        [
+          166.7878388439,
+          -54.2323235146
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -166.7878388439,
+          -54.2323235146
+        ],
+        [
+          -146.0417830462,
+          -106.0974630087
+        ],
+        [
+          -63.3587386568,
+          -175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss007",
+      "node": "T_S_LEFT_2_3",
+      "group": "F02_07",
+      "variant": "L",
+      "before": [
+        [
+          36.5,
+          -175.0
+        ],
+        [
+          36.5,
+          27.0828120229
+        ],
+        [
+          -140.0765432939,
+          -43.5478052946
+        ],
+        [
+          -171.52296617,
+          -68.7049435955
+        ],
+        [
+          -86.4869210465,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          36.5,
+          -166.9258240357
+        ],
+        [
+          36.5,
+          27.0828120229
+        ],
+        [
+          -140.0765432939,
+          -43.5478052946
+        ],
+        [
+          -171.52296617,
+          -68.7049435955
+        ],
+        [
+          -86.4869210465,
+          -175.0
+        ],
+        [
+          16.3145600892,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          -159.9341302718,
+          -80.219022548
+        ],
+        [
+          -84.1093483101,
+          -175.0
+        ],
+        [
+          36.5,
+          -175.0
+        ],
+        [
+          36.5,
+          27.0828120229
+        ],
+        [
+          -159.9341302718,
+          -51.4908400858
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss008",
+      "node": "B_S_APEX",
+      "group": "F04_04",
+      "variant": "Mantida",
+      "before": [
+        [
+          -233.3813483102,
+          -11.59
+        ],
+        [
+          233.3813483102,
+          -11.59
+        ],
+        [
+          84.1093483101,
+          175.0
+        ],
+        [
+          -84.1093483101,
+          175.0
+        ]
+      ],
+      "saved": [
+        [
+          -233.3813483102,
+          -11.59
+        ],
+        [
+          233.3813483102,
+          -11.59
+        ],
+        [
+          84.1093483101,
+          175.0
+        ],
+        [
+          -84.1093483101,
+          175.0
+        ]
+      ],
+      "expected": [
+        [
+          -233.3813483102,
+          -11.59
+        ],
+        [
+          233.3813483102,
+          -11.59
+        ],
+        [
+          84.1093483101,
+          175.0
+        ],
+        [
+          -84.1093483101,
+          175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss008",
+      "node": "B_S_LEFT_1_3",
+      "group": "F02_08",
+      "variant": "L",
+      "before": [
+        [
+          84.1093483101,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ],
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          43.9410086666,
+          -11.59
+        ],
+        [
+          159.4534108883,
+          80.8199217774
+        ]
+      ],
+      "saved": [
+        [
+          11.5,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ],
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          43.9410086666,
+          -11.59
+        ],
+        [
+          159.4534108883,
+          80.8199217774
+        ],
+        [
+          118.8482327972,
+          131.5763943912
+        ]
+      ],
+      "expected": [
+        [
+          -53.5,
+          -11.59
+        ],
+        [
+          149.3143144633,
+          -11.59
+        ],
+        [
+          149.3143144633,
+          93.4937923085
+        ],
+        [
+          84.1093483101,
+          175.0
+        ],
+        [
+          -53.5,
+          175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss008",
+      "node": "B_S_LEFT_2_3",
+      "group": "F04_03",
+      "variant": "Mantida",
+      "before": [
+        [
+          -193.1167682497,
+          -11.59
+        ],
+        [
+          287.2667386567,
+          -11.59
+        ],
+        [
+          63.3587386568,
+          175.0
+        ],
+        [
+          -118.4807682497,
+          175.0
+        ]
+      ],
+      "saved": [
+        [
+          -193.1167682497,
+          -11.59
+        ],
+        [
+          287.2667386567,
+          -11.59
+        ],
+        [
+          63.3587386568,
+          175.0
+        ],
+        [
+          -118.4807682497,
+          175.0
+        ]
+      ],
+      "expected": [
+        [
+          -193.1167682497,
+          -11.59
+        ],
+        [
+          287.2667386567,
+          -11.59
+        ],
+        [
+          63.3587386568,
+          175.0
+        ],
+        [
+          -118.4807682497,
+          175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss008",
+      "node": "T_S_APEX",
+      "group": "F06_01",
+      "variant": "Mantida",
+      "before": [
+        [
+          63.3587386568,
+          -175.0
+        ],
+        [
+          146.0417830462,
+          -106.0974630087
+        ],
+        [
+          166.7878388439,
+          -54.2323235146
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -166.7878388439,
+          -54.2323235146
+        ],
+        [
+          -146.0417830462,
+          -106.0974630087
+        ],
+        [
+          -63.3587386568,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          63.3587386568,
+          -175.0
+        ],
+        [
+          146.0417830462,
+          -106.0974630087
+        ],
+        [
+          166.7878388439,
+          -54.2323235146
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -166.7878388439,
+          -54.2323235146
+        ],
+        [
+          -146.0417830462,
+          -106.0974630087
+        ],
+        [
+          -63.3587386568,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          63.3587386568,
+          -175.0
+        ],
+        [
+          146.0417830462,
+          -106.0974630087
+        ],
+        [
+          166.7878388439,
+          -54.2323235146
+        ],
+        [
+          0.0,
+          12.4828120229
+        ],
+        [
+          -166.7878388439,
+          -54.2323235146
+        ],
+        [
+          -146.0417830462,
+          -106.0974630087
+        ],
+        [
+          -63.3587386568,
+          -175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss008",
+      "node": "T_S_LEFT_1_3",
+      "group": "F02_05",
+      "variant": "L",
+      "before": [
+        [
+          118.4807682497,
+          -175.0
+        ],
+        [
+          182.3528220899,
+          -15.3198653996
+        ],
+        [
+          56.4230642668,
+          35.0520377296
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ],
+        [
+          -53.5,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          137.9409983755,
+          -126.3494246855
+        ],
+        [
+          182.3528220899,
+          -15.3198653996
+        ],
+        [
+          56.4230642668,
+          35.0520377296
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ],
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          16.3145600892,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          118.4807682497,
+          -175.0
+        ],
+        [
+          174.8561379089,
+          -34.0615758521
+        ],
+        [
+          174.8561379089,
+          82.4252671865
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss008",
+      "node": "T_S_LEFT_2_3",
+      "group": "F04_05",
+      "variant": "Mantida",
+      "before": [
+        [
+          84.1093483101,
+          -175.0
+        ],
+        [
+          200.3569616032,
+          -29.6904833837
+        ],
+        [
+          158.179002966,
+          75.7544132093
+        ],
+        [
+          -179.1463414127,
+          -59.1757245421
+        ],
+        [
+          -86.4869210467,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          84.1093483101,
+          -175.0
+        ],
+        [
+          200.3569616032,
+          -29.6904833837
+        ],
+        [
+          158.179002966,
+          75.7544132093
+        ],
+        [
+          -179.1463414127,
+          -59.1757245421
+        ],
+        [
+          -86.4869210467,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          84.1093483101,
+          -175.0
+        ],
+        [
+          200.3569616032,
+          -29.6904833837
+        ],
+        [
+          158.179002966,
+          75.7544132093
+        ],
+        [
+          -179.1463414127,
+          -59.1757245421
+        ],
+        [
+          -86.4869210467,
+          -175.0
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss009",
+      "node": "B_S_APEX",
+      "group": "F09_01",
+      "variant": "Mantida",
+      "before": [
+        [
+          -183.539097568,
+          -11.59
+        ],
+        [
+          183.539097568,
+          -11.59
+        ],
+        [
+          166.9250139872,
+          71.4804179036
+        ],
+        [
+          84.1093483101,
+          175.0
+        ],
+        [
+          -84.1093483102,
+          175.0
+        ],
+        [
+          -166.9250139872,
+          71.4804179036
+        ]
+      ],
+      "saved": [
+        [
+          -183.539097568,
+          -11.59
+        ],
+        [
+          183.539097568,
+          -11.59
+        ],
+        [
+          166.9250139872,
+          71.4804179036
+        ],
+        [
+          84.1093483101,
+          175.0
+        ],
+        [
+          -84.1093483102,
+          175.0
+        ],
+        [
+          -166.9250139872,
+          71.4804179036
+        ]
+      ],
+      "expected": [
+        [
+          -183.539097568,
+          -11.59
+        ],
+        [
+          183.539097568,
+          -11.59
+        ],
+        [
+          166.9250139872,
+          71.4804179036
+        ],
+        [
+          84.1093483101,
+          175.0
+        ],
+        [
+          -84.1093483102,
+          175.0
+        ],
+        [
+          -166.9250139872,
+          71.4804179036
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss009",
+      "node": "T_S_RIGHT_1_3",
+      "group": "F01_02",
+      "variant": "Mantida",
+      "before": [
+        [
+          -170.0732266967,
+          -67.5451520168
+        ],
+        [
+          -112.2171261423,
+          -139.8652777098
+        ],
+        [
+          52.1453240158,
+          -8.3753175834
+        ],
+        [
+          -46.692181098,
+          31.1596844621
+        ]
+      ],
+      "saved": [
+        [
+          -170.0732266967,
+          -67.5451520168
+        ],
+        [
+          -112.2171261423,
+          -139.8652777098
+        ],
+        [
+          52.1453240158,
+          -8.3753175834
+        ],
+        [
+          -46.692181098,
+          31.1596844621
+        ]
+      ],
+      "expected": [
+        [
+          -170.0732266967,
+          -67.5451520168
+        ],
+        [
+          -112.2171261423,
+          -139.8652777098
+        ],
+        [
+          52.1453240158,
+          -8.3753175834
+        ],
+        [
+          -46.692181098,
+          31.1596844621
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss010",
+      "node": "T_S_LEFT_2_3",
+      "group": "F02_09",
+      "variant": "L",
+      "before": [
+        [
+          175.0,
+          -175.0
+        ],
+        [
+          175.0,
+          53.5
+        ],
+        [
+          102.5429699427,
+          53.5
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ],
+        [
+          -53.5,
+          -175.0
+        ]
+      ],
+      "saved": [
+        [
+          175.0,
+          -111.5258240357
+        ],
+        [
+          175.0,
+          53.5
+        ],
+        [
+          102.5429699427,
+          53.5
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ],
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          16.3145600892,
+          -175.0
+        ]
+      ],
+      "expected": [
+        [
+          -53.5,
+          -175.0
+        ],
+        [
+          175.0,
+          -175.0
+        ],
+        [
+          175.0,
+          82.4828120229
+        ],
+        [
+          -53.5,
+          -8.9171879771
+        ]
+      ]
+    },
+    {
+      "owner": "StructuralTruss010",
+      "node": "T_S_RIGHT_1_3",
+      "group": "F02_10",
+      "variant": "L",
+      "before": [
+        [
+          -175.0,
+          53.5
+        ],
+        [
+          -175.0,
+          -175.0
+        ],
+        [
+          36.5,
+          -175.0
+        ],
+        [
+          36.5,
+          -2.1171879771
+        ],
+        [
+          -102.5429699427,
+          53.5
+        ]
+      ],
+      "saved": [
+        [
+          -102.5429699427,
+          53.5
+        ],
+        [
+          -175.0,
+          53.5
+        ],
+        [
+          -175.0,
+          -118.3258240357
+        ],
+        [
+          -33.3145600892,
+          -175.0
+        ],
+        [
+          36.5,
+          -175.0
+        ],
+        [
+          36.5,
+          -2.1171879771
+        ]
+      ],
+      "expected": [
+        [
+          -175.0,
+          -175.0
+        ],
+        [
+          36.5,
+          -175.0
+        ],
+        [
+          36.5,
+          -2.1171879771
+        ],
+        [
+          -175.0,
+          82.4828120229
+        ]
+      ]
+    }
+  ]
+}

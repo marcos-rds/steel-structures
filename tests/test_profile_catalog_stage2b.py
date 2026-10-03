@@ -35,7 +35,22 @@ class Stage2BCatalogTests(unittest.TestCase):
     def test_exact_global_and_series_counts_and_unique_refs(self):
         expected = {"w": 100, "hp": 8, "i": 8, "u": 12, "t": 10,
                     "equal-angle-inch": 50, "equal-angle-metric": 30}
-        self.assertEqual(len(self.library.list_catalogs()), 2)
+        catalog_counts = {
+            catalog.id: len(tuple(
+                item for item in self.library.list_profiles()
+                if item.ref.catalog_id == catalog.id
+            ))
+            for catalog in self.library.list_catalogs()
+        }
+        self.assertEqual(catalog_counts, {
+            "abnt-nbr-6355-2012-a3": 85,
+            "arcelormittal-tuper-hollow-2024": 2999,
+            "gerdau-construcao-metalica-2023-01": 218,
+            "abnt-nbr-16683-2018-solid": 164,
+        })
+        all_profiles = self.library.list_profiles()
+        self.assertEqual(len(all_profiles), 3466)
+        self.assertEqual(len({item.ref for item in all_profiles}), 3466)
         self.assertEqual(len(tuple(item for item in self.library.list_categories()
                                    if item.catalog_id == CATALOG_ID)), 1)
         self.assertEqual(len(tuple(item for item in self.library.list_series()
@@ -43,6 +58,19 @@ class Stage2BCatalogTests(unittest.TestCase):
         self.assertEqual(len(self.profiles), 218)
         self.assertEqual(len({item.ref for item in self.profiles}), 218)
         self.assertEqual({sid: len(self.library.list_profiles(series_id=sid)) for sid in expected}, expected)
+        tubular = tuple(
+            item for item in all_profiles
+            if item.ref.catalog_id == "arcelormittal-tuper-hollow-2024"
+        )
+        self.assertEqual(len(tubular), 2999)
+        self.assertEqual(
+            {series: sum(item.series_id == series for item in tubular)
+             for series in ("shs", "rhs", "chs")},
+            {"shs": 678, "rhs": 1190, "chs": 1131},
+        )
+        self.assertTrue({
+            "RHS 150x100x4,75", "RHS 203,20x76,20x16", "CHS 88,90x3",
+        }.issubset({item.designation for item in tubular}))
 
     def test_creation_combo_bridge_round_trips_all_constructible_profile_refs(self):
         for designation, expected_series in (

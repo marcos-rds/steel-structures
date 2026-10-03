@@ -13,7 +13,7 @@ from pathlib import Path
 from freecad.SteelStructures.paths import CATALOGS_DIR
 from freecad.SteelStructures.profiles import ProfileLibrary, ProfileRef
 from freecad.SteelStructures.profiles.geometry import (
-    Point2D, SectionBounds2D, SectionGeometry2D, SectionPath2D,
+    LineSegment2D, Point2D, SectionBounds2D, SectionGeometry2D, SectionPath2D,
     build_section_geometry,
 )
 
@@ -71,15 +71,19 @@ class Solid:
 
 
 class Face:
-    def __init__(self, wire):
-        self.Wires = [wire]
-        points = [edge.start for edge in wire.Edges]
-        self.Area = abs(0.5 * sum(
-            point.x * wire.Edges[(index + 1) % len(wire.Edges)].start.y
-            - wire.Edges[(index + 1) % len(wire.Edges)].start.x * point.y
-            for index, point in enumerate(points)
-        ))
-        self.BoundBox = BoundBox(points)
+    def __init__(self, wires):
+        self.Wires = list(wires) if isinstance(wires, (list, tuple)) else [wires]
+        def polygon_area(wire):
+            points = [edge.start for edge in wire.Edges]
+            return abs(0.5 * sum(
+                point.x * wire.Edges[(index + 1) % len(wire.Edges)].start.y
+                - wire.Edges[(index + 1) % len(wire.Edges)].start.x * point.y
+                for index, point in enumerate(points)
+            ))
+        self.Area = polygon_area(self.Wires[0]) - sum(
+            polygon_area(wire) for wire in self.Wires[1:]
+        )
+        self.BoundBox = BoundBox([edge.start for edge in self.Wires[0].Edges])
 
     def isNull(self):
         return False
@@ -155,11 +159,26 @@ class FreeCADSectionAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(self.adapter.FreeCADSectionGeometryError, "FutureArcSegment"):
             self.adapter.section_path_to_wire(path)
 
-    def test_inner_paths_are_rejected_instead_of_ignored(self):
+    def test_inner_paths_create_valid_positive_face_holes_instead_of_being_ignored(self):
         geometry = build_section_geometry(self.profile("w-150x13.0"))
-        with_hole = replace(geometry, inner_paths=(geometry.outer_path,))
-        with self.assertRaisesRegex(self.adapter.FreeCADSectionGeometryError, "contornos internos"):
-            self.adapter.section_geometry_to_face(with_hole)
+        inner = SectionPath2D((
+            LineSegment2D(Point2D(-1, -1), Point2D(1, -1)),
+            LineSegment2D(Point2D(1, -1), Point2D(1, 1)),
+            LineSegment2D(Point2D(1, 1), Point2D(-1, 1)),
+            LineSegment2D(Point2D(-1, 1), Point2D(-1, -1)),
+        ), True)
+        with_hole = replace(geometry, inner_paths=(inner,))
+        face = self.adapter.section_geometry_to_face(with_hole)
+        self.assertEqual(len(face.Wires), 2)
+        self.assertGreater(face.Area, 0.0)
+        self.assertLess(face.Area, geometry.area)
+
+    def test_coincident_inner_path_is_rejected_as_zero_area_face(self):
+        geometry = build_section_geometry(self.profile("w-150x13.0"))
+        coincident = replace(geometry, inner_paths=(geometry.outer_path,))
+        with self.assertRaisesRegex(
+                self.adapter.FreeCADSectionGeometryError, "área positiva"):
+            self.adapter.section_geometry_to_face(coincident)
 
     def test_required_w_hp_faces_preserve_area_and_bounds(self):
         ids = ("w-150x13.0", "w-310x52.0", "w-610x217.0", "hp-200x53.0", "hp-310x132.0")

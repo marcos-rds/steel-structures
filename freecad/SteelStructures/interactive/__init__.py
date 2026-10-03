@@ -2,6 +2,7 @@
 """Interactive creation infrastructure for Steel Structures."""
 
 from .member_controller import (
+    CreationGeometryMode,
     ControllerState,
     MemberController,
     MemberCreationOptions,
@@ -21,6 +22,7 @@ except ImportError:
 
 __all__ = [
     "ControllerState",
+    "CreationGeometryMode",
     "MemberController",
     "MemberCreationOptions",
     "compact_profile_designation",

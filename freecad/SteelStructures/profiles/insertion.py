@@ -37,6 +37,9 @@ def section_insertion_references(geometry: SectionGeometry2D):
         inner = geometry.outer_path.segments[3].start
         values = (
             ("centroid", "Centroide", geometry.origin),
+            ("envelope_center", "Centro do envelope", Point2D(
+                (bounds.min_x + bounds.max_x) / 2.0,
+                (bounds.min_y + bounds.max_y) / 2.0)),
             ("outer_corner", "Quina externa", Point2D(bounds.min_x, bounds.min_y)),
             ("top_tip", "Ponta superior", Point2D(bounds.min_x, bounds.max_y)),
             ("right_tip", "Ponta direita", Point2D(bounds.max_x, bounds.min_y)),
@@ -58,34 +61,26 @@ def section_insertion_references(geometry: SectionGeometry2D):
         }
         values = tuple((identifier, label, points[identifier]) for identifier, label in _I_LABELS)
     elif key == ("channel_section", "tapered_flange"):
-        # Semantic U references come from its canonical right-opening contour.
-        rear_bottom = geometry.outer_path.segments[0].start
-        lower_tip = geometry.outer_path.segments[0].end
-        inner_web_bottom = geometry.outer_path.segments[5].start
-        upper_tip = geometry.outer_path.segments[10].start
-        rear_top = geometry.outer_path.segments[10].end
-        web_mid_x = (rear_bottom.x + inner_web_bottom.x) / 2.0
+        stations = dict(geometry.dimension_stations)
+        rear_x = stations["web_back_x"]
+        inner_x = stations["web_inner_x"]
+        tip_x = stations["flange_tip_x"]
+        web_mid_x = (rear_x + inner_x) / 2.0
         values = (
             ("centroid", "Centroide", geometry.origin),
             ("web_center", "Centro da alma", Point2D(web_mid_x, 0.0)),
-            ("web_back", "Face externa da alma", Point2D(rear_bottom.x, 0.0)),
-            ("rear_top", "Canto superior traseiro", rear_top),
-            ("rear_bottom", "Canto inferior traseiro", rear_bottom),
-            ("flange_top_tip", "Ponta superior da mesa", upper_tip),
-            ("flange_bottom_tip", "Ponta inferior da mesa", lower_tip),
+            ("web_back", "Face externa da alma", Point2D(rear_x, 0.0)),
+            ("rear_top", "Canto superior traseiro", Point2D(rear_x, bounds.max_y)),
+            ("rear_bottom", "Canto inferior traseiro", Point2D(rear_x, bounds.min_y)),
+            ("flange_top_tip", "Ponta superior da mesa", Point2D(tip_x, bounds.max_y)),
+            ("flange_bottom_tip", "Ponta inferior da mesa", Point2D(tip_x, bounds.min_y)),
         )
     elif key == ("cold_formed_channel", "stiffened_u"):
         stations = dict(geometry.dimension_stations)
-        upper_cap = geometry.outer_path.segments[-1]
-        lower_cap = geometry.outer_path.segments[9]
-        upper_tip = Point2D(
-            (upper_cap.start.x + upper_cap.end.x) / 2.0,
-            (upper_cap.start.y + upper_cap.end.y) / 2.0,
-        )
-        lower_tip = Point2D(
-            (lower_cap.start.x + lower_cap.end.x) / 2.0,
-            (lower_cap.start.y + lower_cap.end.y) / 2.0,
-        )
+        upper_tip = Point2D(stations["nominal_flange_tip_x"] - 0.5 * stations["thickness"],
+                            stations["upper_lip_tip_y"])
+        lower_tip = Point2D(stations["nominal_flange_tip_x"] - 0.5 * stations["thickness"],
+                            stations["lower_lip_tip_y"])
         outer_flange_mid_x = (
             stations["flange_web_tangent_x"]
             + stations["flange_lip_tangent_x"]
@@ -123,6 +118,28 @@ def section_insertion_references(geometry: SectionGeometry2D):
             ("top_left", "Canto superior esquerdo", Point2D(bounds.min_x, bounds.max_y)),
             ("top_right", "Canto superior direito", Point2D(bounds.max_x, bounds.max_y)),
         )
+    elif key in (("hollow_section", "square"), ("hollow_section", "rectangular"),
+                 ("solid_section", "square"), ("solid_section", "rectangular")):
+        x0, y0 = geometry.origin.x, geometry.origin.y
+        points = {
+            "centroid": geometry.origin,
+            "left": Point2D(bounds.min_x, y0), "right": Point2D(bounds.max_x, y0),
+            "top": Point2D(x0, bounds.max_y), "bottom": Point2D(x0, bounds.min_y),
+            "top_left": Point2D(bounds.min_x, bounds.max_y),
+            "top_right": Point2D(bounds.max_x, bounds.max_y),
+            "bottom_left": Point2D(bounds.min_x, bounds.min_y),
+            "bottom_right": Point2D(bounds.max_x, bounds.min_y),
+        }
+        values = tuple((identifier, label, points[identifier]) for identifier, label in _I_LABELS)
+    elif key in (("hollow_section", "circular"), ("solid_section", "circular")):
+        x0, y0 = geometry.origin.x, geometry.origin.y
+        values = (
+            ("centroid", "Centroide", geometry.origin),
+            ("left", "Face esquerda", Point2D(bounds.min_x, y0)),
+            ("right", "Face direita", Point2D(bounds.max_x, y0)),
+            ("top", "Face superior", Point2D(x0, bounds.max_y)),
+            ("bottom", "Face inferior", Point2D(x0, bounds.min_y)),
+        )
     else:
         values = (("centroid", "Centroide", geometry.origin),)
     return tuple(InsertionReference(*value) for value in values)
@@ -130,6 +147,10 @@ def section_insertion_references(geometry: SectionGeometry2D):
 
 def insertion_reference(geometry: SectionGeometry2D, value: str):
     """Resolve a stable id or current label, falling back to the centroid."""
+    if geometry.geometry_type == "solid_section" and value in {
+        "outer_top_left", "outer_top_right", "outer_bottom_left", "outer_bottom_right",
+    }:
+        value = value.removeprefix("outer_")
     references = section_insertion_references(geometry)
     return next(
         (item for item in references if value in (item.id, item.label)), references[0]

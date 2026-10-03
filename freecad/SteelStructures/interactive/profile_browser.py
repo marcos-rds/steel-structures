@@ -27,6 +27,12 @@ def _user_role():
 
 def _profile_subtitle(profile, series_name):
     parts = [series_name]
+    if profile.catalog.source.source_type == "development_fixture":
+        parts.append(profile.catalog.name)
+        return " — ".join(parts)
+    if profile.geometry_type == "solid_section" and profile.catalog.source.source_type == "normative":
+        parts.append(profile.catalog.source.source_name)
+        return " — ".join(parts)
     if (profile.geometry_type, profile.geometry_variant) == ("equal_angle", "equal_leg"):
         parts.append("Abas iguais")
     if profile.manufacturer is not None:
@@ -42,7 +48,7 @@ class ProfileBrowserDialog(QtWidgets.QDialog):
 
     def __init__(self, parent=None, mode=BROWSE_MODE, library=None,
                  initial_profile_ref=None, is_profile_selectable=None,
-                 insertion=None):
+                 insertion=None, profile_filter=None):
         super().__init__(parent)
         if mode not in (self.BROWSE_MODE, self.SELECT_MODE):
             raise ValueError("modo inválido para o Catálogo de Perfis")
@@ -50,6 +56,8 @@ class ProfileBrowserDialog(QtWidgets.QDialog):
         self.library = library or ProfileLibrary(CATALOGS_DIR)
         self.model = ProfileBrowserModel(self.library)
         self._is_profile_selectable = is_profile_selectable or (lambda _profile: True)
+        self._filter_catalog = profile_filter is not None
+        self._profile_filter = profile_filter or (lambda _profile: True)
         self.insertion = insertion if mode == self.SELECT_MODE else None
         self._series = {item.id: item for item in self.library.list_series()}
         self.setWindowTitle("Catálogo de Perfis")
@@ -151,11 +159,16 @@ class ProfileBrowserDialog(QtWidgets.QDialog):
 
     def _populate_tree(self):
         role = _user_role()
+        visible = [p for p in self.library.list_profiles() if self._profile_filter(p)]
         for category in self.library.list_categories():
+            if self._filter_catalog and not any(p.category_id == category.id for p in visible):
+                continue
             root = QtWidgets.QTreeWidgetItem((category.name,))
             root.setData(0, role, (category.id, None))
             self.tree.addTopLevelItem(root)
             for series in self.library.list_series(category.id):
+                if self._filter_catalog and not any(p.series_id == series.id and p.category_id == category.id for p in visible):
+                    continue
                 child = QtWidgets.QTreeWidgetItem((series.name,))
                 child.setData(0, role, (category.id, series.id))
                 root.addChild(child)
@@ -172,10 +185,10 @@ class ProfileBrowserDialog(QtWidgets.QDialog):
                 profile = self.library.get(initial_ref)
             except (ProfileNotFoundError, TypeError):
                 pass
-        if profile is None:
+        if profile is None or not self._profile_filter(profile):
             profile = next(
                 (item for item in self.library.list_profiles()
-                 if self._is_profile_selectable(item)),
+                 if self._is_profile_selectable(item) and self._profile_filter(item)),
                 None,
             )
         if profile is None:
@@ -217,15 +230,16 @@ class ProfileBrowserDialog(QtWidgets.QDialog):
         self.table.blockSignals(True)
         self.table.setRowCount(0)
         role = _user_role()
-        for row, profile in enumerate(self.model.profiles):
+        visible = [p for p in self.model.profiles if self._profile_filter(p)]
+        for row, profile in enumerate(visible):
             self.table.insertRow(row)
             designation = QtWidgets.QTableWidgetItem(profile.designation)
             designation.setData(role, profile.ref)
             self.table.setItem(row, 0, designation)
         self.table.blockSignals(False)
-        if self.model.profiles:
+        if visible:
             self.table.selectRow(0)
-            self._show_profile(self.model.profiles[0])
+            self._show_profile(visible[0])
         else:
             self.model.selected_ref = None
             self._show_empty("Nenhum perfil encontrado.")

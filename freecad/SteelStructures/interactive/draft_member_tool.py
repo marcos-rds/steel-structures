@@ -8,8 +8,16 @@ from draftguitools import gui_base_original, gui_lines
 from draftutils import gui_utils, todo
 from draftutils.messages import _toolmsg
 
-from .member_controller import MemberController
+from .member_controller import CreationGeometryMode, MemberController
+from .member_creation_preview import (
+    PreviewState, configure_preview_object, update_member_preview,
+)
+from .axis_source_widget import (
+    AxisSourceWidget, configure_source_axis_draft_ui,
+    install_source_axis_create_button, remove_source_axis_create_button,
+)
 from .profile_options_widget import ProfileOptionsWidget
+from ..member_axis_source import resolve_axis_source
 from ..paths import MEMBER_ICON
 from ..preferences import load_member_creation_settings, save_member_creation_settings
 
@@ -35,12 +43,17 @@ class StructuralMemberDraftTool(gui_lines.Line):
         self._tool_active = False
         self._lifecycle_state = TOOL_NEW
         self._closed_notified = False
+        self.axis_source = None
+        self.axis_source_controls = None
+        self._source_axis_button_binding = None
+        self._preview_state = PreviewState()
 
     def is_active(self):
         """Return whether this exact native Line instance owns the session."""
         return self._lifecycle_state == TOOL_ACTIVE and self._tool_active
 
-    def Activated(self, name="StructuralMember", icon=None, task_title=None):
+    def Activated(self, name="StructuralMember", icon=None, task_title=None,
+                  axis_source=None):
         if self._lifecycle_state != TOOL_NEW:
             raise RuntimeError(
                 f"StructuralMemberDraftTool cannot activate from {self._lifecycle_state}"
@@ -56,6 +69,11 @@ class StructuralMemberDraftTool(gui_lines.Line):
         self.controller = MemberController(self.doc)
         self.controller.start()
         self.profile_options = ProfileOptionsWidget(self.doc)
+        self.axis_source = axis_source if resolve_axis_source(axis_source) else None
+        self.axis_source_controls = AxisSourceWidget(self.axis_source)
+        self.axis_source_controls.linkChanged.connect(self._axis_link_changed)
+        self.profile_options.layout().insertWidget(0, self.axis_source_controls)
+        self.axis_source_controls.setVisible(self.axis_source is not None)
         self.profile_options.apply_creation_settings(load_member_creation_settings())
         self.ui.lineUi(title="Criar elemento estrutural", icon="Draft_Draft",
                        extra=self.profile_options)
@@ -65,13 +83,94 @@ class StructuralMemberDraftTool(gui_lines.Line):
         self._last_input_stage = None
         self._update_point_input_stage()
         self._schedule_stage_update()
-        self.ui.continueMode = True
-        self.ui.continueCmd.setChecked(self.ui.continueMode)
-        self.obj = self.doc.addObject("Part::Feature", "SteelStructuresDraftPreview")
-        gui_utils.format_object(self.obj)
-        self.obj.ViewObject.ShowInTree = False
-        self.call = self.view.addEventCallback("SoEvent", self.action)
-        _toolmsg("Selecione o primeiro ponto")
+        if self.axis_source is not None:
+            configure_source_axis_draft_ui(self.ui)
+            QtCore.QTimer.singleShot(100, self._install_source_axis_create_button)
+            self.obj = self.doc.addObject(
+                "Part::Feature", "SteelStructuresMemberPreview"
+            )
+            configure_preview_object(self.obj)
+            self._connect_source_axis_preview()
+            self._update_source_axis_preview()
+            self.call = None
+            _toolmsg("Eixo definido pela linha selecionada")
+        else:
+            self.ui.continueMode = True
+            self.ui.continueCmd.setChecked(self.ui.continueMode)
+            self.obj = self.doc.addObject("Part::Feature", "SteelStructuresDraftPreview")
+            gui_utils.format_object(self.obj)
+            self.obj.ViewObject.ShowInTree = False
+            self.call = self.view.addEventCallback("SoEvent", self.action)
+            _toolmsg("Selecione o primeiro ponto")
+
+    def _axis_link_changed(self, linked):
+        # In SourceAxis this choice controls only future associativity.
+        self._update_source_axis_preview()
+
+    def _connect_source_axis_preview(self):
+        for signal in (
+                self.profile_options.category.currentTextChanged,
+                self.profile_options.series.currentTextChanged,
+                self.profile_options.profile.currentIndexChanged,
+                self.profile_options.insertion.currentIndexChanged,
+                self.profile_options.rotation.valueChanged,
+                self.profile_options.colorChanged,
+                self.profile_options.sectionGeometryModeChanged):
+            signal.connect(self._preview_options_changed)
+
+    def _preview_options_changed(self, *_args):
+        self._update_source_axis_preview()
+
+    def _update_source_axis_preview(self):
+        if not self.is_active() or self.axis_source is None or self.obj is None:
+            return False
+        resolved = resolve_axis_source(self.axis_source)
+        if resolved is None:
+            self.removeTemporaryObject()
+            return False
+        try:
+            self._preview_state = update_member_preview(
+                self.obj, self._preview_state,
+                self.profile_options.profile_designation,
+                resolved.start, resolved.end,
+                self.profile_options.insertion.currentText(),
+                float(self.profile_options.rotation.value()),
+                self.profile_options.rgb,
+                section_geometry_mode=self.profile_options.section_geometry_mode,
+            )
+        except (KeyError, RuntimeError, ValueError):
+            self.removeTemporaryObject()
+            return False
+        return True
+
+    def _install_source_axis_create_button(self):
+        if not self.is_active() or self._source_axis_button_binding is not None:
+            return
+        self._source_axis_button_binding = install_source_axis_create_button(
+            self.ui, self._confirm_axis_source
+        )
+
+    def _confirm_axis_source(self):
+        resolved = resolve_axis_source(self.axis_source)
+        if resolved is None:
+            App.Console.PrintError("Steel Structures: a linha de origem está inválida.\n")
+            self._terminate_native_session()
+            return False
+        linked = self.axis_source_controls.linked
+        try:
+            options = self.profile_options.creation_options(
+                resolved.start, resolved.end, self.axis_source, linked,
+                CreationGeometryMode.SOURCE_AXIS,
+            )
+            result = self.controller.create(options)
+        except Exception as exc:
+            App.Console.PrintError(f"Steel Structures: erro ao criar elemento: {exc}\n")
+            self._terminate_native_session()
+            return False
+        save_member_creation_settings(self.profile_options.creation_settings())
+        self.profile_options.creation_succeeded(result.next_default_name)
+        self._terminate_native_session()
+        return True
 
     def _apply_point_stage_ui(self):
         """Apply one coherent title/icon/control state to Draft's own widgets."""
@@ -140,10 +239,22 @@ class StructuralMemberDraftTool(gui_lines.Line):
             )
         continue_requested = bool(cont or (cont is None and self.ui and self.ui.continueMode))
         points = list(self.node)
+        controls = getattr(self, "axis_source_controls", None)
+        linked = bool(controls and controls.linked)
+        if linked:
+            resolved = resolve_axis_source(self.axis_source)
+            if resolved is not None:
+                points = [App.Vector(resolved.start), App.Vector(resolved.end)]
         created = False
         if len(points) == 2 and self.profile_options is not None:
             try:
-                options = self.profile_options.creation_options(points[0], points[1])
+                source = getattr(self, "axis_source", None)
+                if source is None:
+                    options = self.profile_options.creation_options(points[0], points[1])
+                else:
+                    options = self.profile_options.creation_options(
+                        points[0], points[1], source, linked
+                    )
                 result = self.controller.create(options)
             except Exception as exc:
                 App.Console.PrintError(f"Steel Structures: erro ao criar elemento: {exc}\n")
@@ -163,6 +274,13 @@ class StructuralMemberDraftTool(gui_lines.Line):
         self.pos = []
         self.support = None
         self.constrain = None
+        self.axis_source = None
+        if self.axis_source_controls is not None:
+            self.axis_source_controls.clear_source()
+        for name in ("xValue", "yValue", "zValue"):
+            widget = getattr(self.ui, name, None)
+            if widget is not None and hasattr(widget, "setReadOnly"):
+                widget.setReadOnly(False)
 
         accept_point_input = getattr(self.ui, "acceptPointInput", None)
         if callable(accept_point_input):
@@ -215,10 +333,14 @@ class StructuralMemberDraftTool(gui_lines.Line):
         self._stage_generation += 1
         self._stage_update_pending = False
         try:
+            remove_source_axis_create_button(self._source_axis_button_binding)
+            self._source_axis_button_binding = None
             self.end_callbacks(self.call)
             self.call = None
             self.removeTemporaryObject()
             gui_base_original.Creator.finish(self)
+            if App.activeDraftCommand is self:
+                App.activeDraftCommand = None
             from ..init_gui import schedule_draft_snap_toolbar_visible
             schedule_draft_snap_toolbar_visible()
         finally:
@@ -237,6 +359,8 @@ class StructuralMemberDraftTool(gui_lines.Line):
         self._stage_generation += 1
         self._stage_update_pending = False
         try:
+            remove_source_axis_create_button(self._source_axis_button_binding)
+            self._source_axis_button_binding = None
             call = getattr(self, "call", None)
             if call is not None:
                 self.end_callbacks(call)
@@ -262,6 +386,7 @@ class StructuralMemberDraftTool(gui_lines.Line):
             self._on_closed(self)
 
     def removeTemporaryObject(self):
+        self._preview_state = PreviewState()
         obj = getattr(self, "obj", None)
         if obj:
             try:

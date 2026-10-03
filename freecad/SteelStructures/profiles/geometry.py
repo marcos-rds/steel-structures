@@ -16,9 +16,37 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from enum import Enum
 from typing import Protocol, runtime_checkable
 
 from .models import ProfileDefinition
+
+
+class SectionGeometryMode(str, Enum):
+    """Physical representation strategy, independent from catalog data."""
+
+    DETAILED = "Detailed"
+    SIMPLIFIED = "Simplified"
+
+
+def normalize_section_geometry_mode(value) -> SectionGeometryMode:
+    if isinstance(value, SectionGeometryMode):
+        return value
+    try:
+        return SectionGeometryMode(str(value))
+    except ValueError as exc:
+        raise SectionGeometryError(f"modo geométrico de seção inválido: {value!r}") from exc
+
+
+def section_geometry_mode_has_effect(profile: ProfileDefinition) -> bool:
+    """Whether this typed profile has removable manufacturing radii."""
+    return (profile.geometry_type, profile.geometry_variant) in {
+        ("i_section", "tapered_flange"),
+        ("channel_section", "tapered_flange"),
+        ("cold_formed_channel", "stiffened_u"),
+        ("hollow_section", "square"),
+        ("hollow_section", "rectangular"),
+    }
 
 
 class SectionGeometryError(ValueError):
@@ -409,6 +437,42 @@ def build_tapered_flange_i_section(
     )
 
 
+def build_simplified_tapered_flange_i_section(
+    *, d: float, bf: float, tw: float, tf: float, flange_angle: float,
+    tl: float,
+) -> SectionGeometry2D:
+    """Build the approved tapered I datum with sharp manufacturing corners."""
+    values = {name: _finite(value, name) for name, value in (
+        ("d", d), ("bf", bf), ("tw", tw), ("tf", tf),
+        ("flange_angle", flange_angle), ("tl", tl),
+    )}
+    d, bf, tw, tf = (values[name] for name in ("d", "bf", "tw", "tf"))
+    flange_angle, tl = values["flange_angle"], values["tl"]
+    if min(d, bf, tw, tf, tl) <= 0.0 or tw >= bf or 2.0 * tf >= d:
+        raise SectionGeometryError("proporções inválidas para perfil I de mesas inclinadas")
+    if not 0.0 < flange_angle < 45.0 or tl >= (bf - tw) / 2.0:
+        raise SectionGeometryError("inclinação ou TL inválido para perfil I")
+    half_b, half_d, half_tw = bf / 2.0, d / 2.0, tw / 2.0
+    x_tf = half_b - tl
+    slope = math.tan(math.radians(flange_angle))
+    intercept = half_d - tf - slope * x_tf
+    inner_web = slope * half_tw + intercept
+    inner_tip = slope * half_b + intercept
+    points = (
+        Point2D(-half_b, -half_d), Point2D(half_b, -half_d),
+        Point2D(half_b, -inner_tip), Point2D(half_tw, -inner_web),
+        Point2D(half_tw, inner_web), Point2D(half_b, inner_tip),
+        Point2D(half_b, half_d), Point2D(-half_b, half_d),
+        Point2D(-half_b, inner_tip), Point2D(-half_tw, inner_web),
+        Point2D(-half_tw, -inner_web), Point2D(-half_b, -inner_tip),
+    )
+    return SectionGeometry2D(
+        "i_section", "tapered_flange", _closed_polygon(points), (),
+        SectionBounds2D(-half_b, half_b, -half_d, half_d), Point2D(0.0, 0.0),
+        (("tf_left", -x_tf), ("tf_right", x_tf)),
+    )
+
+
 def build_equal_angle_section(
     *, b: float, t: float, centroid_x: float
 ) -> SectionGeometry2D:
@@ -577,20 +641,75 @@ def build_tapered_flange_channel_section(
         inner_paths=(),
         bounds=SectionBounds2D(-centroid_x, bf - centroid_x, -half_d, half_d),
         origin=Point2D(0.0, 0.0),
+        dimension_stations=(("web_back_x", -centroid_x),
+                            ("web_inner_x", tw - centroid_x),
+                            ("flange_tip_x", bf - centroid_x)),
     )
-def build_section_geometry(profile: ProfileDefinition) -> SectionGeometry2D:
+
+
+def build_simplified_tapered_flange_channel_section(
+    *, d: float, bf: float, tw: float, tf: float, flange_angle: float,
+    centroid_x: float,
+) -> SectionGeometry2D:
+    """Build a sharp-corner U while retaining its approved flange taper."""
+    values = {name: _finite(value, name) for name, value in (
+        ("d", d), ("bf", bf), ("tw", tw), ("tf", tf),
+        ("flange_angle", flange_angle), ("centroid_x", centroid_x),
+    )}
+    d, bf, tw, tf = (values[name] for name in ("d", "bf", "tw", "tf"))
+    flange_angle, centroid_x = values["flange_angle"], values["centroid_x"]
+    if min(d, bf, tw, tf, centroid_x) <= 0.0 or tw >= bf or 2.0 * tf >= d:
+        raise SectionGeometryError("proporções inválidas para perfil U de mesas inclinadas")
+    if not 0.0 < flange_angle < 45.0 or centroid_x >= bf:
+        raise SectionGeometryError("inclinação ou centroide inválido para perfil U")
+    half_d = d / 2.0
+    tl = (bf - tw) / 2.0
+    x_tf = bf - tl
+    slope = math.tan(math.radians(flange_angle))
+    intercept = half_d - tf - slope * x_tf
+    inner_root = slope * tw + intercept
+    inner_tip = slope * bf + intercept
+    point = lambda x, y: Point2D(x - centroid_x, y)
+    points = (
+        point(0.0, -half_d), point(bf, -half_d), point(bf, -inner_tip),
+        point(tw, -inner_root), point(tw, inner_root), point(bf, inner_tip),
+        point(bf, half_d), point(0.0, half_d),
+    )
+    return SectionGeometry2D(
+        "channel_section", "tapered_flange", _closed_polygon(points), (),
+        SectionBounds2D(-centroid_x, bf - centroid_x, -half_d, half_d),
+        Point2D(0.0, 0.0),
+        (("web_back_x", -centroid_x), ("web_inner_x", tw - centroid_x),
+         ("flange_tip_x", bf - centroid_x)),
+    )
+
+
+def build_section_geometry(
+    profile: ProfileDefinition, mode: SectionGeometryMode | str = SectionGeometryMode.DETAILED,
+) -> SectionGeometry2D:
     """Dispatch a typed profile by geometry type and variant."""
     if getattr(profile, "geometry_status", "released") == "pending_technical_review":
         raise GeometryTemporarilyUnavailableError(
             "geometria temporariamente indisponível: inconsistência entre fontes técnicas Gerdau"
         )
+    mode = normalize_section_geometry_mode(mode)
+    if (profile.geometry_type, profile.geometry_variant) == (
+        "hollow_section", "rectangular"
+    ):
+        from .hollow_sections import normalize_hollow_profile_definition
+        profile = normalize_hollow_profile_definition(profile)
     key = (profile.geometry_type, profile.geometry_variant)
+    dimensions_mode = False
     if key == ("i_section", "parallel_flange"):
         names = ("d", "bf", "tw", "tf")
         builder = build_parallel_flange_i_section
     elif key == ("i_section", "tapered_flange"):
-        names = ("d", "bf", "tw", "tf", "flange_angle", "r1", "r2", "tl")
-        builder = build_tapered_flange_i_section
+        if mode is SectionGeometryMode.SIMPLIFIED:
+            names = ("d", "bf", "tw", "tf", "flange_angle", "tl")
+            builder = build_simplified_tapered_flange_i_section
+        else:
+            names = ("d", "bf", "tw", "tf", "flange_angle", "r1", "r2", "tl")
+            builder = build_tapered_flange_i_section
     elif key == ("equal_angle", "equal_leg"):
         names = ("b", "t")
         builder = build_equal_angle_section
@@ -598,12 +717,42 @@ def build_section_geometry(profile: ProfileDefinition) -> SectionGeometry2D:
         names = ("d", "bf", "tw", "tf")
         builder = build_standard_tee_section
     elif key == ("channel_section", "tapered_flange"):
-        names = ("d", "bf", "tw", "tf", "flange_angle", "r1", "r2")
-        builder = build_tapered_flange_channel_section
+        if mode is SectionGeometryMode.SIMPLIFIED:
+            names = ("d", "bf", "tw", "tf", "flange_angle")
+            builder = build_simplified_tapered_flange_channel_section
+        else:
+            names = ("d", "bf", "tw", "tf", "flange_angle", "r1", "r2")
+            builder = build_tapered_flange_channel_section
     elif key == ("cold_formed_channel", "stiffened_u"):
-        from .ue_section import build_ue_section
+        from .ue_section import build_simplified_ue_section, build_ue_section
         names = ("bw", "bf", "D", "t", "ri")
-        builder = build_ue_section
+        builder = (build_simplified_ue_section
+                   if mode is SectionGeometryMode.SIMPLIFIED else build_ue_section)
+    elif key[0] == "solid_section":
+        from .solid_sections import (
+            SOLID_SECTION_PARAMETERS, build_flat_bar, build_round_bar, build_square_bar,
+        )
+        builders = {"circular": build_round_bar, "square": build_square_bar,
+                    "rectangular": build_flat_bar}
+        if key[1] not in builders:
+            raise UnsupportedSectionGeometryError(f"variante maciça não suportada: {key[1]!r}")
+        names = SOLID_SECTION_PARAMETERS[key[1]]
+        builder = builders[key[1]]
+        dimensions_mode = True
+    elif key == ("hollow_section", "square"):
+        from .hollow_sections import build_square_hollow_section
+        names = ("b", "t")
+        builder = build_square_hollow_section
+        dimensions_mode = True
+    elif key == ("hollow_section", "rectangular"):
+        from .hollow_sections import build_rhs_hollow_section
+        names = ("b", "h", "t")
+        builder = build_rhs_hollow_section
+        dimensions_mode = True
+    elif key == ("hollow_section", "circular"):
+        from .hollow_sections import build_circular_hollow_section
+        names = ("d", "t")
+        builder = build_circular_hollow_section
     else:
         raise UnsupportedSectionGeometryError(
             f"geometria de seção ainda não suportada: {key[0]!r} / {key[1]!r}"
@@ -616,6 +765,8 @@ def build_section_geometry(profile: ProfileDefinition) -> SectionGeometry2D:
             dimensions["centroid_x"] = profile.centroid["x"]
     except KeyError as exc:
         raise SectionGeometryError(f"dimensão ausente: {exc.args[0]}") from exc
+    if dimensions_mode:
+        dimensions["mode"] = mode
     return builder(**dimensions)
 
 
@@ -623,9 +774,13 @@ __all__ = [
     "LineSegment2D", "PathSegment2D", "Point2D", "SectionBounds2D",
     "SectionGeometry2D", "SectionGeometryError", "SectionPath2D",
     "GeometryTemporarilyUnavailableError", "geometry_is_released",
+    "SectionGeometryMode", "normalize_section_geometry_mode",
+    "section_geometry_mode_has_effect",
     "UnsupportedSectionGeometryError", "ArcSegment2D", "build_equal_angle_section",
     "build_standard_tee_section",
     "build_tapered_flange_i_section",
+    "build_simplified_tapered_flange_i_section",
     "build_tapered_flange_channel_section",
+    "build_simplified_tapered_flange_channel_section",
     "build_parallel_flange_i_section", "build_section_geometry",
 ]

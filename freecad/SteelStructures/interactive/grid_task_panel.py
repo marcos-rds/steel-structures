@@ -6,8 +6,18 @@ from __future__ import annotations
 from PySide import QtCore, QtGui, QtWidgets
 
 from ..grid_geometry import build_grid_geometry
-
-
+from ..paths import (
+    GRID_RESET_DEFAULTS_ICON,
+    GRID_SPACING_ADD_ICON,
+    GRID_SPACING_DUPLICATE_ICON,
+    GRID_SPACING_REMOVE_ICON,
+)
+from ..preferences import (
+    GridAppearanceSettings,
+    default_grid_appearance,
+    load_grid_appearance_settings,
+    save_grid_appearance_settings,
+)
 SCHEMES = {
     "Numérica": "Numeric",
     "Alfabética": "Alphabetic",
@@ -15,11 +25,35 @@ SCHEMES = {
 }
 
 
+class SpacingDoubleSpinBox(QtWidgets.QDoubleSpinBox):
+    """Normal Qt editor that reports explicit focus without reacting to hover."""
+
+    def __init__(self, activate, parent=None):
+        super().__init__(parent)
+        self._activate = activate
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+
+    def focusInEvent(self, event):
+        self._activate()
+        super().focusInEvent(event)
+
+    def wheelEvent(self, event):
+        if self.hasFocus():
+            super().wheelEvent(event)
+        else:
+            event.ignore()
+
+
 def standard_buttons_value(button_box):
     """Return FreeCAD's integer mask for legacy and PySide6 enum APIs."""
     standard = getattr(button_box, "StandardButton", button_box)
     buttons = standard.Ok | standard.Cancel
     return int(getattr(buttons, "value", buttons))
+
+
+def stabilize_compact_tool_button(button):
+    """Prevent external margins and padding from clipping a compact tool icon."""
+    button.setStyleSheet("QToolButton { margin: 0px; padding: 2px; }")
 
 
 class _EscapeEventFilter(QtCore.QObject):
@@ -62,23 +96,61 @@ def parse_custom_identifiers(text, count):
     return values
 
 
+def _supported_font_name(view, requested, fallback):
+    try:
+        options = tuple(str(value) for value in view.getEnumerationsOfProperty("FontName"))
+    except (AttributeError, ReferenceError, RuntimeError, TypeError):
+        options = ()
+    requested = str(requested or "")
+    return requested if requested and (not options or requested in options) else str(fallback or "")
+
+
 class SpacingEditor(QtWidgets.QGroupBox):
     """Independent editable list of positive spacings for one axis family."""
 
     def __init__(self, title, defaults, on_change, parent=None):
         super().__init__(title, parent)
         self._on_change = on_change
+        self._spins = []
+        self._active_spin = None
+        self._field_minimum_width = 0
         layout = QtWidgets.QVBoxLayout(self)
-        self.list = QtWidgets.QListWidget()
-        self.list.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        layout.addWidget(self.list)
-        buttons = QtWidgets.QHBoxLayout()
-        self.add_button = QtWidgets.QPushButton("Adicionar")
-        self.duplicate_button = QtWidgets.QPushButton("Duplicar")
-        self.remove_button = QtWidgets.QPushButton("Remover")
+        compact_spacing = max(round(self.fontMetrics().lineSpacing() * 0.25), 3)
+        layout.setContentsMargins(compact_spacing, compact_spacing,
+                                  compact_spacing, compact_spacing)
+        layout.setSpacing(compact_spacing)
+        content = QtWidgets.QHBoxLayout()
+        content.setContentsMargins(0, 0, 0, 0)
+        content.setSpacing(compact_spacing)
+        self.scroll = QtWidgets.QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.editor_container = QtWidgets.QWidget()
+        self.editor_layout = QtWidgets.QVBoxLayout(self.editor_container)
+        self.editor_layout.setContentsMargins(0, 0, 0, 0)
+        self.editor_layout.setSpacing(0)
+        self.editor_layout.setAlignment(QtCore.Qt.AlignTop)
+        self.scroll.setWidget(self.editor_container)
+        self.scroll.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        content.addWidget(self.scroll, 1)
+        actions = QtWidgets.QVBoxLayout()
+        actions.setContentsMargins(0, 0, 0, 0)
+        actions.setSpacing(compact_spacing)
+        self.add_button = self._action_button(
+            GRID_SPACING_ADD_ICON, "+", "Adicionar vão"
+        )
+        self.duplicate_button = self._action_button(
+            GRID_SPACING_DUPLICATE_ICON, "⧉", "Duplicar vão selecionado"
+        )
+        self.remove_button = self._action_button(
+            GRID_SPACING_REMOVE_ICON, "−", "Remover vão selecionado"
+        )
         for button in (self.add_button, self.duplicate_button, self.remove_button):
-            buttons.addWidget(button)
-        layout.addLayout(buttons)
+            actions.addWidget(button)
+        actions.addStretch(1)
+        content.addLayout(actions)
+        layout.addLayout(content)
         self.summary = QtWidgets.QLabel()
         layout.addWidget(self.summary)
         self.add_button.clicked.connect(self.add_spacing)
@@ -86,29 +158,94 @@ class SpacingEditor(QtWidgets.QGroupBox):
         self.remove_button.clicked.connect(self.remove_spacing)
         for value in defaults:
             self._append(value)
+        self._update_editor_metrics()
         self._update_summary()
 
+    def _action_button(self, icon_path, fallback, description):
+        button = QtWidgets.QToolButton()
+        stabilize_compact_tool_button(button)
+        icon = QtGui.QIcon(icon_path)
+        if icon.isNull():
+            button.setText(fallback)
+        else:
+            button.setIcon(icon)
+        button.setToolTip(description)
+        button.setAccessibleName(description)
+        button.setFocusPolicy(QtCore.Qt.StrongFocus)
+        return button
+
+    def _update_editor_metrics(self):
+        probe = self._spins[0] if self._spins else SpacingDoubleSpinBox(lambda: None)
+        metrics = probe.fontMetrics()
+        text_width = metrics.horizontalAdvance("100000,00 mm")
+        style = probe.style()
+        arrow_width = style.pixelMetric(QtWidgets.QStyle.PM_ScrollBarExtent, None, probe)
+        frame_width = style.pixelMetric(QtWidgets.QStyle.PM_SpinBoxFrameWidth, None, probe)
+        field_width = max(probe.sizeHint().width(), text_width + arrow_width + 2 * frame_width)
+        row_height = probe.sizeHint().height()
+        spacing = max(self.editor_layout.spacing(), 0)
+        margins = self.editor_layout.contentsMargins()
+        chrome = self.scroll.frameWidth() * 2 + margins.top() + margins.bottom()
+        height_for = lambda rows: chrome + rows * row_height + (rows - 1) * spacing
+        content_rows = max(len(self._spins), 1)
+        self.editor_container.setMinimumHeight(
+            margins.top() + margins.bottom() + content_rows * row_height
+            + (content_rows - 1) * spacing
+        )
+        self._field_minimum_width = field_width
+        self.scroll.setMinimumWidth(
+            field_width + style.pixelMetric(QtWidgets.QStyle.PM_ScrollBarExtent)
+            + self.scroll.frameWidth() * 2
+        )
+        visible_rows = min(max(len(self._spins), 1), 7)
+        self.scroll.setFixedHeight(height_for(visible_rows))
+        for spin in self._spins:
+            spin.setMinimumWidth(field_width)
+            spin.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        tool_extent = row_height
+        icon_extent = max(round(tool_extent * 0.62), 16)
+        for button in (self.add_button, self.duplicate_button, self.remove_button):
+            button.setFixedSize(tool_extent, tool_extent)
+            button.setIconSize(QtCore.QSize(icon_extent, icon_extent))
+        if probe not in self._spins:
+            probe.deleteLater()
+
     def _append(self, value):
-        item = QtWidgets.QListWidgetItem()
-        spin = QtWidgets.QDoubleSpinBox()
+        spin = SpacingDoubleSpinBox(lambda: self._set_active(spin))
         spin.setRange(0.0, 1.0e9)
         spin.setDecimals(2)
         spin.setSuffix(" mm")
         spin.setValue(float(value))
         spin.valueChanged.connect(self._changed)
-        item.setSizeHint(spin.sizeHint())
-        self.list.addItem(item)
-        self.list.setItemWidget(item, spin)
-        self.list.setCurrentItem(item)
+        self._spins.append(spin)
+        self.editor_layout.addWidget(spin)
+        if self._field_minimum_width:
+            spin.setMinimumWidth(self._field_minimum_width)
+        spin.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        return spin
+
+    def _set_active(self, spin):
+        if spin in self._spins:
+            self._active_spin = spin
+
+    def active_index(self):
+        if self._active_spin in self._spins:
+            return self._spins.index(self._active_spin)
+        return len(self._spins) - 1
 
     def set_values(self, values):
-        self.list.clear()
+        for spin in self._spins:
+            self.editor_layout.removeWidget(spin)
+            spin.deleteLater()
+        self._spins = []
+        self._active_spin = None
         for value in values:
             self._append(value)
+        self._update_editor_metrics()
         self._changed()
 
     def values(self):
-        return [self.list.itemWidget(self.list.item(i)).value() for i in range(self.list.count())]
+        return [spin.value() for spin in self._spins]
 
     def _changed(self, _value=None):
         self._update_summary()
@@ -120,21 +257,31 @@ class SpacingEditor(QtWidgets.QGroupBox):
 
     def add_spacing(self):
         values = self.values()
-        self._append(values[-1] if values else 1000.0)
+        spin = self._append(values[-1] if values else 1000.0)
+        self._update_editor_metrics()
+        spin.setFocus(QtCore.Qt.OtherFocusReason)
         self._changed()
 
     def duplicate_spacing(self):
-        row = self.list.currentRow()
+        row = self.active_index()
         values = self.values()
-        self._append(values[row] if 0 <= row < len(values) else (values[-1] if values else 1000.0))
+        spin = self._append(values[row] if 0 <= row < len(values)
+                            else (values[-1] if values else 1000.0))
+        self._update_editor_metrics()
+        spin.setFocus(QtCore.Qt.OtherFocusReason)
         self._changed()
 
     def remove_spacing(self):
-        row = self.list.currentRow()
-        if row < 0 and self.list.count():
-            row = self.list.count() - 1
+        row = self.active_index()
         if row >= 0:
-            self.list.takeItem(row)
+            spin = self._spins.pop(row)
+            self.editor_layout.removeWidget(spin)
+            spin.deleteLater()
+            self._active_spin = None
+            if self._spins:
+                next_spin = self._spins[min(row, len(self._spins) - 1)]
+                next_spin.setFocus(QtCore.Qt.OtherFocusReason)
+            self._update_editor_metrics()
             self._changed()
 
 
@@ -153,13 +300,34 @@ class GridTaskPanel:
         self.form = QtWidgets.QWidget()
         root = QtWidgets.QVBoxLayout(self.form)
 
-        general = QtWidgets.QGroupBox("Geral")
-        general_form = QtWidgets.QFormLayout(general)
+        panel_spacing = max(round(self.form.fontMetrics().lineSpacing() * 0.3), 4)
+        root.setContentsMargins(panel_spacing, panel_spacing,
+                                panel_spacing, panel_spacing)
+        root.setSpacing(panel_spacing)
+        header = QtWidgets.QHBoxLayout()
+        header.setContentsMargins(0, 0, 0, 0)
+        header.setSpacing(panel_spacing)
+        name_label = QtWidgets.QLabel("Nome do grid:")
         self.name_edit = QtWidgets.QLineEdit("Grid Estrutural")
-        self.reset_button = QtWidgets.QPushButton("Redefinir padrões")
-        general_form.addRow("Nome do grid:", self.name_edit)
-        general_form.addRow(self.reset_button)
-        root.addWidget(general)
+        self.name_edit.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.reset_button = QtWidgets.QToolButton()
+        stabilize_compact_tool_button(self.reset_button)
+        self.reset_button.setToolTip("Redefinir todos os padrões do Grid")
+        self.reset_button.setAccessibleName("Redefinir todos os padrões do Grid")
+        reset_icon = QtGui.QIcon(GRID_RESET_DEFAULTS_ICON)
+        if reset_icon.isNull():
+            self.reset_button.setText("↺")
+        else:
+            self.reset_button.setIcon(reset_icon)
+        reset_extent = self.name_edit.sizeHint().height()
+        self.reset_button.setFixedSize(reset_extent, reset_extent)
+        reset_icon_extent = max(round(reset_extent * 0.62), 16)
+        self.reset_button.setIconSize(QtCore.QSize(reset_icon_extent, reset_icon_extent))
+        self.reset_button.setFocusPolicy(QtCore.Qt.StrongFocus)
+        header.addWidget(name_label)
+        header.addWidget(self.name_edit, 1)
+        header.addWidget(self.reset_button)
+        root.addLayout(header)
 
         self.x_editor = SpacingEditor("Vãos em X", [6000, 6000], self.update_preview)
         self.y_editor = SpacingEditor("Vãos em Y", [5000, 5000], self.update_preview)
@@ -193,43 +361,59 @@ class GridTaskPanel:
         self.x_labels.textChanged.connect(self.update_preview)
         self.y_labels.textChanged.connect(self.update_preview)
         identification_form.addRow("Eixos X:", self.x_scheme)
-        identification_form.addRow("Identificadores X:", self.x_labels)
+        self.x_labels_label = QtWidgets.QLabel("Identificadores X:")
+        identification_form.addRow(self.x_labels_label, self.x_labels)
         identification_form.addRow("Eixos Y:", self.y_scheme)
-        identification_form.addRow("Identificadores Y:", self.y_labels)
+        self.y_labels_label = QtWidgets.QLabel("Identificadores Y:")
+        identification_form.addRow(self.y_labels_label, self.y_labels)
         root.addWidget(identification)
 
         appearance = QtWidgets.QGroupBox("Aparência")
         appearance_form = QtWidgets.QFormLayout(appearance)
-        self.line_color = QtGui.QColor(80, 150, 230)
         current_view = getattr(grid_object, "ViewObject", None)
-        point_rgb = tuple(getattr(current_view, "IntersectionPointColor", (245 / 255, 190 / 255, 60 / 255)))[:3]
-        try:
-            self.point_color = QtGui.QColor.fromRgbF(*(float(component) for component in point_rgb))
-        except Exception:
-            self.point_color = QtGui.QColor(245, 190, 60)
-        self.line_color_button = QtWidgets.QPushButton("Escolher cor")
-        self.point_color_button = QtWidgets.QPushButton("Escolher cor")
+        current_font = str(getattr(current_view, "FontName", "") or "")
+        self._factory_appearance = default_grid_appearance(current_font)
+        appearance_settings = load_grid_appearance_settings()
+        self._font_name = _supported_font_name(
+            current_view, appearance_settings.font_name, current_font
+        )
+        self.line_color = QtGui.QColor.fromRgbF(*appearance_settings.line_color)
+        self.point_color = QtGui.QColor.fromRgbF(*appearance_settings.intersection_color)
+        self.line_color_button = self._color_swatch("Cor das linhas")
+        self.point_color_button = self._color_swatch("Cor dos pontos")
         self.line_width = QtWidgets.QDoubleSpinBox()
         self.line_width.setRange(1.0, 20.0)
-        self.line_width.setValue(1.0)
+        self.line_width.setValue(appearance_settings.line_width)
         self.show_points = QtWidgets.QCheckBox()
-        self.show_points.setChecked(bool(getattr(current_view, "ShowIntersections", True)))
+        self.show_points.setChecked(appearance_settings.show_intersections)
         self.point_size = QtWidgets.QDoubleSpinBox()
         self.point_size.setRange(1.0, 30.0)
-        self.point_size.setValue(float(getattr(current_view, "IntersectionPointSize", 5.0)))
-        self.line_color_button.clicked.connect(lambda: self._choose_color("line"))
-        self.point_color_button.clicked.connect(lambda: self._choose_color("point"))
+        self.point_size.setValue(appearance_settings.intersection_size)
         self.show_labels = QtWidgets.QCheckBox()
-        self.show_labels.setChecked(True)
+        self.show_labels.setChecked(appearance_settings.show_labels)
         self.label_position = QtWidgets.QComboBox()
         self.label_position.addItems(["Start", "End", "Both"])
-        self.label_position.setCurrentText("Both")
+        self.label_position.setCurrentText(appearance_settings.label_position)
+        self.label_offset = QtWidgets.QDoubleSpinBox()
+        self.label_offset.setRange(0.0, 1.0e9)
+        self.label_offset.setDecimals(2)
+        self.label_offset.setSuffix(" mm")
+        self.label_offset.setValue(appearance_settings.label_offset)
         self.font_size = QtWidgets.QDoubleSpinBox()
         self.font_size.setRange(1.0, 200.0)
-        self.font_size.setValue(14.0)
-        self.text_color = QtGui.QColor(242, 242, 242)
-        self.text_color_button = QtWidgets.QPushButton("Escolher cor")
-        self.text_color_button.clicked.connect(lambda: self._choose_color("text"))
+        self.font_size.setValue(appearance_settings.font_size)
+        self.text_color = QtGui.QColor.fromRgbF(*appearance_settings.text_color)
+        self.text_color_button = self._color_swatch("Cor do texto")
+        self._color_buttons = {
+            "line": self.line_color_button,
+            "point": self.point_color_button,
+            "text": self.text_color_button,
+        }
+        for target, button in self._color_buttons.items():
+            button.clicked.connect(
+                lambda _checked=False, selected_target=target:
+                self._choose_color(selected_target)
+            )
         appearance_form.addRow("Cor das linhas:", self.line_color_button)
         appearance_form.addRow("Espessura das linhas:", self.line_width)
         appearance_form.addRow("Exibir pontos:", self.show_points)
@@ -237,6 +421,7 @@ class GridTaskPanel:
         appearance_form.addRow("Tamanho dos pontos:", self.point_size)
         appearance_form.addRow("Exibir identificadores:", self.show_labels)
         appearance_form.addRow("Posição:", self.label_position)
+        appearance_form.addRow("Afastamento:", self.label_offset)
         appearance_form.addRow("Tamanho do texto:", self.font_size)
         appearance_form.addRow("Cor do texto:", self.text_color_button)
         root.addWidget(appearance)
@@ -248,7 +433,8 @@ class GridTaskPanel:
         # Connect only after every identification and appearance widget exists.
         for combo in (self.x_scheme, self.y_scheme): combo.currentTextChanged.connect(self._identification_changed)
         for spin in self.extensions.values(): spin.valueChanged.connect(self.update_preview)
-        for widget in (self.line_width, self.point_size, self.font_size): widget.valueChanged.connect(self.update_preview)
+        for widget in (self.line_width, self.point_size, self.label_offset, self.font_size):
+            widget.valueChanged.connect(self.update_preview)
         for widget in (self.show_points, self.show_labels): widget.toggled.connect(self.update_preview)
         self.label_position.currentTextChanged.connect(self.update_preview)
         self.name_edit.textChanged.connect(self.update_preview)
@@ -263,27 +449,58 @@ class GridTaskPanel:
             self._remove_escape_filter()
             raise
 
+    def _color_swatch(self, description):
+        button = QtWidgets.QToolButton()
+        button.setText("")
+        button.setToolTip(description)
+        button.setAccessibleName(description)
+        button.setFocusPolicy(QtCore.Qt.StrongFocus)
+        height = max(self.name_edit.sizeHint().height(), self.form.fontMetrics().lineSpacing())
+        button.setFixedSize(max(round(height * 2.4), height), height)
+        return button
+
+    def _color_for_target(self, target):
+        return {"line": self.line_color, "point": self.point_color,
+                "text": self.text_color}[target]
+
     def _choose_color(self, target):
-        current = {"line": self.line_color, "point": self.point_color, "text": self.text_color}[target]
+        if target not in self._color_buttons:
+            return
+        current = self._color_for_target(target)
         selected = QtWidgets.QColorDialog.getColor(current, self.form, "Escolher cor")
         if selected.isValid():
-            if target == "line":
-                self.line_color = selected
-            elif target == "point":
-                self.point_color = selected
-            else:
-                self.text_color = selected
-            self._refresh_color_buttons()
-            self.update_preview()
+            self._apply_color(target, selected)
+
+    def _apply_color(self, target, value):
+        if target not in self._color_buttons:
+            return
+        selected = QtGui.QColor(*value) if isinstance(value, tuple) else QtGui.QColor(value)
+        if not selected.isValid() or selected == self._color_for_target(target):
+            return
+        if target == "line":
+            self.line_color = selected
+        elif target == "point":
+            self.point_color = selected
+        else:
+            self.text_color = selected
+        self._refresh_color_buttons()
+        self.update_preview()
 
     def _refresh_color_buttons(self):
-        self.line_color_button.setStyleSheet("background-color: %s" % self.line_color.name())
-        self.point_color_button.setStyleSheet("background-color: %s" % self.point_color.name())
-        self.text_color_button.setStyleSheet("background-color: %s" % self.text_color.name())
+        border = self.form.palette().color(QtGui.QPalette.Mid).name()
+        for target, button in self._color_buttons.items():
+            button.setStyleSheet(
+                "QToolButton { background-color: %s; border: 1px solid %s; }"
+                % (self._color_for_target(target).name(), border)
+            )
 
     def _identification_changed(self, _value=None):
-        self.x_labels.setVisible(SCHEMES[self.x_scheme.currentText()] == "Custom")
-        self.y_labels.setVisible(SCHEMES[self.y_scheme.currentText()] == "Custom")
+        x_custom = SCHEMES[self.x_scheme.currentText()] == "Custom"
+        y_custom = SCHEMES[self.y_scheme.currentText()] == "Custom"
+        self.x_labels_label.setVisible(x_custom)
+        self.x_labels.setVisible(x_custom)
+        self.y_labels_label.setVisible(y_custom)
+        self.y_labels.setVisible(y_custom)
         if not self._initializing:
             self.update_preview()
 
@@ -340,6 +557,9 @@ class GridTaskPanel:
             view.ShowIntersections = self.show_points.isChecked()
             view.ShowLabels = self.show_labels.isChecked()
             view.LabelPosition = self.label_position.currentText()
+            view.LabelOffset = self.label_offset.value()
+            if self._font_name:
+                view.FontName = self._font_name
             view.FontSize = self.font_size.value()
             view.TextColor = self.text_color.redF(), self.text_color.greenF(), self.text_color.blueF()
             try:
@@ -371,6 +591,7 @@ class GridTaskPanel:
             return False
         try:
             self.document.commitTransaction()
+            save_grid_appearance_settings(self._appearance_settings())
             return True
         finally:
             self._finish(True)
@@ -438,13 +659,31 @@ class GridTaskPanel:
         self.x_scheme.setCurrentText("Numérica")
         self.y_scheme.setCurrentText("Alfabética")
         for spin in self.extensions.values(): spin.setValue(1000.0)
-        self.line_width.setValue(1.0)
-        self.show_points.setChecked(True)
-        self.point_size.setValue(5.0)
-        self.show_labels.setChecked(True)
-        self.label_position.setCurrentText("Both")
-        self.font_size.setValue(14.0)
+        defaults = self._factory_appearance
+        self.line_color = QtGui.QColor.fromRgbF(*defaults.line_color)
+        self.point_color = QtGui.QColor.fromRgbF(*defaults.intersection_color)
+        self.text_color = QtGui.QColor.fromRgbF(*defaults.text_color)
+        self._font_name = defaults.font_name
+        self.line_width.setValue(defaults.line_width)
+        self.show_points.setChecked(defaults.show_intersections)
+        self.point_size.setValue(defaults.intersection_size)
+        self.show_labels.setChecked(defaults.show_labels)
+        self.label_position.setCurrentText(defaults.label_position)
+        self.label_offset.setValue(defaults.label_offset)
+        self.font_size.setValue(defaults.font_size)
+        self._refresh_color_buttons()
         self.update_preview()
+
+    def _appearance_settings(self):
+        return GridAppearanceSettings(
+            (self.line_color.redF(), self.line_color.greenF(), self.line_color.blueF()),
+            self.line_width.value(), self.show_points.isChecked(),
+            (self.point_color.redF(), self.point_color.greenF(), self.point_color.blueF()),
+            self.point_size.value(), self.show_labels.isChecked(),
+            self.label_position.currentText(), self.label_offset.value(),
+            self._font_name, self.font_size.value(),
+            (self.text_color.redF(), self.text_color.greenF(), self.text_color.blueF()),
+        )
 
     def getStandardButtons(self):
         return standard_buttons_value(QtWidgets.QDialogButtonBox)

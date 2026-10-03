@@ -166,6 +166,7 @@ class StructuralGridProxy:
     def __init__(self, obj):
         self._updating = True
         self._schema_ready = False
+        self._view_provider = None
         obj.Proxy = self
         try:
             self._setup_properties(obj, refresh_enumerations=True)
@@ -325,6 +326,11 @@ class StructuralGridProxy:
     def __setstate__(self, _state):
         self._updating = False
         self._schema_ready = False
+        self._view_provider = None
+
+    def __getstate__(self):
+        # Runtime adapters and their Coin nodes are rebuilt by FreeCAD.
+        return None
 
 
 def create_grid(
@@ -350,7 +356,7 @@ def create_grid(
         view_object = getattr(obj, "ViewObject", None)
         if view_object is not None:
             from .grid_view import StructuralGridViewProvider
-            StructuralGridViewProvider(view_object)
+            proxy._view_provider = StructuralGridViewProvider(view_object)
         proxy._updating = True
         try:
             if x_spacings is not None:

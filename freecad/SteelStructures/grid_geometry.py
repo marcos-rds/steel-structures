@@ -47,6 +47,17 @@ class GridIntersection:
 
 
 @dataclass(frozen=True)
+class GridLabelAnchor:
+    """Render-independent axis identification anchored in local coordinates."""
+
+    text: str
+    family: str
+    axis_index: int
+    side: str
+    anchor_point_local: Point3D
+
+
+@dataclass(frozen=True)
 class GridGeometry:
     """Immutable result of a structural-grid calculation."""
 
@@ -59,6 +70,41 @@ class GridGeometry:
     overall_length_y: float
     displayed_length_x: float
     displayed_length_y: float
+
+
+def grid_label_anchors(
+    geometry: GridGeometry,
+    label_position: str,
+    label_offset: Real,
+) -> tuple[GridLabelAnchor, ...]:
+    """Return semantic label anchors at axis ends, independent of rendering."""
+    if label_position not in ("Start", "End", "Both"):
+        raise ValueError("Label position must be Start, End or Both.")
+    offset = validate_extension(label_offset, "Label offset")
+    anchors = []
+    for axis in geometry.x_axes:
+        if label_position in ("Start", "Both"):
+            anchors.append(GridLabelAnchor(
+                axis.identifier, axis.family, axis.index, "bottom",
+                (axis.start[0], axis.start[1] - offset, axis.start[2]),
+            ))
+        if label_position in ("End", "Both"):
+            anchors.append(GridLabelAnchor(
+                axis.identifier, axis.family, axis.index, "top",
+                (axis.end[0], axis.end[1] + offset, axis.end[2]),
+            ))
+    for axis in geometry.y_axes:
+        if label_position in ("Start", "Both"):
+            anchors.append(GridLabelAnchor(
+                axis.identifier, axis.family, axis.index, "left",
+                (axis.start[0] - offset, axis.start[1], axis.start[2]),
+            ))
+        if label_position in ("End", "Both"):
+            anchors.append(GridLabelAnchor(
+                axis.identifier, axis.family, axis.index, "right",
+                (axis.end[0] + offset, axis.end[1], axis.end[2]),
+            ))
+    return tuple(anchors)
 
 
 def _finite_number(value: object, name: str) -> float:
@@ -304,9 +350,11 @@ __all__ = [
     "GridAxis",
     "GridGeometry",
     "GridIntersection",
+    "GridLabelAnchor",
     "accumulated_positions",
     "alphabetic_axis_identifier",
     "build_grid_geometry",
+    "grid_label_anchors",
     "nearest_intersection",
     "normalize_identifiers",
     "numeric_axis_identifier",

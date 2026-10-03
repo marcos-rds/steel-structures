@@ -3,6 +3,7 @@
 
 from dataclasses import dataclass
 from html import escape
+import math
 
 from PySide import QtCore, QtGui, QtWidgets
 
@@ -10,7 +11,7 @@ from ..profiles import (
     SectionGeometry2D, insertion_reference,
     section_insertion_references,
 )
-from ..profiles.preview_geometry import section_outline_points
+from ..profiles.preview_geometry import SchematicCubic2D, preview_segments_for_path
 
 
 DIMENSIONS_MODE = "dimensions"
@@ -41,6 +42,16 @@ UE_D_OFFSET_PIXELS = 18.0
 UE_D_TEXT_OFFSET_PIXELS = 8.0
 UE_T_LEADER_X_PIXELS = 22.0
 UE_T_LEADER_Y_PIXELS = 20.0
+HOLLOW_WIDTH_OFFSET_PIXELS = 26.0
+HOLLOW_HEIGHT_OFFSET_PIXELS = 30.0
+HOLLOW_T_LEADER_X_PIXELS = 24.0
+HOLLOW_T_LEADER_Y_PIXELS = 16.0
+CHS_WIDTH_OFFSET_PIXELS = 18.0
+CHS_T_LEADER_X_PIXELS = 18.0
+CHS_T_LEADER_Y_PIXELS = 12.0
+CHS_T_TARGET_ANGLE_DEGREES = 35.0
+HOLLOW_HORIZONTAL_RESERVE_PIXELS = 82.0
+HOLLOW_VERTICAL_RESERVE_PIXELS = 48.0
 DIMENSION_COLOR = (128, 32, 48)
 INSERTION_MARKER_COLOR = (0, 112, 132)
 INSERTION_MARKER_RADIUS_PIXELS = 5.0
@@ -59,6 +70,18 @@ def _clamp(value, minimum, maximum):
     return max(minimum, min(float(value), maximum))
 
 
+def _fit_units_per_pixel(bounds, viewport_width, viewport_height,
+                         width_fraction=0.58, height_fraction=0.66):
+    """Return a continuous model-to-screen fit without an absolute-size floor."""
+    width = max(float(viewport_width), 1.0)
+    height = max(float(viewport_height), 1.0)
+    return max(
+        bounds.width / (width * float(width_fraction)),
+        bounds.height / (height * float(height_fraction)),
+        1.0e-9,
+    )
+
+
 def _balanced_section_envelope(bounds, visual_bounds, padding):
     """Return a section-centred rect large enough for every annotation."""
     left, right = bounds.min_x, bounds.max_x
@@ -72,6 +95,19 @@ def _balanced_section_envelope(bounds, visual_bounds, padding):
     return (
         left - horizontal, top - vertical,
         bounds.width + 2.0 * horizontal, bounds.height + 2.0 * vertical,
+    )
+
+
+def _hollow_section_envelope(bounds, units_per_pixel):
+    """Return a section-centred viewport independent of annotation item bounds."""
+    horizontal = HOLLOW_HORIZONTAL_RESERVE_PIXELS * float(units_per_pixel)
+    vertical = HOLLOW_VERTICAL_RESERVE_PIXELS * float(units_per_pixel)
+    left = bounds.min_x - horizontal
+    top = -bounds.max_y - vertical
+    return (
+        left, top,
+        bounds.width + 2.0 * horizontal,
+        bounds.height + 2.0 * vertical,
     )
 
 
@@ -150,12 +186,21 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
             raise ValueError("modo de preview inválido")
         self.scene().clear()
         path = QtGui.QPainterPath()
-        outline_points = section_outline_points(geometry)
-        first = outline_points[0]
-        path.moveTo(first.x, -first.y)
-        for point in outline_points[1:]:
-            path.lineTo(point.x, -point.y)
-        path.closeSubpath()
+        path.setFillRule(QtCore.Qt.OddEvenFill)
+        for contour in (geometry.outer_path,) + geometry.inner_paths:
+            segments = preview_segments_for_path(contour)
+            first = segments[0].start
+            path.moveTo(first.x, -first.y)
+            for segment in segments:
+                if isinstance(segment, SchematicCubic2D):
+                    path.cubicTo(
+                        segment.control1.x, -segment.control1.y,
+                        segment.control2.x, -segment.control2.y,
+                        segment.end.x, -segment.end.y,
+                    )
+                else:
+                    path.lineTo(segment.end.x, -segment.end.y)
+            path.closeSubpath()
 
         outline = QtGui.QPen(QtGui.QColor(28, 28, 28))
         outline.setCosmetic(True)
@@ -176,11 +221,20 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
             self._add_insertion_marker(geometry, insertion)
 
         visual_bounds = self.scene().itemsBoundingRect()
-        scene_units_per_pixel = self._scene_units_per_pixel(geometry.bounds)
+        dimension_key = (geometry.geometry_type, geometry.geometry_variant)
+        if dimension_key[0] in ("hollow_section", "solid_section"):
+            scene_units_per_pixel = self._hollow_units_per_pixel(geometry.bounds)
+        else:
+            scene_units_per_pixel = self._scene_units_per_pixel(geometry.bounds)
         margin_x = CANVAS_MARGIN_PIXELS * scene_units_per_pixel
         margin_y = CANVAS_MARGIN_PIXELS * scene_units_per_pixel
-        dimension_key = (geometry.geometry_type, geometry.geometry_variant)
-        if mode == DIMENSIONS_MODE and dimension_key == ("equal_angle", "equal_leg"):
+        if (mode == DIMENSIONS_MODE
+                and dimension_key[0] in ("hollow_section", "solid_section")):
+            rect = _hollow_section_envelope(
+                geometry.bounds, scene_units_per_pixel,
+            )
+            self.scene().setSceneRect(QtCore.QRectF(*rect))
+        elif mode == DIMENSIONS_MODE and dimension_key == ("equal_angle", "equal_leg"):
             rect = _balanced_section_envelope(
                 geometry.bounds, visual_bounds, max(margin_x, margin_y)
             )
@@ -213,6 +267,14 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
         height = max(float(viewport.height()), 1.0) if viewport is not None else 240.0
         return max(bounds.width / (width * 0.58), bounds.height / (height * 0.66), 0.75)
 
+    def _hollow_units_per_pixel(self, bounds):
+        """Fit each closed section independently, without an absolute-size floor."""
+        viewport_getter = getattr(self, "viewport", None)
+        viewport = viewport_getter() if callable(viewport_getter) else None
+        width = float(viewport.width()) if viewport is not None else 500.0
+        height = float(viewport.height()) if viewport is not None else 240.0
+        return _fit_units_per_pixel(bounds, width, height)
+
     @staticmethod
     def _d_offset_pixels(bounds):
         """Compensate the final fit compression without changing small profiles."""
@@ -234,6 +296,109 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
             self._add_tee_dimensions(geometry, dimensions)
         elif key == ("cold_formed_channel", "stiffened_u"):
             self._add_ue_dimensions(geometry, dimensions)
+        elif key in (
+                ("hollow_section", "square"),
+                ("hollow_section", "rectangular"),
+                ("hollow_section", "circular")):
+            self._add_hollow_dimensions(geometry, dimensions)
+        elif key[0] == "solid_section":
+            self._add_solid_dimensions(geometry, dimensions)
+
+    def _add_solid_dimensions(self, geometry, dimensions):
+        """Dimension solid bars in their canonical width/thickness orientation."""
+        pen = self._annotation_pen()
+        bounds = geometry.bounds
+        left, right = bounds.min_x, bounds.max_x
+        top, bottom = -bounds.max_y, -bounds.min_y
+        units = self._hollow_units_per_pixel(bounds)
+        clearance = GEOMETRY_CLEARANCE_PIXELS * units
+        circular = geometry.geometry_variant == "circular"
+        self._add_hollow_width_dimension(
+            "Ø" if circular else "b", left, right, top,
+            (CHS_WIDTH_OFFSET_PIXELS if circular else HOLLOW_WIDTH_OFFSET_PIXELS) * units,
+            clearance, units, dimensions["ØD" if circular else "B"], pen,
+            parenthesize=not circular,
+        )
+        if geometry.geometry_variant == "rectangular":
+            self._add_angle_t_dimension(
+                right, top, bottom, clearance, units, dimensions["t"], pen,
+            )
+
+    def _add_hollow_dimensions(self, geometry, dimensions):
+        """Annotate nominal hollow dimensions without deriving values from contours."""
+        pen = self._annotation_pen()
+        bounds = geometry.bounds
+        left, right = bounds.min_x, bounds.max_x
+        top, bottom = -bounds.max_y, -bounds.min_y
+        units = self._hollow_units_per_pixel(bounds)
+        clearance = GEOMETRY_CLEARANCE_PIXELS * units
+        circular = geometry.geometry_variant == "circular"
+        catalog_width_symbol = "ØD" if circular else "B"
+        display_width_symbol = "Ø" if circular else "b"
+        width_value = dimensions[catalog_width_symbol]
+        self._add_hollow_width_dimension(
+            display_width_symbol, left, right, top,
+            (CHS_WIDTH_OFFSET_PIXELS if circular else HOLLOW_WIDTH_OFFSET_PIXELS) * units,
+            clearance, units, width_value, pen, parenthesize=not circular,
+        )
+        if geometry.geometry_variant == "rectangular":
+            self._add_vertical_dimension(
+                "h", left, top, bottom, HOLLOW_HEIGHT_OFFSET_PIXELS * units,
+                clearance, units, dimensions["H"], pen,
+            )
+        self._add_hollow_thickness_note(geometry, dimensions["t"], pen, units)
+
+    def _add_hollow_width_dimension(self, symbol, left, right, top, offset,
+                                    clearance, units, value, pen,
+                                    parenthesize=True):
+        line_y = top - offset
+        parts = (
+            self._dimension_parts(symbol, value) if parenthesize
+            else (symbol, value.removesuffix(" mm"))
+        )
+        label = self._create_dimension_label(
+            parts, pen.color()
+        )
+        self._position_label(
+            label, (left + right) / 2.0, line_y,
+            -label.width / 2.0, -TEXT_LINE_GAP - label.height,
+        )
+        overshoot = EXTENSION_OVERSHOOT_PIXELS * units
+        self._line(left, top - clearance, left, line_y - overshoot, pen)
+        self._line(right, top - clearance, right, line_y - overshoot, pen)
+        self._line(left, line_y, right, line_y, pen)
+        self._terminator(left, line_y, pen)
+        self._terminator(right, line_y, pen)
+
+    def _add_hollow_thickness_note(self, geometry, value, pen, units):
+        """Use a short external leader; the displayed value remains catalog nominal."""
+        bounds = geometry.bounds
+        if geometry.geometry_variant == "circular":
+            stations = dict(geometry.dimension_stations)
+            outer_radius = stations["diameter"] / 2.0
+            inner_radius = stations["inner_diameter"] / 2.0
+            mid_radius = (outer_radius + inner_radius) / 2.0
+            angle = math.radians(CHS_T_TARGET_ANGLE_DEGREES)
+            target_x = mid_radius * math.cos(angle)
+            target_y = mid_radius * math.sin(angle)
+            leader_x = CHS_T_LEADER_X_PIXELS
+            leader_y = CHS_T_LEADER_Y_PIXELS
+        else:
+            target_x = bounds.max_x
+            target_y = -(bounds.min_y + bounds.height * 0.30)
+            leader_x = HOLLOW_T_LEADER_X_PIXELS
+            leader_y = -HOLLOW_T_LEADER_Y_PIXELS
+        anchor_x = target_x + leader_x * units
+        anchor_y = target_y + leader_y * units
+        label = self._create_dimension_label(
+            self._dimension_parts("t", value), pen.color()
+        )
+        self._position_label(label, anchor_x, anchor_y, 6.0, -label.height / 2.0)
+        self._line(target_x, target_y, anchor_x, anchor_y, pen)
+        self._device_ellipse(
+            target_x, target_y, TF_WITNESS_RADIUS_PIXELS, pen,
+            QtGui.QBrush(QtGui.QColor(*DIMENSION_COLOR)),
+        )
 
     def _add_ue_dimensions(self, geometry, dimensions):
         """Annotate the real Ue contour from its geometric stations."""
@@ -683,7 +848,11 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
 
     def _add_axes(self, geometry):
         bounds = geometry.bounds
-        extension = _clamp(max(bounds.width, bounds.height) * 0.10, 18.0, 48.0)
+        extension = (
+            18.0 * self._hollow_units_per_pixel(bounds)
+            if geometry.geometry_type == "solid_section" else
+            _clamp(max(bounds.width, bounds.height) * 0.10, 18.0, 48.0)
+        )
         x_pen = QtGui.QPen(QtGui.QColor(205, 45, 45))
         y_pen = QtGui.QPen(QtGui.QColor(38, 145, 72))
         for pen in (x_pen, y_pen):
@@ -785,6 +954,8 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
 
 __all__ = [
     "DIMENSIONS_MODE", "NEUTRAL_MODE", "PREVIEW_MODES", "PROPERTIES_MODE",
-    "SectionPreviewView", "_balanced_section_envelope", "_channel_tf_measurement",
+    "SectionPreviewView", "_balanced_section_envelope", "_fit_units_per_pixel",
+    "_hollow_section_envelope",
+    "_channel_tf_measurement",
     "_tapered_i_tf_measurement", "_tee_dimension_stations", "_ue_section_envelope",
 ]

@@ -6,8 +6,13 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, replace
 
-from .cold_formed import ColdFormedPath2D, section_geometry_from_cold_formed
-from .geometry import ArcSegment2D, LineSegment2D, Point2D, SectionGeometryError, SectionPath2D
+from .cold_formed import (
+    ColdFormedPath2D, section_geometry_from_cold_formed, translated_path,
+)
+from .geometry import (
+    ArcSegment2D, LineSegment2D, Point2D,
+    SectionGeometry2D, SectionGeometryError, SectionPath2D,
+)
 
 
 @dataclass(frozen=True)
@@ -132,6 +137,36 @@ def build_ue_section(*, bw, bf, D, t, ri):
     ))
 
 
+def build_simplified_ue_section(*, bw, bf, D, t, ri):
+    """Build the same nominal Ue with sharp bends and unchanged technical data."""
+    # Validate the catalog contract, including ri, without applying ri to BRep.
+    ue_derived_dimensions(bw=bw, bf=bf, D=D, t=t, ri=ri)
+    detailed = build_ue_section(bw=bw, bf=bf, D=D, t=t, ri=ri)
+    detailed_stations = dict(detailed.dimension_stations)
+    # Nominal external datum: rear web x=0, height 0..bw, opening toward +X.
+    points = (
+        Point2D(bf - t, bw - D), Point2D(bf - t, bw - t),
+        Point2D(t, bw - t), Point2D(t, t),
+        Point2D(bf - t, t), Point2D(bf - t, D),
+        Point2D(bf, D), Point2D(bf, 0.0), Point2D(0.0, 0.0),
+        Point2D(0.0, bw), Point2D(bf, bw), Point2D(bf, bw - D),
+    )
+    raw = SectionPath2D(tuple(
+        LineSegment2D(point, points[(index + 1) % len(points)])
+        for index, point in enumerate(points)
+    ), True)
+    # Preserve the detailed nominal centroid as the member-axis datum.
+    detailed_external_web = detailed_stations["external_web_x"]
+    detailed_centroid_x = -detailed_external_web
+    centered = translated_path(raw, -detailed_centroid_x, -bw / 2.0)
+    bounds = detailed.bounds
+    stations = tuple((name, value) for name, value in detailed.dimension_stations)
+    return SectionGeometry2D(
+        "cold_formed_channel", "stiffened_u", centered, (), bounds,
+        Point2D(0.0, 0.0), stations,
+    )
+
+
 def ue_normative_properties(*, bw, bf, D, t, ri):
     """Calculate Ue A, Xg, Ix and Iy with the Annex A item 11 formulas.
 
@@ -184,6 +219,7 @@ def nbr_6355_expected_internal_radius(tn):
 
 __all__ = [
     "UeDerivedDimensions", "UeNormativeProperties", "build_ue_mean_path",
+    "build_simplified_ue_section",
     "build_ue_section", "nbr_6355_expected_internal_radius",
     "ue_derived_dimensions", "ue_normative_properties",
 ]

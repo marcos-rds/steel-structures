@@ -9,11 +9,12 @@ import FreeCAD as App
 from FreeCAD import Gui
 from PySide import QtWidgets
 
-from .paths import COLUMN_ICON, GRID_COMMAND_ICON, MEMBER_ICON
+from .paths import ADJUST_MEMBER_ICON, COLUMN_ICON, GRID_COMMAND_ICON, MEMBER_ICON
 
 
 _active_member_tool = None
 _active_grid_panel = None
+_active_adjustment_panel = None
 _move_copy_registered = False
 
 
@@ -138,7 +139,8 @@ def _load_native_draft_tool(column=False):
     return tool_class
 
 
-def _start_native_member_tool(tool_class, document, icon=MEMBER_ICON, task_title="Criar elemento estrutural"):
+def _start_native_member_tool(tool_class, document, icon=MEMBER_ICON,
+                              task_title="Criar elemento estrutural", axis_source=None):
     """Start one native session with Draft's process-wide toolbar."""
     global _active_member_tool
     if getattr(App, "activeDraftCommand", None) is not None:
@@ -151,7 +153,7 @@ def _start_native_member_tool(tool_class, document, icon=MEMBER_ICON, task_title
     tool = tool_class(on_closed=_member_draft_tool_closed)
     _active_member_tool = tool
     try:
-        tool.Activated(icon=icon, task_title=task_title)
+        tool.Activated(icon=icon, task_title=task_title, axis_source=axis_source)
     except Exception:
         try:
             tool.abort_activation(skip_native_ui_cleanup=True)
@@ -202,6 +204,10 @@ class CreateMemberCommand:
         document = App.ActiveDocument
         if document is None:
             document = App.newDocument("SteelStructures")
+        from .member_axis_source import axis_source_from_selection
+        selection = getattr(Gui, "Selection", None)
+        selection_ex = getattr(selection, "getSelectionEx", lambda: ())()
+        axis_source = axis_source_from_selection(selection_ex)
 
         try:
             tool_class = _load_native_draft_tool()
@@ -220,7 +226,7 @@ class CreateMemberCommand:
 
         tool = None
         try:
-            tool = _start_native_member_tool(tool_class, document)
+            tool = _start_native_member_tool(tool_class, document, axis_source=axis_source)
         except Exception:
             failed_tool = tool or _active_member_tool
             App.Console.PrintError(
@@ -275,10 +281,15 @@ class CreateColumnCommand(CreateMemberCommand):
         document = App.ActiveDocument
         if document is None:
             document = App.newDocument("SteelStructures")
+        from .member_axis_source import axis_source_from_selection
+        selection = getattr(Gui, "Selection", None)
+        selection_ex = getattr(selection, "getSelectionEx", lambda: ())()
+        axis_source = axis_source_from_selection(selection_ex)
         try:
             tool_class = _load_native_draft_tool(column=True)
             _start_native_member_tool(
-                tool_class, document, icon=COLUMN_ICON, task_title="Criar Pilar"
+                tool_class, document, icon=COLUMN_ICON, task_title="Criar Pilar",
+                axis_source=axis_source,
             )
         except DraftInterfaceUnavailable:
             App.Console.PrintError(
@@ -366,6 +377,74 @@ class CreateGridCommand:
                 _active_grid_panel = None
 
 
+class AdjustMemberCommand:
+    """Open the non-preview task panel for one member end adjustment."""
+
+    def GetResources(self):
+        return {
+            "Pixmap": ADJUST_MEMBER_ICON,
+            "MenuText": "Recortar / Ajustar Membro",
+            "ToolTip": "Limita ou recorta uma extremidade usando uma referência geométrica.",
+        }
+
+    def IsActive(self):
+        return App.ActiveDocument is not None
+
+    def Activated(self):
+        global _active_adjustment_panel
+        if (_active_adjustment_panel is not None
+                and not getattr(_active_adjustment_panel, "_closed", False)):
+            App.Console.PrintWarning(
+                "Steel Structures: o painel Recortar / Ajustar Membro já está ativo.\n"
+            )
+            return
+        if _get_active_task_dialog() is not None:
+            App.Console.PrintWarning(
+                "Steel Structures: feche o painel de tarefas atual antes de ajustar um membro.\n"
+            )
+            return
+        document = App.ActiveDocument
+        if document is None:
+            return
+        from .interactive.member_adjustment_controller import is_structural_member
+        from .interactive.member_adjustment_task_panel import MemberAdjustmentTaskPanel
+        selected = [obj for obj in Gui.Selection.getSelection() if is_structural_member(obj)]
+        member = selected[0] if len(selected) == 1 and len(Gui.Selection.getSelection()) == 1 else None
+        try:
+            panel = MemberAdjustmentTaskPanel(document, member, _adjustment_panel_closed)
+            _active_adjustment_panel = panel
+            Gui.Control.showDialog(panel)
+        except Exception:
+            _active_adjustment_panel = None
+            App.Console.PrintError(
+                "Steel Structures: falha ao abrir Recortar / Ajustar Membro:\n"
+                + traceback.format_exc()
+            )
+
+
+def _adjustment_panel_closed(panel, _accepted):
+    global _active_adjustment_panel
+    if _active_adjustment_panel is panel:
+        _active_adjustment_panel = None
+    try:
+        Gui.Control.closeDialog()
+    except Exception:
+        pass
+
+
+def close_adjustment_panel():
+    global _active_adjustment_panel
+    panel = _active_adjustment_panel
+    if panel is None:
+        return False
+    try:
+        panel.reject()
+    finally:
+        if _active_adjustment_panel is panel:
+            _active_adjustment_panel = None
+    return True
+
+
 def _grid_panel_closed(panel, _accepted):
     global _active_grid_panel
     if _active_grid_panel is panel:
@@ -414,4 +493,42 @@ def close_member_tool():
 Gui.addCommand("SteelStructures_CreateMember", CreateMemberCommand())
 Gui.addCommand("SteelStructures_CreateColumn", CreateColumnCommand())
 Gui.addCommand("SteelStructures_CreateGrid", CreateGridCommand())
+Gui.addCommand("SteelStructures_AdjustMember", AdjustMemberCommand())
 Gui.addCommand("SteelStructures_ProfileBrowser", ProfileBrowserCommand())
+
+
+class CreateTrussCommand:
+    def GetResources(self):
+        from .paths import TRUSS_ICON
+        return {"Pixmap": TRUSS_ICON, "MenuText": "Criar Treliça", "ToolTip": "Criar treliça paramétrica Warren ou Pratt."}
+
+    def IsActive(self):
+        return App.ActiveDocument is not None
+
+    def Activated(self):
+        from .interactive.truss_controller import open_truss_panel
+        try:
+            open_truss_panel(App.ActiveDocument)
+        except ValueError as exc:
+            App.Console.PrintWarning(str(exc)+"\n")
+
+
+class UpdateTrussCommand(CreateTrussCommand):
+    def GetResources(self):
+        resources = super().GetResources()
+        resources.update(MenuText="Atualizar Treliça", ToolTip="Revisar e aplicar a definição candidata da treliça selecionada.")
+        return resources
+
+    def IsActive(self):
+        selected = Gui.Selection.getSelection()
+        return len(selected) == 1 and hasattr(selected[0], "AppliedState") and hasattr(selected[0], "GeneratedMembers")
+
+    def Activated(self):
+        from .interactive.truss_controller import open_truss_panel
+        selected = Gui.Selection.getSelection()
+        if self.IsActive():
+            open_truss_panel(App.ActiveDocument, selected[0])
+
+
+Gui.addCommand("SteelStructures_CreateTruss", CreateTrussCommand())
+Gui.addCommand("SteelStructures_UpdateTruss", UpdateTrussCommand())

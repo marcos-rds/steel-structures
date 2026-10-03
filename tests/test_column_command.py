@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 COMMANDS = ROOT / "freecad/SteelStructures/commands.py"
 TOOL = ROOT / "freecad/SteelStructures/interactive/draft_column_tool.py"
+PREVIEW = ROOT / "freecad/SteelStructures/interactive/member_creation_preview.py"
 GUI = ROOT / "freecad/SteelStructures/init_gui.py"
 MEMBER = ROOT / "freecad/SteelStructures/member.py"
 ICON = ROOT / "Resources/Icons/CreateColumn.svg"
@@ -36,6 +37,7 @@ class ColumnCommandContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.commands = COMMANDS.read_text(encoding="utf-8")
         cls.tool = TOOL.read_text(encoding="utf-8")
+        cls.preview = PREVIEW.read_text(encoding="utf-8")
         cls.gui = GUI.read_text(encoding="utf-8")
 
     def test_command_is_registered_with_portuguese_resources(self):
@@ -44,7 +46,7 @@ class ColumnCommandContractTests(unittest.TestCase):
         self.assertIn("ponto de base", self.commands)
 
     def test_toolbar_and_menu_place_column_next_to_member(self):
-        expected = '["SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_CreateGrid"]'
+        expected = '["SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_AdjustMember", "SteelStructures_CreateGrid"]'
         self.assertIn(expected, self.gui)
 
     def test_icon_exists_and_is_valid_svg(self):
@@ -76,22 +78,22 @@ class ColumnCommandContractTests(unittest.TestCase):
         self.assertIn("self.column_panel.creation_options(base)", self.tool)
 
     def test_confirmation_uses_existing_member_controller(self):
-        self.assertIn("from .member_controller import MemberController", self.tool)
+        self.assertIn("MemberController", self.tool)
         self.assertNotIn("ColumnProxy", self.tool)
         self.assertNotIn("PillarProxy", self.tool)
 
     def test_preview_uses_real_profile_insertion_rotation_and_global_z(self):
         for statement in (
-            "profile_catalog.get", "_section_face(profile)",
-            "_insertion_translation", "face.extrude(App.Vector(0.0, 0.0, height))",
+            "profile_catalog.get", "_section_face(profile, section_geometry_mode)",
+            "_insertion_translation", "face.extrude(App.Vector(0.0, 0.0, length))",
             "App.Rotation(App.Vector(0.0, 0.0, 1.0)",
         ):
-            self.assertIn(statement, self.tool)
+            self.assertIn(statement, self.preview)
 
     def test_preview_tracks_current_snapped_point(self):
         self.assertIn("self._current_hover_point = candidate", self.tool)
         self.assertIn("point = self._current_hover_point", self.tool)
-        self.assertIn("self.obj.Placement = App.Placement(point, roll)", self.tool)
+        self.assertIn("obj.Placement = App.Placement(start, alignment.multiply(roll))", self.preview)
 
     def test_native_location_event_consumes_draft_snapped_point(self):
         action = self.tool.split("    def action(self, arg):", 1)[1].split(
@@ -103,14 +105,14 @@ class ColumnCommandContractTests(unittest.TestCase):
 
     def test_preview_is_temporary_hidden_and_removed(self):
         self.assertIn('addObject("Part::Feature", "SteelStructuresColumnPreview")', self.tool)
-        self.assertIn("ShowInTree = False", self.tool)
+        self.assertIn("ShowInTree = False", self.preview)
         self.assertIn("todo.ToDo.delay(self.doc.removeObject, name)", self.tool)
 
     def test_preview_is_excluded_from_snap_candidates_at_creation(self):
         activated = self.tool.split("    def Activated", 1)[1].split(
             "    def action", 1
         )[0]
-        self.assertIn("self._keep_preview_unsnappable()", activated)
+        self.assertIn("configure_preview_object(self.obj)", activated)
         exclusion = self.tool.split("    def _keep_preview_unsnappable", 1)[1].split(
             "    def numericInput", 1
         )[0]
@@ -131,12 +133,11 @@ class ColumnCommandContractTests(unittest.TestCase):
             self.assertNotIn(forbidden, hover)
 
     def test_shape_is_cached_while_only_placement_moves(self):
-        update = self.tool.split("    def _update_preview", 1)[1].split(
-            "    def _confirm_base", 1
-        )[0]
-        self.assertIn("shape_signature != self._preview_shape_signature", update)
-        self.assertIn("placement_signature != self._preview_placement_signature", update)
-        self.assertLess(update.index("shape_signature !="), update.index("self.obj.Shape ="))
+        update = self.preview.split("def update_member_preview", 1)[1]
+        self.assertIn("shape_signature != state.shape_signature", update)
+        self.assertIn("placement_signature != state.placement_signature", update)
+        self.assertIn("if shape_changed or placement_signature", update)
+        self.assertLess(update.index("shape_signature !="), update.index("obj.Shape ="))
 
     def test_continue_preserves_panel_and_options(self):
         reset = self.tool.split("    def _reset_for_continue", 1)[1].split(
@@ -224,7 +225,10 @@ class ColumnHoverBehaviorTests(unittest.TestCase):
         hover_class = ast.ClassDef(
             name="HoverTool", bases=[], keywords=[], body=methods, decorator_list=[]
         )
-        namespace = {"App": types.SimpleNamespace(Vector=Vector)}
+        namespace = {
+            "App": types.SimpleNamespace(Vector=Vector),
+            "PreviewState": lambda: None,
+        }
         exec(compile(ast.fix_missing_locations(ast.Module(
             body=[hover_class], type_ignores=[])), str(TOOL), "exec"), namespace)
         cls.HoverTool = namespace["HoverTool"]
@@ -308,12 +312,12 @@ class ColumnHoverBehaviorTests(unittest.TestCase):
     def test_clear_removes_hover_and_hides_only_temporary_preview(self):
         tool = self.HoverTool()
         tool._current_hover_point = Vector(1, 2, 3)
-        tool._preview_placement_signature = (1, 2, 3, 0)
+        tool._preview_state = object()
         view = types.SimpleNamespace(Visibility=True)
         tool.obj = types.SimpleNamespace(ViewObject=view)
         tool._clear_hover_state()
         self.assertIsNone(tool._current_hover_point)
-        self.assertIsNone(tool._preview_placement_signature)
+        self.assertIsNone(tool._preview_state)
         self.assertFalse(view.Visibility)
 
 

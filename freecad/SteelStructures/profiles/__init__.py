@@ -10,6 +10,7 @@ from .geometry import (
     Point2D,
     SectionBounds2D,
     SectionGeometry2D,
+    SectionGeometryMode,
     SectionGeometryError,
     SectionPath2D,
     UnsupportedSectionGeometryError,
@@ -19,6 +20,7 @@ from .geometry import (
     build_tapered_flange_i_section,
     build_tapered_flange_channel_section,
     build_section_geometry,
+    normalize_section_geometry_mode, section_geometry_mode_has_effect,
     geometry_is_released,
 )
 from .insertion import (
@@ -26,7 +28,10 @@ from .insertion import (
     section_insertion_references,
 )
 from .effective_properties import (
-    GeometricSectionProperties, resolve_effective_section_properties,
+    CalculatedSectionProperties, GeometricSectionProperties,
+    HOLLOW_CALCULATION_CONVENTION, calculate_hollow_profile_properties,
+    hollow_section_properties, rectangular_hollow_calculation_radii,
+    resolve_effective_section_properties,
     section_geometric_properties,
 )
 from .cold_formed import (
@@ -37,8 +42,15 @@ from .cold_formed import (
 )
 from .ue_section import (
     UeDerivedDimensions, UeNormativeProperties, build_ue_mean_path,
-    build_ue_section, nbr_6355_expected_internal_radius,
+    build_simplified_ue_section, build_ue_section, nbr_6355_expected_internal_radius,
     ue_derived_dimensions, ue_normative_properties,
+)
+from .hollow_sections import (
+    HollowSectionDefinition, HollowSectionRadii, HollowSectionRadiusMetadata,
+    build_circular_hollow_section, canonical_rhs_key,
+    build_rectangular_hollow_section, build_rhs_hollow_section,
+    build_square_hollow_section, nominal_hollow_section_radii,
+    normalize_hollow_profile_definition, normalize_rhs_dimensions,
 )
 from .models import (
     CatalogMetadata,
@@ -47,11 +59,16 @@ from .models import (
     ManufacturerDefinition,
     IssuerDefinition,
     PhysicalProperties,
+    PropertyProvenance,
     ProfileDefinition,
     ProfileRef,
+    ProfileSourceMetadata,
     SectionPropertyOverride,
     SeriesDefinition,
+    SupplyConditionDefinition,
 )
+from .solid_sections import build_round_bar, build_square_bar, build_flat_bar
+from .effective_properties import solid_section_properties, calculate_solid_profile_properties
 from .validation import (
     CatalogError,
     CatalogValidationError,
@@ -60,15 +77,17 @@ from .validation import (
 )
 
 __all__ = [
+    "build_round_bar", "build_square_bar", "build_flat_bar",
+    "solid_section_properties", "calculate_solid_profile_properties",
     "CatalogError", "CatalogMetadata", "CatalogSource",
     "CatalogValidationError", "CategoryDefinition", "ArcSegment2D", "LineSegment2D",
     "ManufacturerDefinition", "IssuerDefinition", "PathSegment2D", "Point2D",
     "GeometryTemporarilyUnavailableError", "geometry_is_released",
-    "PhysicalProperties", "ProfileDefinition", "ProfileLibrary",
-    "ProfileNotFoundError", "ProfileRef", "SectionBounds2D",
+    "PhysicalProperties", "PropertyProvenance", "ProfileDefinition", "ProfileLibrary",
+    "ProfileNotFoundError", "ProfileRef", "ProfileSourceMetadata", "SectionBounds2D",
     "SectionPropertyOverride",
-    "SectionGeometry2D", "SectionGeometryError", "SectionPath2D",
-    "SeriesDefinition", "UnsupportedSectionGeometryError",
+    "SectionGeometry2D", "SectionGeometryError", "SectionGeometryMode", "SectionPath2D",
+    "SeriesDefinition", "SupplyConditionDefinition", "UnsupportedSectionGeometryError",
     "build_equal_angle_section", "build_parallel_flange_i_section",
     "build_standard_tee_section",
     "build_tapered_flange_i_section",
@@ -77,7 +96,10 @@ __all__ = [
     "InsertionReference", "insertion_reference", "insertion_translation",
     "section_insertion_references",
     "canonicalize_designation", "convert_to_canonical", "normalize_search_text",
-    "GeometricSectionProperties", "resolve_effective_section_properties",
+    "CalculatedSectionProperties", "GeometricSectionProperties",
+    "HOLLOW_CALCULATION_CONVENTION", "calculate_hollow_profile_properties",
+    "hollow_section_properties", "rectangular_hollow_calculation_radii",
+    "resolve_effective_section_properties",
     "section_geometric_properties",
     "ColdFormedPath2D", "PhysicalSectionProperties2D",
     "SegmentIntersections2D", "angle_on_arc", "arc_arc_intersections",
@@ -85,6 +107,12 @@ __all__ = [
     "segment_segment_intersections",
     "physical_section_properties", "section_geometry_from_cold_formed",
     "UeDerivedDimensions", "UeNormativeProperties", "build_ue_mean_path",
-    "build_ue_section", "nbr_6355_expected_internal_radius",
+    "build_simplified_ue_section", "build_ue_section", "nbr_6355_expected_internal_radius",
+    "normalize_section_geometry_mode", "section_geometry_mode_has_effect",
+    "HollowSectionDefinition", "HollowSectionRadii", "HollowSectionRadiusMetadata",
+    "build_circular_hollow_section", "canonical_rhs_key",
+    "build_rectangular_hollow_section", "build_rhs_hollow_section",
+    "build_square_hollow_section", "nominal_hollow_section_radii",
+    "normalize_hollow_profile_definition", "normalize_rhs_dimensions",
     "ue_derived_dimensions", "ue_normative_properties",
 ]

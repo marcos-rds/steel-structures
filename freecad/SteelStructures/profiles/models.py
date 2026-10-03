@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any, Mapping
 
@@ -26,6 +26,9 @@ class CatalogSource:
     source_url: str | None = None
     source_date: str | None = None
     notes: str | None = None
+    source_type: str | None = None
+    # Informative density stated by the source, never a mass-calculation trigger.
+    density_kg_m3: float | None = None
 
 
 @dataclass(frozen=True)
@@ -43,6 +46,16 @@ class IssuerDefinition:
 
 
 @dataclass(frozen=True)
+class SupplyConditionDefinition:
+    """Catalog-level glossary entry; never an inferred per-profile attribute."""
+
+    code: str
+    description: str
+    availability: str
+    source_page: int | None = None
+
+
+@dataclass(frozen=True)
 class CatalogMetadata:
     id: str
     name: str
@@ -53,6 +66,10 @@ class CatalogMetadata:
     standard_references: tuple[str, ...] = ()
     material_notes: str | None = None
     issuer: IssuerDefinition | None = None
+    supply_condition_definitions: tuple[SupplyConditionDefinition, ...] = ()
+    region: str | None = None
+    country: str | None = None
+    catalog_pack: str | None = None
 
 
 @dataclass(frozen=True)
@@ -91,6 +108,36 @@ class SectionPropertyOverride:
 
 
 @dataclass(frozen=True)
+class PropertyProvenance:
+    """Origin of one effective property, independent of catalog provenance."""
+
+    source_type: str
+    calculation_convention: str | None = None
+    note: str | None = None
+
+
+@dataclass(frozen=True)
+class ProfileSourceMetadata:
+    """Traceable source fields that are not technical section properties."""
+
+    source_page: int | None = None
+    source_weight_p_kg_per_6m: float | None = None
+    source_weight_basis_mm: float | None = None
+    source_designation: str | None = None
+    source_inches: str | None = None
+    source_dimensions: Mapping[str, float] = field(default_factory=immutable_mapping)
+    availability_note: str | None = None
+    mass_type: str | None = None
+    source_mass_per_length_kg_m: float | None = None
+    density_kg_m3: float | None = None
+    source_table: str | None = None
+    # One-based locations; printed source_page and PDF page remain independent.
+    source_row: int | None = None
+    source_pdf_page: int | None = None
+    mass_basis: str | None = None
+
+
+@dataclass(frozen=True)
 class ProfileDefinition:
     ref: ProfileRef
     designation: str
@@ -118,3 +165,7 @@ class ProfileDefinition:
     # a StructuralMember placement offset or a bounding-box center.
     centroid: Mapping[str, float]
     catalog: CatalogMetadata
+    property_provenance: Mapping[str, PropertyProvenance] = field(
+        default_factory=immutable_mapping
+    )
+    source_metadata: ProfileSourceMetadata | None = None

@@ -4,13 +4,14 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum, auto
 from typing import Callable
 
 from FreeCAD import Gui
 
 from ..member import create_member
+from ..member_axis_source import resolve_axis_source
 
 
 class ControllerState(Enum):
@@ -18,6 +19,11 @@ class ControllerState(Enum):
     READY_NUMERIC = auto()
     CREATING = auto()
     STOPPING = auto()
+
+
+class CreationGeometryMode(Enum):
+    INTERACTIVE = auto()
+    SOURCE_AXIS = auto()
 
 
 @dataclass(frozen=True)
@@ -30,6 +36,10 @@ class MemberCreationOptions:
     rotation: float
     color: tuple[float, float, float]
     display_name: str
+    axis_source: object = None
+    link_axis: bool = False
+    geometry_mode: CreationGeometryMode = CreationGeometryMode.INTERACTIVE
+    section_geometry_mode: str = "Detailed"
 
 
 @dataclass(frozen=True)
@@ -84,6 +94,13 @@ class MemberController:
             raise RuntimeError("A sessão de criação não está ativa.")
         if self.document is None:
             raise RuntimeError("A sessão de criação não está ativa.")
+        if options.geometry_mode is CreationGeometryMode.SOURCE_AXIS:
+            source_geometry = resolve_axis_source(options.axis_source)
+            if source_geometry is None:
+                raise ValueError("A linha de origem está inválida.")
+            options = replace(
+                options, start=source_geometry.start, end=source_geometry.end
+            )
         self.validate_points(options.start, options.end)
         if not options.designation.strip():
             raise ValueError("Selecione um perfil cadastrado.")
@@ -91,6 +108,8 @@ class MemberController:
         previous_state = self.state
         self.state = ControllerState.CREATING
         self.document.openTransaction("Criar elemento estrutural")
+        source = options.axis_source[0] if options.axis_source else None
+        previous_visibility = None
         try:
             member = self._member_factory(
                 document=self.document,
@@ -102,10 +121,21 @@ class MemberController:
                 rotation=options.rotation,
                 color=options.color,
                 display_name=options.display_name,
+                axis_source=options.axis_source,
+                link_axis=options.link_axis,
+                section_geometry_mode=options.section_geometry_mode,
             )
+            if source is not None:
+                previous_visibility = bool(source.ViewObject.Visibility)
+                source.ViewObject.Visibility = False
             self.document.commitTransaction()
         except Exception:
             self.document.abortTransaction()
+            if previous_visibility is not None and source is not None:
+                try:
+                    source.ViewObject.Visibility = previous_visibility
+                except (AttributeError, ReferenceError, RuntimeError):
+                    pass
             self.state = previous_state
             raise
 
