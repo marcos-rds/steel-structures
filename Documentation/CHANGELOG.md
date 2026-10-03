@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.6.0 — 2026-10-02
+
+### Adicionado
+
+- Gerador paramétrico de treliças com banzos paralelos ou duas águas, panelização e padrões Warren, Pratt, Warren com montantes, Howe, X, K, Fink básico, Fan, King Post e Queen Post, conforme o envelope selecionado.
+- Editor de topologia para personalizar a alma, criar e remover barras e nós, mover nós internos, inverter a alma e copiar por espelhamento.
+- Membros compostos integrados à treliça, com configuração dos componentes, espaçamentos e interconectores posicionados pelas superfícies físicas dos perfis.
+- Ajustes paramétricos de extremidades, criação de membros a partir de eixos selecionados e fitting automático das barras e ligações, com contato direto, encontro em meia-esquadria, prioridade e folgas.
+- Chapas Gusset paramétricas com espessura, margem, sobreposição e posições transversais resolvidas a partir das seções e dos participantes físicos da ligação.
+- Persistência das configurações por nó e regeneração das ligações e chapas vinculadas à treliça.
+- Prévia transversal dinâmica da ligação, com perfis simples ou compostos e posição projetada da chapa, integrada ao editor de topologia.
+- Perfis tubulares com catálogo Tuper e seções maciças com catálogo conforme ABNT NBR 16683:2018.
+- Opção de geometria simplificada das seções dos membros.
+
+### Melhorado
+
+- Fluxos de criação e edição de treliças, com previews, seleção de participantes e diagnósticos de ligação no nó selecionado.
+- Integração física entre perfis, componentes, interconectores, fitting e chapas, respeitando inserções, rotações e espaçamentos.
+- Apresentação das etiquetas e edição do Grid Estrutural.
+
+### Corrigido
+
+- Inconsistências de contorno, contato e posicionamento transversal das Gussets nas configurações suportadas, incluindo perfis W/I e membros compostos.
+- Preservação das configurações dos nós sobreviventes durante edição e regeneração da topologia.
+
+### Notas e limitações
+
+- As chapas Gusset são preliminares; furos, soldas, parafusos e verificação resistente não estão incluídos. A intenção de fixação não gera esses detalhes.
+- Regiões e posições transversais dependem da seção, orientação, espessura e acesso físico dos participantes. Configurações inviáveis recebem diagnóstico e podem permanecer sem chapa materializada.
+- A prévia transversal usa as seções anteriores aos recortes de fitting e uma projeção da chapa; não representa um corte localizado do sólido final.
+- A criação e remoção de chapas ocorre na aplicação ou regeneração explícita da treliça; o recompute ordinário atualiza os objetos existentes.
+
 ## 0.5.0 — 2026-08-25
 
 ### Adicionado

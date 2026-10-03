@@ -2,8 +2,8 @@
 <package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
   <name>Steel Structures</name>
   <description>Bancada paramétrica para modelagem de estruturas metálicas com catálogos brasileiros.</description>
-  <version>0.5.0</version>
-  <date>2026-08-25</date>
+  <version>0.6.0</version>
+  <date>2026-10-02</date>
   <freecadmin>1.1.0</freecadmin>
   <pythonmin>3.11</pythonmin>
   <tag>Structure</tag>
