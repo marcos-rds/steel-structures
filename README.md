@@ -26,9 +26,8 @@ As chapas Gusset são preliminares: não incluem furos, soldas, parafusos ou ver
 ## Instalação
 
 1. Feche o FreeCAD.
-2. Remova a pasta antiga `BancadaFC_Steel_v0.1.0` de `%APPDATA%\FreeCAD\Mod\`.
-3. Extraia o pacote da versão 0.6.0 dentro de `%APPDATA%\FreeCAD\Mod\`, mantendo `package.xml`, `freecad` e `Resources` diretamente na pasta da bancada.
-4. Reinicie o FreeCAD e selecione **Steel Structures**.
+2. Extraia o pacote da versão 0.6.0 dentro de `%APPDATA%\FreeCAD\Mod\`, mantendo `package.xml`, `freecad` e `Resources` diretamente na pasta da bancada.
+3. Reinicie o FreeCAD e selecione **Steel Structures**.
 
 ## Testes recomendados
 
