@@ -20,3 +20,4 @@ GRID_SPACING_REMOVE_ICON = str(ICONS_DIR / "GridSpacingRemove.svg")
 GRID_RESET_DEFAULTS_ICON = str(ICONS_DIR / "GridResetDefaults.svg")
 
 TRUSS_ICON = str(ICONS_DIR / "CreateTruss.svg")
+PLATE_ICON = str(ICONS_DIR / "CreatePlate.svg")

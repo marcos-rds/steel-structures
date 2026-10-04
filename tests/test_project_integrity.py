@@ -148,6 +148,7 @@ class IdentityMigrationTests(unittest.TestCase):
                 "SteelStructures_ProfileBrowser",
                 "SteelStructures_CreateTruss",
                 "SteelStructures_UpdateTruss",
+                "SteelStructures_CreatePlate",
                 "SteelStructures_MoveCopy",
             ],
         )

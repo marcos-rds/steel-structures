@@ -15,6 +15,7 @@ from .paths import ADJUST_MEMBER_ICON, COLUMN_ICON, GRID_COMMAND_ICON, MEMBER_IC
 _active_member_tool = None
 _active_grid_panel = None
 _active_adjustment_panel = None
+_active_plate_panel = None
 _move_copy_registered = False
 
 
@@ -532,3 +533,91 @@ class UpdateTrussCommand(CreateTrussCommand):
 
 Gui.addCommand("SteelStructures_CreateTruss", CreateTrussCommand())
 Gui.addCommand("SteelStructures_UpdateTruss", UpdateTrussCommand())
+
+
+class CreatePlateCommand:
+    """Create a planar StructuralPlate from a Draft outline or picked points."""
+
+    def GetResources(self):
+        from . import paths
+
+        return {
+            "Pixmap": getattr(paths, "PLATE_ICON", ""),
+            "MenuText": "Criar Chapa",
+            "ToolTip": "Cria uma chapa lisa a partir de contorno Draft ou pontos no plano.",
+        }
+
+    def IsActive(self):
+        return True
+
+    def Activated(self):
+        global _active_plate_panel
+
+        if _active_plate_panel is not None and not _active_plate_panel._closed:
+            App.Console.PrintWarning("Steel Structures: Criar Chapa já está ativo.\n")
+            return
+        if _get_active_task_dialog() is not None:
+            App.Console.PrintWarning("Steel Structures: feche o painel atual antes de criar uma chapa.\n")
+            return
+        document = App.ActiveDocument
+        if document is None:
+            document = App.newDocument("SteelStructures")
+        controller = None
+        panel = None
+        try:
+            from .interactive.plate_controller import PlateController, selected_plate_source
+            from .interactive.plate_task_panel import PlateTaskPanel
+            from .plate_planes import selected_plane_face
+
+            selection = Gui.Selection.getSelectionEx()
+            source, mode = selected_plate_source(selection, document)
+            plane_face = selected_plane_face(selection, document) if source is None else None
+            controller = PlateController(document, source=source, source_mode=mode,
+                                         plane_face=plane_face)
+            panel = PlateTaskPanel(controller, _plate_panel_closed)
+            _active_plate_panel = panel
+            Gui.Control.showDialog(panel)
+        except ValueError as exc:
+            if panel is not None:
+                panel.reject()
+            elif controller is not None:
+                controller.cancel()
+            _active_plate_panel = None
+            App.Console.PrintWarning("Steel Structures: " + str(exc) + "\n")
+            QtWidgets.QMessageBox.warning(
+                Gui.getMainWindow(), "Steel Structures", str(exc))
+        except Exception:
+            if panel is not None:
+                panel.reject()
+            elif controller is not None:
+                controller.cancel()
+            _active_plate_panel = None
+            App.Console.PrintError(
+                "Steel Structures: falha ao iniciar Criar Chapa:\n" + traceback.format_exc())
+
+
+def _plate_panel_closed(panel, _accepted):
+    global _active_plate_panel
+    if _active_plate_panel is panel:
+        _active_plate_panel = None
+    try:
+        Gui.Control.closeDialog()
+    except Exception:
+        pass
+
+
+def close_plate_panel():
+    """End only the plate session owned by this workbench."""
+    global _active_plate_panel
+    panel = _active_plate_panel
+    if panel is None:
+        return False
+    try:
+        panel.reject()
+    finally:
+        if _active_plate_panel is panel:
+            _active_plate_panel = None
+    return True
+
+
+Gui.addCommand("SteelStructures_CreatePlate", CreatePlateCommand())

@@ -149,7 +149,7 @@ class GeneralToolsTests(unittest.TestCase):
         self.assertIn(("Steel Structures", [
             "SteelStructures_CreateMember", "SteelStructures_CreateColumn",
             "SteelStructures_AdjustMember", "SteelStructures_CreateGrid",
-            "SteelStructures_CreateTruss"
+            "SteelStructures_CreateTruss", "SteelStructures_CreatePlate"
         ]), workbench.menus)
 
     def test_repeated_activation_does_not_duplicate_bars(self):
