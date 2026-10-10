@@ -258,9 +258,10 @@ class DraftNativeArchitectureTests(unittest.TestCase):
         self.assertIn("blockSignals(blocked)", reset)
 
     def test_official_toolbar_exists_before_tool_construction_and_activation(self):
-        start = self.commands.split("def _start_native_member_tool", 1)[1].split(
-            "def _member_draft_tool_continue", 1
-        )[0]
+        function = next(node for node in ast.parse(self.commands).body
+                        if isinstance(node, ast.FunctionDef)
+                        and node.name == "_start_native_member_tool")
+        start = ast.get_source_segment(self.commands, function)
         self.assertLess(start.index("import DraftGui"), start.index("tool = tool_class("))
         self.assertLess(start.index("tool = tool_class("), start.index("tool.Activated("))
         self.assertIn('hasattr(Gui, "draftToolBar")', start)

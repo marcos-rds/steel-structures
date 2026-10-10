@@ -20,8 +20,9 @@ _DRAFT_MODES = frozenset(("DraftRectangle", "DraftWire"))
 _SCHEMA = (
     ("App::PropertyInteger", "SchemaVersion", "Identidade", "Versão do esquema da Chapa Estrutural."),
     ("App::PropertyString", "DisplayName", "Identidade", "Nome exibido no documento."),
-    ("App::PropertyLength", "Thickness", "Geometria", "Espessura na direção +Z local."),
-    ("App::PropertyDistance", "Offset", "Geometria", "Posição assinada da face inferior em Z local."),
+    ("App::PropertyLength", "Thickness", "Geometria", "Espessura positiva na direção Z local."),
+    ("App::PropertyDistance", "Offset", "Geometria", "Posição assinada da face de referência em Z local."),
+    ("App::PropertyBool", "ReverseExtrusion", "Geometria", "Extrudar para o lado -Z local da face de referência."),
     ("App::PropertyString", "ContourData", "Geometria", "Contorno 2D local versionado."),
     ("App::PropertyEnumeration", "SourceMode", "Origem", "Modo de origem do contorno."),
     ("App::PropertyBool", "KeepSourceLink", "Origem", "Atualizar a chapa quando a origem mudar."),
@@ -35,7 +36,7 @@ _SCHEMA = (
 _REQUIRED_PROPERTIES = frozenset(item[1] for item in _SCHEMA)
 _READ_ONLY = ("SchemaVersion", "ContourData", "SourceMode", "SourceSubElement",
               "GrossArea", "EnvelopeVolume", "GenerationStatus")
-_RECOMPUTE_PROPERTIES = ("Thickness", "Offset", "ContourData", "SourceMode",
+_RECOMPUTE_PROPERTIES = ("Thickness", "Offset", "ReverseExtrusion", "ContourData", "SourceMode",
                          "KeepSourceLink", "SourceObject", "Placement")
 
 
@@ -128,6 +129,10 @@ class StructuralPlateProxy:
             obj.Thickness = 10.0
         if created["Offset"]:
             obj.Offset = 0.0
+        if created["ReverseExtrusion"]:
+            # Additive, compatible property: older schema-1 documents retain
+            # their original positive-Z extrusion when restored.
+            obj.ReverseExtrusion = False
         if created["ContourData"]:
             obj.ContourData = ""
         if created["SourceMode"] or refresh_mode:
@@ -184,7 +189,7 @@ class StructuralPlateProxy:
                 active_containers = []
             thickness = _number(obj.Thickness)
             offset = _number(obj.Offset)
-            shape = build_plate_shape(contour, thickness, offset)
+            shape = build_plate_shape(contour, thickness, offset, bool(obj.ReverseExtrusion))
             area = contour.area
             volume = area * thickness
             # All computation and validation precede mutation. A bad linked
@@ -248,7 +253,7 @@ class StructuralPlateProxy:
 
 def create_plate(document, contour, placement=None, thickness=10.0, offset=0.0,
                  source_mode="InteractivePolygon", source_object=None,
-                 keep_source_link=False, display_name=None):
+                 keep_source_link=False, display_name=None, reverse_extrusion=False):
     """Create one plate from a normalized contour or a supported Draft object.
 
     The caller owns the FreeCAD transaction. No source is deleted or hidden here.
@@ -271,7 +276,7 @@ def create_plate(document, contour, placement=None, thickness=10.0, offset=0.0,
         contour = PlateContour2D.from_points(contour)
     if placement is None:
         placement = App.Placement()
-    build_plate_shape(contour, thickness, offset)
+    build_plate_shape(contour, thickness, offset, reverse_extrusion)
     obj = None
     try:
         obj = document.addObject("Part::FeaturePython", "StructuralPlate")
@@ -286,6 +291,7 @@ def create_plate(document, contour, placement=None, thickness=10.0, offset=0.0,
             obj.Placement = _copy_placement(placement)
             obj.Thickness = thickness
             obj.Offset = offset
+            obj.ReverseExtrusion = bool(reverse_extrusion)
             obj.SourceMode = source_mode
             obj.KeepSourceLink = bool(keep_source_link)
             obj.SourceObject = source_object if keep_source_link else None

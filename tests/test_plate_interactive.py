@@ -36,6 +36,10 @@ class Vector:
 
 
 class Placement:
+    @property
+    def Rotation(self):
+        return self
+
     def inverse(self):
         return self
 
@@ -48,6 +52,10 @@ class PointFrame:
         self.Base = Vector(origin)
         self.axes = (x_axis, y_axis, normal)
         self._inverse = inverse
+
+    @property
+    def Rotation(self):
+        return PointFrame((0, 0, 0), *self.axes)
 
     def inverse(self):
         return PointFrame(self.Base, *self.axes, inverse=not self._inverse)
@@ -68,6 +76,10 @@ class RaisedPlacement:
         self.height = height
         self.Base = Vector(center if center is not None else (0, 0, height))
 
+    @property
+    def Rotation(self):
+        return Placement()
+
     def inverse(self):
         return RaisedPlacement(-self.height)
 
@@ -79,6 +91,10 @@ class RaisedPlacement:
 class VerticalPlacement:
     def __init__(self, inverse=False):
         self._inverse = inverse
+
+    @property
+    def Rotation(self):
+        return PointFrame((0, 0, 0), Vector(0, 1, 0), Vector(0, 0, 1), Vector(1, 0, 0))
 
     def inverse(self):
         return VerticalPlacement(not self._inverse)
@@ -100,8 +116,8 @@ class Preview:
     def outline(self, points, cursor=None):
         self.outlines.append((points, cursor))
 
-    def solid(self, contour, placement, thickness, offset):
-        self.solids.append((contour, placement, thickness, offset))
+    def solid(self, contour, placement, thickness, offset, reverse_extrusion=False):
+        self.solids.append((contour, placement, thickness, offset, reverse_extrusion))
 
     def clear(self):
         pass
@@ -424,6 +440,34 @@ class PlateInteractiveTests(unittest.TestCase):
         self.assertEqual(self.module.NO_PLANE, controller.plane_state)
         controller.cancel()
 
+    def test_empty_ray_only_after_plane_and_never_replaces_snap_or_hover(self):
+        from unittest.mock import patch
+        controller = self.controller(plane_mode="Auto")
+        self.module.Gui.Snapper = types.SimpleNamespace(cursorMode="passive")
+        self.view.getObjectInfo = lambda _position: None
+        fallback = Vector(5, 6, 128)
+        with patch.object(controller, "_point_on_defined_plane", return_value=fallback) as ray:
+            with self.assertRaisesRegex(ValueError, "ponto 3D real"):
+                controller._event_point(Vector(0, 0, 0), (1, 2))
+            ray.assert_not_called()
+            for point in ((0, 0, 128), (10, 0, 128), (10, 10, 128)):
+                controller.add_point(point)
+            self.assertIs(fallback, controller._event_point(Vector(0, 0, 0), (1, 2)))
+            ray.assert_called_once_with((1, 2))
+            ray.reset_mock()
+            off_plane = Vector(10, 20, 129)
+            self.module.Gui.Snapper.cursorMode = "endpoint"
+            self.assertIs(off_plane, controller._event_point(off_plane, (1, 2)))
+            ray.assert_not_called()
+            self.module.Gui.Snapper.cursorMode = "passive"
+            self.view.getObjectInfo = lambda _position: {"point": off_plane}
+            actual = controller._event_point(Vector(0, 0, 0), (1, 2))
+            self.assertEqual(129, actual.z)
+            ray.assert_not_called()
+            with self.assertRaisesRegex(ValueError, "fora do plano"):
+                controller.set_candidate(self.module.PointCandidate((actual.x, actual.y, actual.z)))
+        controller.cancel()
+
     def test_auto_snap_bypasses_draft_work_plane_projection_temporarily(self):
         controller = self.controller(plane_mode="Auto")
         real = Vector(5, 7, 128)
@@ -701,6 +745,249 @@ class PlateInteractiveTests(unittest.TestCase):
                           self.document.aborted))
         self.assertFalse(controller.closed)
         self.assertFalse(controller.preview.removed)
+
+    def numeric(self, controller, values, relative=False, plane=False, confirm=True):
+        import importlib
+        model = importlib.import_module(self.module.__package__ + ".point_input")
+        spec = model.PointInputSpec(
+            model.CoordinateReference.PLANE if plane else model.CoordinateReference.GLOBAL,
+            model.CoordinateMode.RELATIVE if relative else model.CoordinateMode.ABSOLUTE)
+        candidate = spec.candidate(values, plane=controller.input_plane,
+                                   last_point=controller.last_point)
+        controller.set_candidate(candidate)
+        controller.update_preview(6, 0)
+        if confirm:
+            controller.add_point(controller.candidate.world, close_on_first=False)
+        return candidate
+
+    def test_numeric_candidate_preview_never_confirms_or_defines_plane(self):
+        controller = self.controller(plane_mode="Auto")
+        for point in ((3, 4, 20), (13, 4, 20)):
+            self.numeric(controller, point)
+        state = controller.plane_state
+        pending = list(controller._pending_world_points)
+        candidate = self.numeric(controller, (13, 14, 20), confirm=False)
+        self.assertEqual(state, controller.plane_state)
+        self.assertEqual(pending, controller._pending_world_points)
+        self.assertIsNone(controller.placement)
+        self.assertIsNone(controller.contour)
+        cursor = controller.preview.outlines[-1][1]
+        self.assertEqual(candidate.world, (cursor.x, cursor.y, cursor.z))
+        controller.add_point(controller.candidate.world, close_on_first=False)
+        self.assertEqual(self.module.PLANE_DEFINED, controller.plane_state)
+        self.assertEqual(candidate.world, controller.last_point)
+        self.assertIsNone(controller.candidate)
+
+    def test_numeric_collinear_sequence_then_plane_and_off_plane_rejection(self):
+        controller = self.controller(plane_mode="Auto")
+        for point in ((0, 0, 10), (10, 0, 10), (20, 0, 10)):
+            self.numeric(controller, point)
+        self.assertEqual(self.module.FIRST_DIRECTION, controller.plane_state)
+        self.numeric(controller, (0, 10, 0), relative=True)
+        self.assertEqual(self.module.PLANE_DEFINED, controller.plane_state)
+        before = list(controller.points)
+        with self.assertRaisesRegex(ValueError, "fora do plano"):
+            self.numeric(controller, (0, 20, 11), confirm=False)
+        self.assertEqual(before, controller.points)
+        self.assertIsNone(controller.candidate)
+
+    def test_polygon_mixed_and_all_numeric(self):
+        for inputs in ((False, True, False), (True, False, True), (True, True, True)):
+            with self.subTest(inputs=inputs):
+                controller = self.controller(plane_mode="Auto")
+                for numeric, point in zip(inputs, ((1, 2, 8), (11, 2, 8), (11, 12, 8))):
+                    if numeric:
+                        self.numeric(controller, point)
+                    else:
+                        controller.add_point(point)
+                self.numeric(controller, (0, 10), plane=True)
+                controller.close_outline()
+                self.assertAlmostEqual(100, controller.contour.area)
+
+    def test_rectangle_numeric_two_and_three_points_mixed(self):
+        for automatic in (False, True):
+            for mixed in (False, True):
+                with self.subTest(automatic=automatic, mixed=mixed):
+                    controller = self.controller(plane_mode="Auto" if automatic else "WorkPlane")
+                    controller.set_mode("InteractiveRectangle")
+                    if mixed:
+                        controller.add_point((0, 0, 0))
+                    else:
+                        self.numeric(controller, (0, 0, 0))
+                    if automatic:
+                        self.numeric(controller, (10, 0, 0), relative=True)
+                        self.numeric(controller, (0, 5, 0), relative=True)
+                    else:
+                        self.numeric(controller, (10, 5), plane=True, relative=True)
+                    self.assertAlmostEqual(50, controller.contour.area)
+                    self.assertEqual(4, len(controller.contour.vertices))
+
+    def test_numeric_editing_suspends_graphical_input_then_resumes_snap(self):
+        controller, callbacks, _removed, snaps = self._capture_session()
+        controller.numeric_editing = lambda: True
+        callbacks["SoLocation2Event"]({"Position": (1, 2)})
+        callbacks["SoMouseButtonEvent"]({"Position": (1, 2), "State": "DOWN", "Button": "BUTTON1"})
+        self.assertFalse(snaps)
+        self.assertEqual(0, controller.point_count)
+        controller.numeric_editing = lambda: False
+        callbacks["SoLocation2Event"]({"Position": (1, 2)})
+        self.assertEqual((10, 20, 0), controller.candidate.world)
+        callbacks["SoMouseButtonEvent"]({"Position": (1, 2), "State": "DOWN", "Button": "BUTTON1"})
+        self.assertEqual(1, controller.point_count)
+        self.numeric(controller, (20, 20, 0))
+        self.assertEqual(2, controller.point_count)
+        callbacks["SoLocation2Event"]({"Position": (1, 2)})
+        self.assertEqual((10, 20, 0), controller.candidate.world)
+
+    def test_numeric_first_vertex_keeps_closing_separate(self):
+        controller = self.controller()
+        for point in ((0, 0, 0), (10, 0, 0), (0, 10, 0)):
+            self.numeric(controller, point)
+        with self.assertRaisesRegex(ValueError, "Fechar contorno"):
+            self.numeric(controller, (0, 0, 0))
+        self.assertIsNone(controller.contour)
+        self.assertEqual(3, controller.point_count)
+
+    def test_numeric_near_first_is_valid_without_graphical_close_tolerance(self):
+        controller = self.controller()
+        for point in ((0, 0, 0), (10, 0, 0), (10, 10, 0), (0, .0005, 0)):
+            self.numeric(controller, point)
+        self.assertEqual(4, controller.point_count)
+        self.assertIsNone(controller.contour)
+        controller.close_outline()
+        self.assertGreater(controller.contour.area, 0)
+
+    def test_candidate_survives_parameter_preview_and_reset_clears_it(self):
+        controller = self.controller()
+        controller.add_point((0, 0, 0))
+        candidate = self.numeric(controller, (10, 5, 0), confirm=False)
+        controller.update_preview(12, -2)
+        cursor = controller.preview.outlines[-1][1]
+        self.assertEqual(candidate.world, (cursor.x, cursor.y, cursor.z))
+        controller.set_mode("InteractiveRectangle")
+        self.assertIsNone(controller.candidate)
+        self.assertIsNone(controller.last_point)
+        self.assertEqual(0, controller.point_count)
+
+    def test_late_mouse_callback_after_rectangle_completion_is_inert(self):
+        controller, callbacks, _removed, snaps = self._capture_session()
+        controller.set_mode("InteractiveRectangle")
+        controller.add_point((0, 0, 0))
+        self.numeric(controller, (10, 5, 0))
+        before = len(snaps)
+        callbacks["SoLocation2Event"]({"Position": (1, 2)})
+        callbacks["SoMouseButtonEvent"]({"Position": (1, 2), "State": "DOWN", "Button": "BUTTON1"})
+        self.assertEqual(before, len(snaps))
+        self.assertAlmostEqual(50, controller.contour.area)
+
+    def test_undo_first_noncollinear_point_replays_pending_automatic_plane(self):
+        controller = self.controller(plane_mode="Auto")
+        for point in ((0, 0, 12), (10, 0, 12), (20, 0, 12), (20, 10, 12)):
+            controller.add_point(point)
+        self.assertEqual(self.module.PLANE_DEFINED, controller.plane_state)
+        controller.undo_point()
+        self.assertEqual(self.module.FIRST_DIRECTION, controller.plane_state)
+        self.assertIsNone(controller.placement)
+        self.assertIsNone(controller.contour)
+        self.assertEqual(3, controller.point_count)
+        self.assertEqual((20, 0, 12), controller.last_point)
+        self.assertEqual([(0, 0, 12), (10, 0, 12), (20, 0, 12)],
+                         [(point.x, point.y, point.z) for point in controller._world_points()])
+        controller.add_point((20, 10, 12))
+        self.assertEqual(self.module.PLANE_DEFINED, controller.plane_state)
+        controller.cancel()
+
+    def test_undo_closed_polygon_removes_last_confirmed_point_and_reopens(self):
+        controller = self.controller(plane_mode="Auto")
+        for point in ((0, 0, 12), (10, 0, 12), (10, 10, 12), (0, 10, 12)):
+            controller.add_point(point)
+        controller.close_outline()
+        self.assertIsNotNone(controller.contour)
+        controller.undo_point()
+        self.assertEqual(3, controller.point_count)
+        self.assertEqual((10, 10, 12), controller.last_point)
+        self.assertIsNone(controller.contour)
+        self.assertEqual(self.module.PLANE_DEFINED, controller.plane_state)
+        controller.add_point((0, 20, 12))
+        controller.close_outline()
+        self.assertEqual(4, len(controller.contour.vertices))
+        controller.cancel()
+
+    def test_clear_and_undo_keep_live_capture_callbacks_and_reset_automatic_sequence(self):
+        controller, callbacks, removed, _snaps = self._capture_session()
+        controller.set_plane_mode("Auto")
+        original_callbacks = list(controller._callbacks)
+        original_removed = list(removed)
+        for point in ((0, 0, 12), (10, 0, 12), (10, 10, 12)):
+            controller.add_point(point)
+        controller.undo_point()
+        self.assertEqual(2, controller.point_count)
+        self.assertEqual(original_callbacks, controller._callbacks)
+        self.assertEqual(original_removed, removed)
+        controller.clear_points()
+        self.assertEqual(self.module.NO_PLANE, controller.plane_state)
+        self.assertEqual(0, controller.point_count)
+        self.assertIsNone(controller.placement)
+        self.assertIsNone(controller.candidate)
+        self.assertTrue(controller._capturing)
+        self.assertEqual(original_callbacks, controller._callbacks)
+        self.assertEqual(original_removed, removed)
+        self.assertEqual(3, len(callbacks))
+        controller.add_point((0, 0, 18))
+        self.assertEqual((0, 0, 18), controller.last_point)
+        controller.cancel()
+
+    def test_candidate_observer_tracks_snap_changes_without_confirming_or_defining_plane(self):
+        controller, callbacks, _removed, _snaps = self._capture_session()
+        controller.set_plane_mode("Auto")
+        self.module.Gui.Snapper.cursorMode = "endpoint"
+        candidates = []
+        controller.on_candidate = candidates.append
+        values = iter((Vector(4, 5, 18), Vector(14, 5, 28), None))
+        self.module.Gui.Snapper.snap = lambda *_args, **_kwargs: next(values)
+        for _ in range(3):
+            callbacks["SoLocation2Event"]({"Position": (1, 2)})
+        self.assertEqual([(4, 5, 18), (14, 5, 28), None],
+                         [candidate.world if candidate else None for candidate in candidates])
+        self.assertEqual(0, controller.point_count)
+        self.assertIsNone(controller.placement)
+        self.assertEqual(self.module.NO_PLANE, controller.plane_state)
+        self.assertIsNone(controller.candidate)
+        controller.cancel()
+
+    def test_reverse_extrusion_routes_to_preview_and_plate_factory(self):
+        controller = self.controller(plane_mode="Auto")
+        for point in ((1, 2, 18), (11, 2, 18), (11, 12, 18)):
+            controller.add_point(point)
+        controller.close_outline()
+        saved_contour, saved_frame = controller.contour, controller.placement
+        controller.reverse_extrusion = True
+        controller.update_preview(6, -2)
+        contour, frame, thickness, offset, reverse = controller.preview.solids[-1]
+        self.assertIs(contour, saved_contour)
+        self.assertIs(frame, saved_frame)
+        self.assertEqual((6, -2, True), (thickness, offset, reverse))
+        plate = controller.create(6, -2, reverse_extrusion=True)
+        self.assertTrue(plate.kwargs["reverse_extrusion"])
+        self.assertIs(plate.kwargs["placement"], saved_frame)
+        self.assertIs(plate.args[1], saved_contour)
+
+    def test_undo_and_clear_inert_for_cancelled_session_and_draft_source(self):
+        controller = self.controller(plane_mode="Auto")
+        controller.add_point((0, 0, 18))
+        controller.cancel()
+        controller.undo_point()
+        controller.clear_points()
+        self.assertTrue(controller.closed)
+        self.assertEqual(1, controller.point_count)
+        source = types.SimpleNamespace(kind="wire", vertices=((0, 0), (2, 0), (1, 1)))
+        sourced = self.module.PlateController(self.document, source=source,
+                                              source_mode="DraftWire", view=self.view)
+        contour = sourced.contour
+        sourced.undo_point()
+        sourced.clear_points()
+        self.assertIs(sourced.contour, contour)
+        sourced.cancel()
 
 
 if __name__ == "__main__":

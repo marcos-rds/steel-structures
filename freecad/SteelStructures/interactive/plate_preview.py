@@ -67,20 +67,34 @@ class PlatePreview:
             children.append(confirmed)
         if points:
             children.append(self._first_marker(points[0]))
+        if len(points) > 1:
+            # Lightweight confirmed vertices; reuse the existing unpickable root.
+            branch = coin.SoSeparator()
+            material = coin.SoMaterial()
+            material.diffuseColor.setValue(0.15, 0.77, 0.98)
+            branch.addChild(material)
+            draw = coin.SoDrawStyle()
+            draw.pointSize = 6
+            branch.addChild(draw)
+            coords = coin.SoCoordinate3()
+            coords.point.setValues(0, len(points) - 1, [(p.x, p.y, p.z) for p in points[1:]])
+            branch.addChild(coords)
+            branch.addChild(coin.SoPointSet())
+            children.append(branch)
         if points and cursor is not None:
             moving = self._line((points[-1], App.Vector(cursor)), (0.99, 0.78, 0.15))
             if moving is not None:
                 children.append(moving)
         self._replace(children)
 
-    def solid(self, contour, placement, thickness, offset):
+    def solid(self, contour, placement, thickness, offset, reverse_extrusion=False):
         """Build only on a closed contour or a changed parameter, never per mouse move."""
         vertices = tuple(tuple(point) for point in contour.vertices)
-        signature = (vertices, str(placement), float(thickness), float(offset))
+        signature = (vertices, str(placement), float(thickness), float(offset), bool(reverse_extrusion))
         if signature == self._solid_signature:
             return
         self._solid_signature = signature
-        shape = build_plate_shape(contour, thickness, offset).copy()
+        shape = build_plate_shape(contour, thickness, offset, reverse_extrusion).copy()
         shape.Placement = placement.multiply(shape.Placement)
         data = coin.SoInput()
         data.setBuffer(shape.writeInventor())

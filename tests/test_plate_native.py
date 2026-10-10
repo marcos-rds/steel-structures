@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 import tempfile
 import unittest
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -225,6 +226,146 @@ class StructuralPlateNativeTests(unittest.TestCase):
         self.assertAlmostEqual(plate.Shape.BoundBox.ZMax, 305)
         self.assertEqual(PlateContour2D.from_data(plate.ContourData).vertices, contour.vertices)
         self.assertTrue(plate.Shape.isValid())
+
+    def _assert_local_extrusion(self, plate, offset, thickness, reverse):
+        inverse = plate.Placement.inverse()
+        heights = [inverse.multVec(vertex.Point).z for vertex in plate.Shape.Vertexes]
+        self.assertAlmostEqual(min(heights), offset - thickness if reverse else offset)
+        self.assertAlmostEqual(max(heights), offset if reverse else offset + thickness)
+        self.assertEqual(plate.GenerationStatus, "Valid")
+        self.assertTrue(plate.Shape.isValid())
+        self.assertEqual(len(plate.Shape.Solids), 1)
+
+    def test_reverse_extrusion_preserves_contour_frame_and_results_in_all_planes(self):
+        samples = (
+            ((20, 0, 0), (40, 0, 0), (60, 20, 0)),
+            ((20, 0, 0), (20, 0, 40), (60, 0, 40)),
+            ((0, 20, 0), (0, 20, 40), (0, 80, 40)),
+            ((4, 5, 6), (14, 5, 9), (17, 15, 11)),
+        )
+        # Clockwise input also checks that reversing the extrusion does not
+        # change the normalized contour's vertex ordering.
+        contour = PlateContour2D(((0, 0), (0, 30), (40, 30), (40, 0)))
+        for sample in samples:
+            frame = placement_from_points(*[App.Vector(*point) for point in sample])
+            for offset in (0, -3, 2):
+                with self.subTest(sample=sample, offset=offset):
+                    plate = create_plate(self.doc, contour, placement=frame,
+                                         thickness=6, offset=offset)
+                    saved_contour = plate.ContourData
+                    self.assertFalse(plate.ReverseExtrusion)
+                    self._assert_local_extrusion(plate, offset, 6, False)
+                    plate.ReverseExtrusion = True
+                    self.doc.recompute()
+                    self._assert_local_extrusion(plate, offset, 6, True)
+                    self.assertEqual(plate.Placement, frame)
+                    self.assertEqual(plate.ContourData, saved_contour)
+                    self.assertAlmostEqual(plate.GrossArea.Value, contour.area)
+                    self.assertAlmostEqual(plate.EnvelopeVolume.Value, contour.area * 6)
+                    self.assertAlmostEqual(plate.Shape.Volume, contour.area * 6)
+                    plate.Thickness = 9
+                    plate.Offset = offset + 4
+                    self.doc.recompute()
+                    self._assert_local_extrusion(plate, offset + 4, 9, True)
+                    self.assertAlmostEqual(plate.EnvelopeVolume.Value, contour.area * 9)
+                    plate.ReverseExtrusion = False
+                    self.doc.recompute()
+                    self._assert_local_extrusion(plate, offset + 4, 9, False)
+                    self.assertEqual(plate.ContourData, saved_contour)
+                    self.assertEqual(plate.Placement, frame)
+
+    def test_reverse_extrusion_restores_old_and_new_fcstd(self):
+        contour = PlateContour2D(((0, 0), (40, 0), (40, 30), (0, 30)))
+        frame = App.Placement(App.Vector(23, 31, 19),
+                              App.Rotation(App.Vector(1, 2, 3), 37))
+        old = create_plate(self.doc, contour, placement=frame, thickness=7, offset=-2)
+        new = create_plate(self.doc, contour, placement=frame, thickness=7, offset=3,
+                           reverse_extrusion=True)
+        old_name, new_name = old.Name, new.Name
+        saved_contour = old.ContourData
+        saved_old_vertices = sorted(tuple(round(value, 7) for value in vertex.Point)
+                                    for vertex in old.Shape.Vertexes)
+        handle, path = tempfile.mkstemp(prefix="plate_reverse_compat_", suffix=".FCStd")
+        os.close(handle)
+        try:
+            # Serialize an actual schema-1 object lacking the new property.
+            # Guard callbacks only while constructing the old-document fixture.
+            old.Proxy._updating = True
+            old.removeProperty("ReverseExtrusion")
+            self.assertNotIn("ReverseExtrusion", old.PropertiesList)
+            self.doc.saveAs(path)
+            with zipfile.ZipFile(path) as archive:
+                from xml.etree import ElementTree
+                xml = ElementTree.fromstring(archive.read("Document.xml"))
+                objects = xml.find("ObjectData")
+                old_xml = next(item for item in objects if item.get("name") == old_name)
+                self.assertIsNone(old_xml.find("./Properties/Property[@name='ReverseExtrusion']"))
+            App.closeDocument(self.doc.Name)
+            self.doc = App.openDocument(path)
+            self.doc.recompute()
+            restored_old = self.doc.getObject(old_name)
+            restored_new = self.doc.getObject(new_name)
+            self.assertFalse(restored_old.ReverseExtrusion)
+            self.assertTrue(restored_new.ReverseExtrusion)
+            self.assertEqual(restored_old.SchemaVersion, 1)
+            self.assertEqual(restored_new.SchemaVersion, 1)
+            for plate in (restored_old, restored_new):
+                self.assertEqual(plate.Placement, frame)
+                self.assertEqual(plate.ContourData, saved_contour)
+                self.assertAlmostEqual(plate.GrossArea.Value, contour.area)
+                self.assertAlmostEqual(plate.EnvelopeVolume.Value, contour.area * 7)
+            self._assert_local_extrusion(restored_old, -2, 7, False)
+            self._assert_local_extrusion(restored_new, 3, 7, True)
+            self.assertEqual(sorted(tuple(round(value, 7) for value in vertex.Point)
+                                    for vertex in restored_old.Shape.Vertexes), saved_old_vertices)
+        finally:
+            os.remove(path)
+
+    def test_reverse_extrusion_property_transaction_undo_redo(self):
+        self.doc.UndoMode = 1
+        contour = PlateContour2D(((0, 0), (40, 0), (40, 30), (0, 30)))
+        plate = create_plate(self.doc, contour, thickness=6, offset=2)
+        saved_contour = plate.ContourData
+        self.doc.openTransaction("Inverter extrusão")
+        plate.ReverseExtrusion = True
+        self.doc.recompute()
+        self.doc.commitTransaction()
+        self._assert_local_extrusion(plate, 2, 6, True)
+        self.doc.undo()
+        self.doc.recompute()
+        self.assertFalse(plate.ReverseExtrusion)
+        self._assert_local_extrusion(plate, 2, 6, False)
+        self.doc.redo()
+        self.doc.recompute()
+        self.assertTrue(plate.ReverseExtrusion)
+        self._assert_local_extrusion(plate, 2, 6, True)
+        self.assertEqual(plate.ContourData, saved_contour)
+
+    def test_reverse_extrusion_with_linked_rectangle_and_snapshot_wire(self):
+        rectangle = Draft.make_rectangle(40, 30)
+        wire = Draft.make_wire([App.Vector(0, 0, 0), App.Vector(40, 0, 0),
+                                App.Vector(40, 30, 0), App.Vector(0, 30, 0)], closed=True)
+        self.doc.recompute()
+        linked = create_plate(self.doc, None, source_mode="DraftRectangle",
+                              source_object=rectangle, keep_source_link=True,
+                              thickness=8, offset=-2, reverse_extrusion=True)
+        snapshot = create_plate(self.doc, None, source_mode="DraftWire",
+                                source_object=wire, keep_source_link=False,
+                                thickness=8, offset=-2, reverse_extrusion=True)
+        saved_snapshot = snapshot.ContourData
+        self._assert_local_extrusion(linked, -2, 8, True)
+        self._assert_local_extrusion(snapshot, -2, 8, True)
+        rectangle.Length = 60
+        wire.Points = [App.Vector(0, 0, 0), App.Vector(60, 0, 0),
+                       App.Vector(60, 30, 0), App.Vector(0, 30, 0)]
+        self.doc.recompute()
+        self.assertIs(linked.SourceObject, rectangle)
+        self.assertIsNone(snapshot.SourceObject)
+        self.assertEqual(snapshot.ContourData, saved_snapshot)
+        self.assertAlmostEqual(linked.GrossArea.Value, 60 * 30)
+        self.assertAlmostEqual(snapshot.GrossArea.Value, 40 * 30)
+        self._assert_local_extrusion(linked, -2, 8, True)
+        self._assert_local_extrusion(snapshot, -2, 8, True)
 
     def test_rectangle_and_wire_share_contour_model_with_distinct_link_semantics(self):
         rectangle = Draft.make_rectangle(90, 30)

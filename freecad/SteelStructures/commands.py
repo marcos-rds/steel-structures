@@ -16,6 +16,7 @@ _active_member_tool = None
 _active_grid_panel = None
 _active_adjustment_panel = None
 _active_plate_panel = None
+_active_plate_session = None
 _move_copy_registered = False
 
 
@@ -543,20 +544,22 @@ class CreatePlateCommand:
 
         return {
             "Pixmap": getattr(paths, "PLATE_ICON", ""),
-            "MenuText": "Criar Chapa",
-            "ToolTip": "Cria uma chapa lisa a partir de contorno Draft ou pontos no plano.",
+            "MenuText": "Criar Chapa Estrutural",
+            "ToolTip": "Cria uma chapa por polígono, retângulo ou contorno Draft selecionado.",
         }
 
     def IsActive(self):
         return True
 
     def Activated(self):
-        global _active_plate_panel
+        global _active_plate_panel, _active_plate_session
 
-        if _active_plate_panel is not None and not _active_plate_panel._closed:
+        if (_active_plate_session is not None
+                or (_active_plate_panel is not None and not _active_plate_panel._closed)):
             App.Console.PrintWarning("Steel Structures: Criar Chapa já está ativo.\n")
             return
-        if _get_active_task_dialog() is not None:
+        if (_get_active_task_dialog() is not None
+                or getattr(App, "activeDraftCommand", None) is not None):
             App.Console.PrintWarning("Steel Structures: feche o painel atual antes de criar uma chapa.\n")
             return
         document = App.ActiveDocument
@@ -564,6 +567,7 @@ class CreatePlateCommand:
             document = App.newDocument("SteelStructures")
         controller = None
         panel = None
+        session = None
         try:
             from .interactive.plate_controller import PlateController, selected_plate_source
             from .interactive.plate_task_panel import PlateTaskPanel
@@ -572,12 +576,24 @@ class CreatePlateCommand:
             selection = Gui.Selection.getSelectionEx()
             source, mode = selected_plate_source(selection, document)
             plane_face = selected_plane_face(selection, document) if source is None else None
+            if source is None:
+                import DraftTools  # noqa: F401 - official native initialization
+                import DraftGui  # noqa: F401
+                from .interactive.plate_creation_session import PlateCreationSession
+                Gui.Control.clearTaskWatcher()
+                session = PlateCreationSession(document, plane_face=plane_face,
+                                               on_closed=_plate_session_closed)
+                _active_plate_session = session
+                session.start()
+                return
             controller = PlateController(document, source=source, source_mode=mode,
                                          plane_face=plane_face)
             panel = PlateTaskPanel(controller, _plate_panel_closed)
             _active_plate_panel = panel
             Gui.Control.showDialog(panel)
         except ValueError as exc:
+            if session is not None:
+                session.finish()
             if panel is not None:
                 panel.reject()
             elif controller is not None:
@@ -587,6 +603,8 @@ class CreatePlateCommand:
             QtWidgets.QMessageBox.warning(
                 Gui.getMainWindow(), "Steel Structures", str(exc))
         except Exception:
+            if session is not None:
+                session.finish()
             if panel is not None:
                 panel.reject()
             elif controller is not None:
@@ -600,18 +618,43 @@ def _plate_panel_closed(panel, _accepted):
     global _active_plate_panel
     if _active_plate_panel is panel:
         _active_plate_panel = None
-    try:
-        Gui.Control.closeDialog()
-    except Exception:
-        pass
+    # Source-object creation also must not close a replacement task dialog.
+    form = getattr(panel, "input_form", None)
+    if form is None:
+        form = getattr(panel, "form", None)
+    if form is None:
+        return
+    from shiboken6 import isValid
+    if not isValid(form):
+        return
+    widget = form
+    while widget is not None and not widget.inherits("Gui::TaskView::TaskBox"):
+        widget = widget.parentWidget()
+    if widget is not None:
+        parent = widget.parentWidget()
+        if (parent is not None and parent.inherits("Gui::TaskView::TaskPanel")
+                and parent.layout() is not None and parent.layout().indexOf(widget) >= 0
+                and widget.isVisibleTo(parent)):
+            Gui.Control.closeDialog()
+
+
+def _plate_session_closed(session):
+    global _active_plate_session
+    if _active_plate_session is session:
+        _active_plate_session = None
 
 
 def close_plate_panel():
     """End only the plate session owned by this workbench."""
     global _active_plate_panel
+    session_closed = False
+    session = _active_plate_session
+    if session is not None:
+        session.finish()
+        session_closed = True
     panel = _active_plate_panel
     if panel is None:
-        return False
+        return session_closed
     try:
         panel.reject()
     finally:

@@ -1,5 +1,8 @@
 # Chapa Estrutural — núcleo 0.7.0-A
 
+Registro histórico do baseline. Para o comando unificado atual, incluindo
+seleção de face e ReverseExtrusion, consulte o [guia consolidado](STRUCTURAL_PLATE.md).
+
 `StructuralPlate` armazena um contorno poligonal no plano XY local. O último
 segmento liga implicitamente o último vértice ao primeiro. `Placement` define
 o plano no documento e sua normal é o eixo +Z local. `Offset` posiciona a face

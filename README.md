@@ -14,6 +14,10 @@ As chapas Gusset são preliminares: não incluem furos, soldas, parafusos ou ver
 
 ### Recursos disponíveis
 
+O incremento local Criar Chapa Estrutural está documentado no
+[guia de uso da ferramenta unificada](Documentation/STRUCTURAL_PLATE.md).
+Essa documentação de desenvolvimento não altera a versão publicada acima.
+
 - **Grid Estrutural paramétrico**, com painel visual, e comandos dedicados **Criar Membro** e **Criar Pilar** sob a identidade `SteelStructures_*`.
 - **Criar Membro** reutiliza a Linha nativa do Draft para entrada por dois pontos, com snaps, restrições e modo **Continuar**; **Criar Pilar** oferece inserção interativa vertical com preview.
 - **Catálogo de Perfis** nativo com busca, propriedades técnicas e preview 2D das 218 bitolas do catálogo Gerdau.

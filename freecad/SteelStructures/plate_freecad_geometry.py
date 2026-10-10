@@ -7,8 +7,12 @@ import FreeCAD as App
 import Part
 
 
-def build_plate_shape(contour, thickness, offset=0.0):
-    """Extrude a local XY polygon along local +Z, starting at ``offset``."""
+def build_plate_shape(contour, thickness, offset=0.0, reverse_extrusion=False):
+    """Extrude in local Z with ``offset`` locating the reference face.
+
+    Reversing moves the solid below that face without moving the contour or
+    changing its persisted order. Thickness always remains positive.
+    """
     thickness = float(getattr(thickness, "Value", thickness))
     offset = float(getattr(offset, "Value", offset))
     if not math.isfinite(thickness) or thickness <= 0.0:
@@ -19,7 +23,8 @@ def build_plate_shape(contour, thickness, offset=0.0):
     # Force the face's geometric normal to +Z without changing the persisted
     # contour order or losing the orientation chosen by the user.
     ordered = vertices if contour.signed_area > 0 else tuple(reversed(vertices))
-    points = [App.Vector(x, y, offset) for x, y in ordered]
+    start = offset - thickness if reverse_extrusion else offset
+    points = [App.Vector(x, y, start) for x, y in ordered]
     wire = Part.makePolygon(points + [points[0]])
     face = Part.Face(wire)
     shape = face.extrude(App.Vector(0, 0, thickness))

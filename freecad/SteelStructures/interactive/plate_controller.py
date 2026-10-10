@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import math
+
 import FreeCAD as App
 import FreeCADGui as Gui
 
@@ -11,6 +13,7 @@ from ..plate_planes import (placement_from_face, placement_from_points,
                             preselection_pick, view_pick)
 from ..plate_sources import is_draft_rectangle, is_draft_wire, resolve_plate_source
 from .plate_preview import PlatePreview
+from .point_input import PointCandidate, PointInputPlane
 
 
 SOURCE_MODES = ("DraftRectangle", "DraftWire")
@@ -107,11 +110,17 @@ class PlateController:
         self.on_change = None
         self.on_error = None
         self.on_cancel = None
+        self.on_candidate = None
+        self.reverse_extrusion = False
+        self.candidate = None
+        # The widget owns editing state, including incomplete text.
+        self.numeric_editing = None
         self.preview = PlatePreview(self._view)
         if source is not None:
             self._resolve_source()
 
     def _notify(self):
+        self.candidate = None
         if self.on_change is not None:
             self.on_change()
 
@@ -131,6 +140,55 @@ class PlateController:
     def point_count(self):
         return (len(self.points) if self.plane_state == PLANE_DEFINED
                 else len(self._pending_world_points))
+
+    @property
+    def last_point(self):
+        if not self.point_count:
+            return None
+        point = self._world_points()[-1]
+        return (point.x, point.y, point.z)
+
+    @property
+    def input_plane(self):
+        if self.plane_state != PLANE_DEFINED:
+            return None
+        origin = self.placement.multVec(App.Vector(0, 0, 0))
+        axes = [self.placement.Rotation.multVec(App.Vector(*axis))
+                for axis in ((1, 0, 0), (0, 1, 0), (0, 0, 1))]
+        return PointInputPlane((origin.x, origin.y, origin.z),
+                               *((axis.x, axis.y, axis.z) for axis in axes))
+
+    def set_candidate(self, candidate):
+        """Validate preview input without discovering a plane or adding points."""
+        if self.closed or self.source is not None or self.contour is not None:
+            return
+        if candidate is not None:
+            if not isinstance(candidate, PointCandidate):
+                raise ValueError("Candidato de ponto inválido.")
+            if self.plane_state == PLANE_DEFINED:
+                self._local_point(candidate.world)
+        self.candidate = candidate
+        if self.on_candidate is not None:
+            self.on_candidate(candidate)
+
+    def clear_points(self):
+        """Reset just the trace, preserving capture ownership and plane policy."""
+        if self.closed or self.source is not None:
+            return
+        self.contour = None
+        self.points.clear()
+        self._reset_interactive_plane()
+        self.preview.clear()
+        self._notify()
+
+    def undo_point(self):
+        """Replay the remaining confirmed points through the approved plane algorithm."""
+        if self.closed or self.source is not None or self.mode != "InteractivePolygon":
+            return
+        remaining = self._world_points()[:-1]
+        self.clear_points()
+        for point in remaining:
+            self.add_point(point, close_on_first=False)
 
     def _reset_interactive_plane(self):
         self._pending_world_points.clear()
@@ -192,10 +250,12 @@ class PlateController:
         except (AttributeError, TypeError, RuntimeError):
             return 1e-3
 
-    def add_point(self, world_point, *, screen_position=None):
+    def add_point(self, world_point, *, screen_position=None, close_on_first=True):
         if self.source is not None or self.closed:
             raise RuntimeError("Coleta de pontos indisponível.")
-        point = App.Vector(world_point)
+        raw = App.Vector(world_point)
+        checked = PointCandidate((raw.x, raw.y, raw.z))
+        point = App.Vector(*checked.world)
         if self.plane_state != PLANE_DEFINED:
             pending = self._pending_world_points
             if pending and point.sub(pending[-1]).Length <= 1e-7:
@@ -246,7 +306,9 @@ class PlateController:
             distance = ((xy[0] - first[0]) ** 2 + (xy[1] - first[1]) ** 2) ** 0.5
             tolerance = (self._close_tolerance(screen_position)
                          if screen_position is not None else 1e-3)
-            if distance <= tolerance:
+            if not close_on_first and distance <= 1e-7:
+                raise ValueError("Use Fechar contorno para concluir o polígono.")
+            if close_on_first and distance <= tolerance:
                 self.close_outline()
                 return
         if self.points:
@@ -280,8 +342,13 @@ class PlateController:
     def update_preview(self, thickness, offset, cursor=None):
         if self.closed:
             return
+        if cursor is None and self.candidate is not None:
+            cursor = App.Vector(*self.candidate.world)
+        if cursor is not None and self.plane_state == PLANE_DEFINED:
+            self._local_point(cursor)
         if self.contour is not None:
-            self.preview.solid(self.contour, self.placement, thickness, offset)
+            self.preview.solid(self.contour, self.placement, thickness, offset,
+                               reverse_extrusion=self.reverse_extrusion)
         elif (self.mode == "InteractiveRectangle" and self.plane_state != PLANE_DEFINED
               and self.point_count == 2 and cursor is not None):
             first, second = self._pending_world_points
@@ -357,10 +424,43 @@ class PlateController:
         self._last_preselection_info = pre_info
         self._last_pick_info = pick_info
         point = picked if picked is not None else pre_point
+        if point is None and self.plane_state == PLANE_DEFINED:
+            point = self._point_on_defined_plane(position)
         if point is None:
             raise ValueError("Não foi possível obter um ponto 3D real neste local.")
         self._last_effective_point = point
         return point
+
+    def _point_on_defined_plane(self, position):
+        """Empty-space fallback using Draft's ray construction, after P3 only."""
+        from draftgeoutils.geometry import project_point_on_plane
+        from ..plate_planes import screen_coordinates
+
+        pixels = screen_coordinates(position)
+        if pixels is None or self.placement is None:
+            return None
+        try:
+            point = self._view.getPoint(*pixels)
+            if self._view.getCameraType() == "Perspective":
+                camera = self._view.getCameraNode().getField("position").getValue()
+                direction = point.sub(App.Vector(*camera))
+            else:
+                direction = self._view.getViewDirection()
+            if direction.Length <= 1e-12:
+                return None
+            normal = self.placement.Rotation.multVec(App.Vector(0, 0, 1))
+            candidate = project_point_on_plane(point, self.placement.Base, normal,
+                                               direction, force_projection=False)
+            if candidate is None or not all(math.isfinite(v) for v in
+                                             (candidate.x, candidate.y, candidate.z)):
+                return None
+            # Perspective intersections behind the eye are not visible rays.
+            if self._view.getCameraType() == "Perspective" and candidate.sub(
+                    App.Vector(*camera)).dot(direction) <= 0:
+                return None
+            return candidate
+        except (AttributeError, ReferenceError, RuntimeError, TypeError, ValueError):
+            return None
 
     def start_capture(self, thickness, offset):
         if (self.closed or self.source is not None or self.contour is not None
@@ -370,24 +470,8 @@ class PlateController:
         view = self._view
 
         def move(event):
-            if self.closed:
-                return
-            try:
-                point = self._snap_point(event)
-                if self.closed:
-                    return
-                if point is not None and self.point_count:
-                    point = self._event_point(point, event.get("Position"))
-                    if self.plane_state == PLANE_DEFINED:
-                        self._local_point(point)
-                    self.update_preview(thickness(), offset(), point)
-            except (ValueError, KeyError, RuntimeError):
-                if not self.closed and self.point_count:
-                    self.update_preview(thickness(), offset())
-
-        def click(event):
-            if (self.closed or event.get("State") != "DOWN"
-                    or event.get("Button") != "BUTTON1"):
+            if (self.closed or not self._capturing
+                    or (self.numeric_editing is not None and self.numeric_editing())):
                 return
             try:
                 point = self._snap_point(event)
@@ -395,7 +479,30 @@ class PlateController:
                     return
                 if point is not None:
                     point = self._event_point(point, event.get("Position"))
-                    self.add_point(point, screen_position=event.get("Position"))
+                    self.set_candidate(PointCandidate((point.x, point.y, point.z)))
+                    self.update_preview(thickness(), offset())
+                else:
+                    self.set_candidate(None)
+                    self.update_preview(thickness(), offset())
+            except (ValueError, KeyError, RuntimeError):
+                if not self.closed:
+                    self.set_candidate(None)
+                    self.update_preview(thickness(), offset())
+
+        def click(event):
+            if (self.closed or not self._capturing or event.get("State") != "DOWN"
+                    or event.get("Button") != "BUTTON1"
+                    or (self.numeric_editing is not None and self.numeric_editing())):
+                return
+            try:
+                point = self._snap_point(event)
+                if self.closed:
+                    return
+                if point is not None:
+                    point = self._event_point(point, event.get("Position"))
+                    self.set_candidate(PointCandidate((point.x, point.y, point.z)))
+                    self.add_point(self.candidate.world,
+                                   screen_position=event.get("Position"))
                     if not self.closed:
                         self.update_preview(thickness(), offset())
             except (ValueError, KeyError, RuntimeError) as exc:
@@ -440,7 +547,7 @@ class PlateController:
         if snapper is not None and hasattr(snapper, "off"):
             snapper.off()
 
-    def create(self, thickness, offset, keep_source_link=False):
+    def create(self, thickness, offset, keep_source_link=False, reverse_extrusion=False):
         if self.source is not None:
             # A Draft object may have changed while its task panel was open.
             self._resolve_source()
@@ -455,7 +562,8 @@ class PlateController:
                 self.document, self.contour, placement=self.placement,
                 thickness=float(thickness), offset=float(offset),
                 source_mode=self.mode, source_object=self.source,
-                keep_source_link=bool(keep_source_link and self.source is not None))
+                keep_source_link=bool(keep_source_link and self.source is not None),
+                reverse_extrusion=bool(reverse_extrusion))
             if self.source is not None:
                 old_visibility = bool(self.source.ViewObject.Visibility)
                 self.source.ViewObject.Visibility = False
@@ -480,6 +588,7 @@ class PlateController:
         if self._teardown_done:
             return
         self.closed = True
+        self.candidate = None
         try:
             self.stop_capture()
         finally:
