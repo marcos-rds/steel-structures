@@ -20,7 +20,8 @@ def on_segment(point, a, b):
 
 
 def _definition(config):
-    return EnvelopeDefinition(config["envelope_type"], config["span"], config["height"], config["apex_position"])
+    from .envelope import definition_from_config
+    return definition_from_config(config)
 
 
 def inside(definition, point, strict=False):
@@ -176,7 +177,11 @@ def materialize(graph, config):
         pivot=definition.span*definition.apex_position
         branch="MAIN" if definition.kind=="Parallel" else "LEFT" if x<=pivot else "RIGHT"
         fraction=x/definition.span if branch=="MAIN" else x/pivot if branch=="LEFT" else (x-pivot)/(definition.span-pivot)
-        bindings[node.key] = dict(x=fraction, branch=branch, y=y/h if h>TOLERANCE else 0.,
+        # At a collapsed support a top-only identity still belongs to the
+        # upper envelope; keep that semantic binding when the height is zero.
+        relative_height = y/h if h>TOLERANCE else float(
+            "TOP_CHORD" in node.affiliations and "BOTTOM_CHORD" not in node.affiliations)
+        bindings[node.key] = dict(x=fraction, branch=branch, y=relative_height,
                                  apex=node.optional_station_key=="S_APEX")
     return dict(envelope_type=definition.kind, panel_count=config["panel_count"], nodes=[asdict(n) for n in graph.nodes],
                 edges=[asdict(e) for e in graph.edges], bindings=bindings)
@@ -201,10 +206,57 @@ def restore_graph(data, config, stations=None):
             if value["optional_station_key"] not in station_map:
                 raise ValueError("Estações incompatíveis com os vínculos da topologia Custom.")
             x=station_map[value["optional_station_key"]]
-        value["position_local"] = (x,top_height(definition,x)*binding["y"],0.)
         value["affiliations"] = tuple(value["affiliations"])
+        relative_height = binding["y"]
+        if (definition.kind == "DuoPitch"
+                and min(abs(x), abs(x-definition.span)) <= TOLERANCE
+                and "TOP_CHORD" in value["affiliations"]
+                and "BOTTOM_CHORD" not in value["affiliations"]):
+            relative_height = 1.
+        value["position_local"] = (x,top_height(definition,x)*relative_height,0.)
         nodes.append(TopologyNode(**value))
-    return TopologyGraph(tuple(nodes),tuple(TopologyEdge(**e) for e in data["edges"]))
+    edges = [TopologyEdge(**e) for e in data["edges"]]
+    if definition.kind == "DuoPitch":
+        # Earlier files use one shared endpoint for both chords at zero
+        # height. Preserve its bottom/web ownership and only lift TOP edges.
+        used_nodes = {node.key for node in nodes}
+        used_edges = {edge.key for edge in edges}
+        def available(key, used):
+            candidate = key
+            suffix = 1
+            while candidate in used:
+                candidate = f"{key}:{suffix}"
+                suffix += 1
+            used.add(candidate)
+            return candidate
+        for node in tuple(nodes):
+            x = node.position_local[0]
+            if min(abs(x), abs(x-definition.span)) > TOLERANCE:
+                continue
+            height = top_height(definition, x)
+            if height <= TOLERANCE or not set(CHORDS).issubset(node.affiliations):
+                continue
+            bottom = replace(node, position_local=(x, 0., 0.),
+                             affiliations=tuple(role for role in node.affiliations if role != "TOP_CHORD"))
+            upper = replace(node, key=available(node.key+":TOP", used_nodes),
+                            position_local=(x, height, 0.), affiliations=("TOP_CHORD",))
+            nodes[nodes.index(node)] = bottom
+            nodes.append(upper)
+            edges = [replace(edge,
+                             start_node_key=upper.key if edge.start_node_key==node.key else edge.start_node_key,
+                             end_node_key=upper.key if edge.end_node_key==node.key else edge.end_node_key)
+                     if edge.role=="TOP_CHORD" else edge for edge in edges]
+            edges.append(TopologyEdge(available("E_SUPPORT_"+node.key, used_edges),
+                                      bottom.key, upper.key, "END_POST"))
+        positions = {node.key: node.position_local for node in nodes}
+        # Only support closures may disappear when both chord endpoints
+        # coalesce. All other zero-length members remain validation errors.
+        edges = [edge for edge in edges if not (
+            edge.role == "END_POST"
+            and math.dist(positions[edge.start_node_key], positions[edge.end_node_key]) <= TOLERANCE
+            and min(abs(positions[edge.start_node_key][0]),
+                    abs(positions[edge.start_node_key][0]-definition.span)) <= TOLERANCE)]
+    return TopologyGraph(tuple(nodes), tuple(edges))
 
 
 def edit_candidate(candidate, action, **args):

@@ -23,7 +23,7 @@ def cross(a, b):
     return (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0])
 
 
-def reference_frame(config):
+def input_reference_frame(config):
     origin, end = tuple(config["start"]), tuple(config["end"])
     if not all(math.isfinite(v) for v in origin+end):
         raise ValueError("Pontos de referência não finitos.")
@@ -32,6 +32,14 @@ def reference_frame(config):
     if abs(sum(a*b for a,b in zip(x,z))) > 1e-7:
         raise ValueError("A normal do plano deve ser perpendicular ao eixo P0–P1.")
     return origin, x, cross(z, x), z
+
+
+def reference_frame(config):
+    frame = input_reference_frame(config)
+    if config.get("reference_alignment") == "TopChordSupports":
+        from .support_alignment import aligned_frame
+        return aligned_frame(config, frame)
+    return frame
 
 
 def transform_point(point, frame):
@@ -45,6 +53,20 @@ def build_candidate(config, applied=None):
     config.setdefault("panelization_mode", "ByPanelCount")
     config.setdefault("reference_mode", "TwoPoints")
     config.setdefault("reference_linked", False)
+    config.setdefault("left_end_height", 0.)
+    config.setdefault("right_end_height", 0.)
+    config.setdefault("link_end_heights", True)
+    config.setdefault("reference_alignment", "BottomChord")
+    if config["link_end_heights"]:
+        config["right_end_height"] = config["left_end_height"]
+    config.pop("nominal_span", None)
+    config.pop("support_reference_local", None)
+    config.pop("support_section_offset", None)
+    if config["reference_alignment"] not in ("BottomChord", "TopChordSupports"):
+        raise ValueError("Alinhamento da referência inválido.")
+    if config["reference_alignment"] == "TopChordSupports":
+        from .support_alignment import resolve_support_alignment
+        config.update(resolve_support_alignment(config))
     config.setdefault("default_gusset_thickness", 10.)
     if (not isinstance(config["default_gusset_thickness"], (int, float))
             or isinstance(config["default_gusset_thickness"], bool)
@@ -57,8 +79,8 @@ def build_candidate(config, applied=None):
         raise ValueError("Defina a referência; para um retângulo indique explicitamente o lado da base.")
     if config["topology_mode"] not in ("Preset", "Custom"):
         raise ValueError("Modo de topologia inválido.")
-    definition = EnvelopeDefinition(config["envelope_type"], float(config["span"]),
-                                    float(config["height"]), float(config.get("apex_position", .5)))
+    from .envelope import definition_from_config
+    definition = definition_from_config(config)
     count = config["panel_count"]
     allocation = None
     if definition.kind == "DuoPitch":
@@ -95,7 +117,7 @@ def build_candidate(config, applied=None):
         warnings = tuple(w for w in warnings if not w.startswith("Cruzamento sem conexão:"))
     runs = physical_runs(graph, definition, config["top_continuity"], config["bottom_continuity"])
     frame = reference_frame(config)
-    if abs(math.dist(config["start"], config["end"])-definition.span) > 1e-6:
+    if abs(math.dist(config["start"], config["end"])-config["span"]) > 1e-6:
         raise ValueError("Vão deve coincidir com a distância P0–P1.")
     # Additive C1 compatibility: old END_POST supplies both physical sides.
     for side in ("END_POST_LEFT", "END_POST_RIGHT"):
@@ -139,8 +161,17 @@ def build_candidate(config, applied=None):
     candidate = Candidate(config, stations, graph, runs, tuple(items), warnings)
     if isinstance(applied, Candidate):
         from .connections import reconcile_topology_connection_intents
-        config["connection_intents"] = reconcile_topology_connection_intents(
-            candidate, applied)
+        heights_changed = (config["envelope_type"] == applied.config["envelope_type"] == "DuoPitch"
+            and any(config.get(k, 0.) != applied.config.get(k, 0.)
+                    for k in ("left_end_height", "right_end_height")))
+        if heights_changed:
+            # Support identities stay with the lower chord. Never silently
+            # discard a user's plate or cut when a zero-height support splits.
+            missing = set(config.get("connection_intents", {}))-{n.key for n in graph.nodes}
+            if missing:
+                raise ValueError("A alteração das alturas eliminaria nós com ligações: "+", ".join(sorted(missing)))
+        else:
+            config["connection_intents"] = reconcile_topology_connection_intents(candidate, applied)
     from .fitting import apply_physical_fits
     return replace(candidate, items=apply_physical_fits(candidate, frame,
                                                         applied if isinstance(applied, Candidate) else None))

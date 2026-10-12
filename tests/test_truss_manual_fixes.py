@@ -357,11 +357,14 @@ class ManualFixTests(unittest.TestCase):
                          PRESETS=PRESETS, DRIVERS=DRIVERS,
                          ensure_gusset_registry=lambda obj: None,
                          ensure_gusset_defaults=lambda obj: None)
+        definition("truss.py", "ensure_support_properties", namespace)
         definition("truss.py", "ensure_c2_properties", namespace)
+        definition("truss.py", "restore_copied_children", namespace)
         proxy_type = definition("truss.py", "StructuralTrussProxy", namespace)
         modes = {}
         properties = []
-        obj = SimpleNamespace(PropertiesList=properties, addProperty=lambda kind,name,*args: properties.append(name),
+        obj = SimpleNamespace(PropertiesList=properties, GeneratedMembers=[], Span=0.,
+                              addProperty=lambda kind,name,*args: properties.append(name),
                               setEditorMode=lambda name, mode: modes.update({name: mode}))
         proxy = proxy_type(obj)
         structural = ("TopologyPreset", "EnvelopeType", "PanelCount", "TopChordContinuity",

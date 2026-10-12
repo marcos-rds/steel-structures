@@ -16,8 +16,10 @@ def _c1_topology(definition, station_plan, preset):
     nodes, edges, top, bottom = [], [], [], []
     stations = station_plan.stations
     for i, station in enumerate(stations):
-        shared = definition.kind == "DuoPitch" and i in (0, len(stations)-1)
-        bk = "N_"+station.key if shared else "B_"+station.key
+        shared = (definition.kind == "DuoPitch" and i in (0, len(stations)-1)
+                  and top_height(definition, station.x) == 0.)
+        endpoint = definition.kind == "DuoPitch" and i in (0, len(stations)-1)
+        bk = "N_"+station.key if endpoint else "B_"+station.key
         tk = bk if shared else "T_"+station.key
         bottom.append(bk)
         top.append(tk)
@@ -38,8 +40,9 @@ def _c1_topology(definition, station_plan, preset):
     for i in range(count):
         add(bottom[i], bottom[i+1], "BOTTOM_CHORD", "BOTTOM_CHORD")
         add(top[i], top[i+1], "TOP_CHORD", "TOP_CHORD")
-    if definition.kind == "Parallel":
+    if bottom[0] != top[0]:
         add(bottom[0], top[0], "END_POST")
+    if bottom[-1] != top[-1]:
         add(bottom[-1], top[-1], "END_POST")
     vertical_indices = (range(1, count) if preset == "Pratt" else
                         sorted({1, count-1}) if definition.kind == "DuoPitch" else ())
@@ -48,7 +51,8 @@ def _c1_topology(definition, station_plan, preset):
     pivot = (definition.span*definition.apex_position if definition.kind == "DuoPitch"
              else definition.span*0.5)
     for i in range(count):
-        if definition.kind == "DuoPitch" and i in (0, count-1):
+        if ((i == 0 and bottom[0] == top[0]) or
+                (i == count-1 and bottom[-1] == top[-1])):
             continue  # The shared support/chords already close these triangles.
         if preset == "Warren":
             a, b = (bottom[i], top[i+1]) if i % 2 == 0 else (top[i], bottom[i+1])
@@ -69,7 +73,7 @@ def generate_topology(definition, station_plan, preset, x_connection="Disconnect
     base = _c1_topology(definition, station_plan, "Pratt")
     nodes = list(base.nodes)
     edges = [e for e in base.edges if e.role in ("TOP_CHORD", "BOTTOM_CHORD")
-             or (e.role == "END_POST" and preset != "Custom")]
+             or (e.role == "END_POST" and (preset != "Custom" or definition.kind == "DuoPitch"))]
     stations = station_plan.stations
     top = [next(n.key for n in nodes if n.optional_station_key == s.key and "TOP_CHORD" in n.affiliations) for s in stations]
     bottom = [next(n.key for n in nodes if n.optional_station_key == s.key and "BOTTOM_CHORD" in n.affiliations) for s in stations]
@@ -104,7 +108,7 @@ def generate_topology(definition, station_plan, preset, x_connection="Disconnect
         for i in range(1, count): vertical(i)
         pivot = definition.span * (definition.apex_position if definition.kind == "DuoPitch" else .5)
         for i in range(count):
-            if definition.kind == "DuoPitch" and i in (0, count-1): continue
+            if (i == 0 and bottom[0] == top[0]) or (i == count-1 and bottom[-1] == top[-1]): continue
             if preset == "Howe":
                 add(*( (bottom[i], top[i+1]) if stations[i].x < pivot else (top[i], bottom[i+1]) ))
             elif x_connection == "Disconnected":

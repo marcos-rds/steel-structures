@@ -404,7 +404,8 @@ class TrussController:
         candidate = self.candidate(config)
         self.timings["pure_seconds"] = perf_counter()-started
         config = candidate.config
-        definition = EnvelopeDefinition(config["envelope_type"], config["span"], config["height"], config["apex_position"])
+        from ..trusses.envelope import definition_from_config
+        definition = definition_from_config(config)
         from ..trusses.connections import resolve_truss_connections
         from ..trusses.gussets import preliminary_gusset_outlines
         from ..connections import attachment_warning_messages
@@ -430,6 +431,9 @@ class TrussController:
                     edges=[asdict(e) for e in candidate.graph.edges],
                     stations=[asdict(s) for s in candidate.stations.stations],
                     envelope=paths(definition), warnings=list(candidate.warnings),
+                    envelope_type=config["envelope_type"],
+                    reference_alignment=config.get("reference_alignment", "BottomChord"),
+                    support_reference_local=config.get("support_reference_local"),
                     effective=candidate.config["panelization_result"], topology_mode=candidate.config["topology_mode"],
                     left_panels=candidate.stations.left_panels, right_panels=candidate.stations.right_panels,
                     reference_base=config.get("reference_edge","") if config.get("reference_mode")=="DraftRectangle" else "",

@@ -345,19 +345,54 @@ class TrussTaskPanel:
         )
         self.span = self._number(point_distance(config["start"], config["end"]), 0)
         self.height = self._number(config["height"], 0)
+        self.height_label = QtWidgets.QLabel("Altura nominal:")
+        self.left_end_height = self._number(config.get("left_end_height", 0), 0)
+        self.right_end_height = self._number(config.get("right_end_height", 0), 0)
+        self.left_end_height_label = QtWidgets.QLabel("Altura da extremidade esquerda:")
+        self.right_end_height_label = QtWidgets.QLabel("Altura da extremidade direita:")
+        self.link_end_heights = QtWidgets.QCheckBox("Vincular alturas das extremidades")
+        self.link_end_heights.setChecked(config.get("link_end_heights", True))
+        self.reference_alignment = self._combo(
+            (("Banzo inferior", "BottomChord"),
+             ("Topo do banzo superior nos apoios", "TopChordSupports")),
+            config.get("reference_alignment", "BottomChord"),
+        )
+        self.reference_alignment_label = QtWidgets.QLabel("Alinhar linha de referência:")
+        self.reference_alignment.setToolTip(
+            "No alinhamento superior, os pontos da linha correspondem ao topo físico "
+            "do perfil do banzo superior nos apoios."
+        )
         self.apex = self._number(config["apex_position"] * 100.0, 0, 100, " %")
         self.apex_label = QtWidgets.QLabel("Posição da cumeeira:")
-        self.pitch_note = QtWidgets.QLabel("Duas águas: extremidades com altura zero.")
-        self.pitch_note.setWordWrap(True)
+        for widget in (self.height, self.left_end_height, self.right_end_height):
+            widget.setToolTip("Altura nominal perpendicular ao eixo do banzo inferior, "
+                              "independente do perfil e do alinhamento da referência.")
         form.addRow("Forma:", self.envelope_type)
-        form.addRow("Vão nominal:", self.span)
-        form.addRow("Altura nominal:", self.height)
+        self.span_label = QtWidgets.QLabel("Vão nominal:")
+        form.addRow(self.span_label, self.span)
+        form.addRow(self.height_label, self.height)
         form.addRow(self.apex_label, self.apex)
-        form.addRow(self.pitch_note)
+        form.addRow(self.left_end_height_label, self.left_end_height)
+        form.addRow(self.right_end_height_label, self.right_end_height)
+        form.addRow(self.link_end_heights)
+        form.addRow(self.reference_alignment_label, self.reference_alignment)
         self.envelope_type.currentIndexChanged.connect(self._refresh)
         self.height.valueChanged.connect(self._refresh)
         self.apex.valueChanged.connect(self._refresh)
         self.span.valueChanged.connect(self._span_changed)
+        self.left_end_height.valueChanged.connect(self._end_heights_changed)
+        self.right_end_height.valueChanged.connect(self._refresh)
+        self.link_end_heights.toggled.connect(self._end_heights_changed)
+        self.reference_alignment.currentIndexChanged.connect(self._refresh)
+
+    def _end_heights_changed(self, _value=None):
+        if self._updating or self._closed:
+            return
+        if self.link_end_heights.isChecked():
+            blocked = self.right_end_height.blockSignals(True)
+            self.right_end_height.setValue(self.left_end_height.value())
+            self.right_end_height.blockSignals(blocked)
+        self._refresh()
 
     def _build_web(self, root, config):
         from ..trusses.preset_contracts import PRESETS, compatible_presets
@@ -784,6 +819,13 @@ class TrussTaskPanel:
         if hasattr(self,"reference_mode"):
             config.update(reference_mode=self.reference_mode.currentData(),reference_linked=self.keep_reference_link.isChecked(),
                           reference_edge=self.reference_edge.currentData() if self.reference_mode.currentData()=="DraftRectangle" else "Edge1")
+        if hasattr(self, "left_end_height"):
+            linked = self.link_end_heights.isChecked()
+            left = float(self.left_end_height.value())
+            config.update(left_end_height=left,
+                          right_end_height=left if linked else float(self.right_end_height.value()),
+                          link_end_heights=linked,
+                          reference_alignment=self.reference_alignment.currentData())
         return config
 
     def _points_changed(self, _value=None):
@@ -916,8 +958,25 @@ class TrussTaskPanel:
                 self.message.setText("Retângulo aceito. Escolha Base em Referência: Lado 1, 2, 3 ou 4.")
                 return False
         pitched = config["envelope_type"] == "DuoPitch"
-        for widget in (self.apex, self.apex_label, self.pitch_note):
+        if hasattr(self, "height_label"):
+            self.height_label.setText("Altura na cumeeira:" if pitched else "Altura nominal:")
+        for widget in (self.apex, self.apex_label):
             widget.setVisible(pitched)
+        if hasattr(self, "left_end_height"):
+            for widget in (self.left_end_height, self.right_end_height,
+                           self.left_end_height_label, self.right_end_height_label,
+                           self.link_end_heights):
+                widget.setVisible(pitched)
+            for widget in (self.reference_alignment, self.reference_alignment_label):
+                widget.setVisible(config["envelope_type"] in ("Parallel", "DuoPitch"))
+            self.right_end_height.setEnabled(not self.link_end_heights.isChecked())
+            if self.link_end_heights.isChecked():
+                blocked = self.right_end_height.blockSignals(True)
+                self.right_end_height.setValue(config["left_end_height"])
+                self.right_end_height.blockSignals(blocked)
+        upper = config.get("reference_alignment") == "TopChordSupports"
+        if hasattr(self, "span_label"):
+            self.span_label.setText("Distância entre apoios:" if upper else "Vão nominal:")
         self.plane_label.setText(f"Referência definida · Vão: {config['span']:g} mm · Altura: {config['height']:g} mm")
         try:
             model = self.controller.preview(config)
@@ -932,9 +991,19 @@ class TrussTaskPanel:
                     self._write_vector(spins,effective[name])
                 for name,widget,factor in (("span",self.span,1),("height",self.height,1),("apex_position",self.apex,100),("panel_count",self.panel_count,1)):
                     blocked=widget.blockSignals(True); widget.setValue(effective[name]*factor); widget.blockSignals(blocked)
+                if hasattr(self, "left_end_height"):
+                    for name in ("left_end_height", "right_end_height"):
+                        if name in effective:
+                            widget = getattr(self, name)
+                            blocked = widget.blockSignals(True)
+                            widget.setValue(effective[name])
+                            widget.blockSignals(blocked)
                 self._axis_direction=[(b-a)/effective["span"] for a,b in zip(effective["start"],effective["end"])]
                 config=self.get_config()
                 self.plane_label.setText(f"Referência definida · Vão: {effective['span']:g} mm · Altura: {effective['height']:g} mm")
+                if upper:
+                    self.plane_label.setText(f"Distância entre apoios: {effective['span']:g} mm · "
+                        f"Vão nominal calculado: {effective.get('nominal_span', effective['span']):g} mm")
             self.preview.set_model(model)
             present = {edge["role"] for edge in model["edges"]}
             for role, button in getattr(self, "role_buttons", {}).items():

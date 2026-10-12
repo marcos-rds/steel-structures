@@ -364,7 +364,7 @@ def run(output_directory=None, reload_modules=False, keep_documents=False, phase
         obj = truss.apply_truss(doc, configuration())
         before = snapshot(obj)
         counter = [0]
-        name = "prepare_member" if kind == "preflight" else "apply_result" if kind == "apply" else "accept_state"
+        name = "prepared_item" if kind == "preflight" else "apply_result" if kind == "apply" else "accept_state"
         real = getattr(truss, name)
 
         def fail_once(*args, **kwargs):

@@ -14,6 +14,8 @@ class EnvelopeDefinition:
     span: float
     height: float
     apex_position: float = 0.5
+    left_end_height: float = 0.0
+    right_end_height: float = 0.0
 
 
 @dataclass(frozen=True)

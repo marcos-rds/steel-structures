@@ -1,4 +1,4 @@
-"""Piecewise linear envelopes; DuoPitch has shared, zero-height supports."""
+"""Piecewise linear envelopes measured above the nominal bottom chord."""
 import math
 
 
@@ -9,6 +9,12 @@ def validate_envelope(definition):
         raise ValueError("Vão e altura devem ser positivos e finitos.")
     if not math.isfinite(definition.apex_position) or not 0 < definition.apex_position < 1:
         raise ValueError("Posição do ápice deve estar entre 0 e 1.")
+    if definition.kind == "DuoPitch":
+        for value in (definition.left_end_height, definition.right_end_height):
+            if not math.isfinite(value) or value < 0:
+                raise ValueError("Alturas das extremidades devem ser não negativas e finitas.")
+            if value >= definition.height:
+                raise ValueError("Altura da cumeeira deve superar as duas extremidades (duas inclinações positivas).")
 
 
 def paths(definition):
@@ -16,7 +22,8 @@ def paths(definition):
     span, height = definition.span, definition.height
     bottom = ((0., 0., 0.), (span, 0., 0.))
     top = (((0., height, 0.), (span, height, 0.)) if definition.kind == "Parallel"
-           else ((0., 0., 0.), (span * definition.apex_position, height, 0.), (span, 0., 0.)))
+           else ((0., definition.left_end_height, 0.), (span * definition.apex_position, height, 0.),
+                 (span, definition.right_end_height, 0.)))
     return {"top": top, "bottom": bottom}
 
 
@@ -25,5 +32,13 @@ def top_height(definition, x):
         return definition.height
     apex = definition.span * definition.apex_position
     if x <= apex:
-        return definition.height * x / apex
-    return definition.height * (definition.span - x) / (definition.span - apex)
+        return definition.left_end_height + (definition.height-definition.left_end_height) * x / apex
+    return definition.right_end_height + (definition.height-definition.right_end_height) * (definition.span-x) / (definition.span-apex)
+
+
+def definition_from_config(config):
+    from .models import EnvelopeDefinition
+    left = float(config.get("left_end_height", 0.))
+    right = left if config.get("link_end_heights", True) else float(config.get("right_end_height", 0.))
+    return EnvelopeDefinition(config["envelope_type"], float(config.get("nominal_span", config["span"])), float(config["height"]),
+                              float(config.get("apex_position", .5)), left, right)

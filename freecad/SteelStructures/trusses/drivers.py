@@ -44,8 +44,8 @@ def spacing_plan(definition, spacings):
 
 
 @lru_cache(maxsize=128)
-def _solve(kind,span,height,apex,preset,connection,mode,target):
-    definition=EnvelopeDefinition(kind,span,height,apex)
+def _solve(kind,span,height,apex,preset,connection,mode,target,left_height=0.,right_height=0.):
+    definition=EnvelopeDefinition(kind,span,height,apex,left_height,right_height)
     options=[]
     for count in range(PRESETS[preset].minimum_panels,201):
         try:
@@ -70,7 +70,10 @@ def resolve_panelization(config, definition, allocation=None):
         if config["panel_count"]>200: raise ValueError("Máximo de 200 painéis.")
         plan=panelize(definition,config["panel_count"],allocation)
     elif mode=="CustomSpacingList":
-        plan=spacing_plan(definition,config.get("custom_spacings",[]))
+        spacings = config.get("custom_spacings", [])
+        if config.get("nominal_span") is not None:
+            spacings = [s*definition.span/config["span"] for s in spacings]
+        plan=spacing_plan(definition,spacings)
     else:
         target=config.get("target_spacing",1000.) if mode=="ByTargetSpacing" else config.get("target_angle",45.)
         if not math.isfinite(target) or target<=0 or (mode=="ByTargetDiagonalAngle" and target>=90):
@@ -78,7 +81,8 @@ def resolve_panelization(config, definition, allocation=None):
         if mode=="ByTargetDiagonalAngle" and (custom or not PRESETS[preset].angle_family):
             raise ValueError("Ângulo-alvo indisponível: este grafo não define uma família inequívoca de diagonais.")
         plan=_solve(definition.kind,definition.span,definition.height,definition.apex_position,"Custom" if custom else preset,
-                    config.get("x_connection","Disconnected"),mode,float(target))
+                    config.get("x_connection","Disconnected"),mode,float(target),
+                    definition.left_end_height,definition.right_end_height)
     if not custom: validate_preset(definition,plan,preset)
     values=[b.x-a.x for a,b in zip(plan.stations,plan.stations[1:])]
     result=dict(panel_count=plan.panel_count,spacing=definition.span/plan.panel_count,

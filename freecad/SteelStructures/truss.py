@@ -12,7 +12,7 @@ from .member_batch import (apply_result, item_values, lock_controlled,
                            prepare_member, signature, controlled_state, validate_adjustment_dependencies)
 from .paths import TRUSS_ICON
 from .trusses.models import SCHEMA_VERSION, ROLES, CONTINUITIES
-from .trusses.realization import build_candidate, plan_regeneration, reference_frame
+from .trusses.realization import build_candidate, plan_regeneration, reference_frame, input_reference_frame
 from .trusses.serialization import encode_state, decode_state, dumps, loads
 from .trusses.preset_contracts import PRESETS
 from .trusses.drivers import DRIVERS
@@ -26,6 +26,8 @@ PROPERTY_CONFIG = {"EnvelopeType": "envelope_type", "Span": "span", "Height": "h
                    "ApexPosition": "apex_position", "PanelCount": "panel_count",
                    "TopologyPreset": "topology_preset", "TopChordContinuity": "top_continuity",
                    "BottomChordContinuity": "bottom_continuity",
+                   "LeftEndHeight": "left_end_height", "RightEndHeight": "right_end_height",
+                   "LinkEndHeights": "link_end_heights", "ReferenceAlignment": "reference_alignment",
                    "DefaultGussetThickness": "default_gusset_thickness"}
 
 
@@ -34,6 +36,8 @@ def default_config():
     chord = profile_catalog.ref_for_designation('U 4" x 8,04')
     angle = profile_catalog.ref_for_designation('L 40 x 4')
     return dict(envelope_type="Parallel", span=10000., height=2000., apex_position=.5,
+                left_end_height=0., right_end_height=0., link_end_heights=True,
+                reference_alignment="BottomChord",
                 panel_count=6, topology_preset="Warren", top_continuity="Continuous",
                 bottom_continuity="Continuous", left_panels=None, right_panels=None,
                 start=[0.,0.,0.], end=[10000.,0.,0.], plane_normal=[0.,-1.,0.],
@@ -94,6 +98,28 @@ def ensure_c2_properties(obj):
         obj.setEditorMode(name,1)
     for name in ("C2Configuration","ReferenceSource","ReferenceContainers"):
         obj.setEditorMode(name,2)
+    ensure_support_properties(obj)
+
+
+def ensure_support_properties(obj):
+    """Additive migration: legacy documents keep their accepted bottom reference."""
+    fields = (("App::PropertyLength", "LeftEndHeight", "Geometria", 0., "Altura da extremidade esquerda"),
+              ("App::PropertyLength", "RightEndHeight", "Geometria", 0., "Altura da extremidade direita"),
+              ("App::PropertyBool", "LinkEndHeights", "Geometria", True, "Vincular alturas (esquerda controla direita)"))
+    for kind, name, group, default, description in fields:
+        if name not in obj.PropertiesList:
+            obj.addProperty(kind, name, group, description)
+            setattr(obj, name, default)
+    if "ReferenceAlignment" not in obj.PropertiesList:
+        obj.addProperty("App::PropertyEnumeration", "ReferenceAlignment", "Referência",
+                        "Banzo inferior ou topo físico do banzo superior nos apoios")
+        obj.ReferenceAlignment = ["BottomChord", "TopChordSupports"]
+        obj.ReferenceAlignment = "BottomChord"
+    if "NominalSpan" not in obj.PropertiesList:
+        obj.addProperty("App::PropertyLength", "NominalSpan", "Geometria", "Vão nominal calculado do banzo inferior")
+        obj.NominalSpan = obj.Span
+    obj.setEditorMode("NominalSpan", 1)
+    obj.setEditorMode("RightEndHeight", 1 if obj.LinkEndHeights else 0)
 
 
 def ensure_gusset_registry(obj):
@@ -112,7 +138,7 @@ def ensure_gusset_defaults(obj):
 
 
 def set_config(obj, config):
-    origin,x,y,z = reference_frame(config)
+    origin,x,y,z = input_reference_frame(config)
     proxy = obj.Proxy
     previous = proxy._updating
     proxy._updating = True
@@ -120,7 +146,10 @@ def set_config(obj, config):
         ensure_c2_properties(obj)
         ensure_gusset_defaults(obj)
         for prop,key in PROPERTY_CONFIG.items():
-            setattr(obj, prop, config[key])
+            setattr(obj, prop, config.get(key, {"left_end_height": 0., "right_end_height": 0.,
+                    "link_end_heights": True, "reference_alignment": "BottomChord"}.get(key)))
+        obj.setEditorMode("RightEndHeight", 1 if obj.LinkEndHeights else 0)
+        obj.NominalSpan = config.get("nominal_span", config["span"])
         obj.Placement = App.Placement(App.Vector(*origin), App.Rotation(
             App.Vector(*x), App.Vector(*y), App.Vector(*z), "ZXY"))
         obj.RoleSpecs = dumps(config["role_specs"])
@@ -258,6 +287,9 @@ def prepare_batch(candidate, children):
         if child is not None and hasattr(child, "AssemblySectionTransform"):
             values.setdefault("AssemblySectionTransform", "")  # Double -> Single clears previous T.
         prepared[item.key] = prepared_item(item, child, values)
+    if candidate.config.get("reference_alignment") == "TopChordSupports":
+        from .trusses.support_alignment_freecad import validate_support_alignment
+        validate_support_alignment(candidate, prepared)
     return prepared
 
 
@@ -283,7 +315,7 @@ def apply_existing_batch(obj, candidate, children, prepared,
     owner_fields = ("AppliedState", "LeftPanels", "RightPanels", "GeneratedMembers",
                     "GeneratedGussetPlates", "NeedsRegeneration",
                     "GenerationState", "GenerationMessage", "SchemaVersion", "Placement", "RoleSpecs") + tuple(PROPERTY_CONFIG)
-    owner_fields += tuple(name for name in ("C2Configuration", "TopologyMode", "ReferenceMode", "ReferenceLinked",
+    owner_fields += tuple(name for name in ("NominalSpan", "C2Configuration", "TopologyMode", "ReferenceMode", "ReferenceLinked",
                                            "ReferenceSource", "ReferenceContainers", "PanelizationMode") if hasattr(obj,name))
     owner_backup = {name: getattr(obj, name) for name in owner_fields}
     try:
@@ -313,6 +345,90 @@ def apply_existing_batch(obj, candidate, children, prepared,
                 proxy._updating = previous
         for name,value in owner_backup.items():
             setattr(obj, name, value)
+        raise
+
+
+def restore_copied_children(obj):
+    """Complete a shallow native copy, without copying external references.
+
+    Draft copies this FeaturePython without dependencies. Only an exact copy
+    of another live truss's registries is eligible; ordinary restore and damaged
+    or partially copied graphs must keep their existing validation contract.
+    The caller's native copy transaction owns all newly created objects.
+    """
+    members = list(obj.GeneratedMembers)
+    if not members:
+        return
+    source = getattr(members[0], "GenerationOwner", None)
+    if (source is None or source == obj or source.Document != obj.Document
+            or not isinstance(getattr(source, "Proxy", None), StructuralTrussProxy)
+            or any(getattr(child, "GenerationOwner", None) != source for child in members)
+            or members != list(source.GeneratedMembers)
+            or list(obj.RoleGroups) != list(source.RoleGroups)
+            or list(obj.GeneratedGussetPlates) != list(source.GeneratedGussetPlates)
+            or obj.AppliedState != source.AppliedState):
+        return
+    state = decode_state(obj.AppliedState)
+    bound_children(source, state)
+    plates = list(bound_gusset_plates(source).values())
+    groups = list(obj.RoleGroups)
+    subgroups = []
+    for group in groups:
+        for child in group.Group:
+            if child in members:
+                continue
+            if (not getattr(child, "AssemblyInterconnectorGroup", False)
+                    or any(member not in members for member in child.Group)):
+                raise ValueError("Grupo da treliça contém objetos externos; cópia não aplicada.")
+            if child not in subgroups:
+                subgroups.append(child)
+    originals = members + plates + groups + subgroups
+    if len(set(originals)) != len(originals):
+        raise ValueError("Agregado da treliça contém registros duplicados.")
+    before = {child.Name for child in obj.Document.Objects}
+    try:
+        copied = obj.Document.copyObject(originals, False)
+        mapping = dict(zip(originals, copied))
+        if len(copied) != len(originals):
+            raise ValueError("Cópia incompleta dos filhos da treliça.")
+        for child in members:
+            mapping[child].GenerationOwner = obj
+        for plate in plates:
+            mapping[plate].ParentTruss = obj
+        # copyObject copies document properties, but not the generated children's
+        # presentation. In particular, default colors would invalidate their
+        # accepted ControlledState. Preserve them rather than accepting new inputs.
+        for original, target in mapping.items():
+            for name in ("ShapeColor", "LineColor", "PointColor", "Transparency",
+                         "LineWidth", "PointSize", "DrawStyle", "DisplayMode"):
+                if hasattr(original.ViewObject, name) and hasattr(target.ViewObject, name):
+                    setattr(target.ViewObject, name, getattr(original.ViewObject, name))
+        # Group visibility propagates to its contents; restore individual states last.
+        for original in groups + subgroups + members + plates:
+            mapping[original].ViewObject.Visibility = original.ViewObject.Visibility
+        bindings = {child.GenerationKey: child.Name for child in copied
+                    if getattr(child, "GenerationOwner", None) == obj}
+        if set(bindings) != set(state["bindings"]):
+            raise ValueError("Cópia inconsistente dos bindings da treliça.")
+        state["bindings"] = bindings
+        obj.GeneratedMembers = [mapping[child] for child in members]
+        obj.GeneratedGussetPlates = [mapping[plate] for plate in plates]
+        obj.RoleGroups = [mapping[group] for group in groups]
+        obj.AppliedState = dumps(state)
+        obj.Proxy._copied_names = {child.Name: mapping[child].Name for child in originals}
+        # Native copying can restore the ViewProvider before this callback.
+        # Its persisted visibility cache must follow the newly copied children.
+        view_proxy = getattr(obj.ViewObject, "Proxy", None)
+        if hasattr(view_proxy, "_remap_hidden_children"):
+            view_proxy._remap_hidden_children()
+    except Exception:
+        obj.GeneratedMembers = members
+        obj.GeneratedGussetPlates = list(source.GeneratedGussetPlates)
+        obj.RoleGroups = groups
+        obj.AppliedState = source.AppliedState
+        for child in reversed(list(obj.Document.Objects)):
+            if child.Name not in before:
+                obj.Document.removeObject(child.Name)
         raise
 
 
@@ -371,7 +487,8 @@ class StructuralTrussProxy:
                 raise ValueError("SchemaVersion não suportada.")
             state = decode_state(obj.AppliedState)
             applied = build_candidate(state["candidate"]["config"])
-            candidate = build_candidate(config_from_object(obj), applied)
+            requested = config_from_object(obj)
+            candidate = build_candidate(requested, applied)
             children = bound_children(obj, state)
             gusset_plates = bound_gusset_plates(obj)
             from .trusses.gussets import preliminary_gusset_outlines
@@ -385,6 +502,17 @@ class StructuralTrussProxy:
             if plan.conflicts:
                 raise ValueError("; ".join(action.reason for action in plan.conflicts))
             if plan.structural:
+                support_keys = ("left_end_height", "right_end_height", "link_end_heights", "reference_alignment")
+                structural_keys = ("envelope_type", "topology_mode", "topology_preset", "panel_count",
+                                   "top_continuity", "bottom_continuity", "role_specs")
+                if (candidate.config["envelope_type"] == "DuoPitch"
+                        and any(candidate.config.get(k) != applied.config.get(k) for k in support_keys)
+                        and requested.get("custom_topology") == applied.config.get("custom_topology")
+                        and all(candidate.config.get(k) == applied.config.get(k) for k in structural_keys)):
+                    # Reuse the atomic preparation/application path. Native recompute
+                    # owns this change; never nest a transaction or recompute here.
+                    apply_truss(obj.Document, candidate.config, obj, _recompute=False, _transaction=False)
+                    return
                 obj.NeedsRegeneration = True
                 obj.GenerationState = "Pending"
                 obj.GenerationMessage = "Alteração estrutural pendente. Dê duplo clique na treliça e confirme no Gerador."
@@ -416,6 +544,14 @@ class StructuralTrussProxy:
             return
         if prop == "DisplayName" and obj.DisplayName:
             obj.Label = obj.DisplayName
+        if prop in ("LeftEndHeight", "RightEndHeight", "LinkEndHeights") and hasattr(obj, "LinkEndHeights"):
+            self._updating = True
+            try:
+                if obj.LinkEndHeights:
+                    obj.RightEndHeight = obj.LeftEndHeight
+                obj.setEditorMode("RightEndHeight", 1 if obj.LinkEndHeights else 0)
+            finally:
+                self._updating = False
 
     def onDocumentRestored(self, obj):
         self._updating = True
@@ -423,6 +559,7 @@ class StructuralTrussProxy:
             ensure_c2_properties(obj)
             ensure_gusset_registry(obj)
             ensure_gusset_defaults(obj)
+            restore_copied_children(obj)
         finally:
             self._updating = False
         for name in ("TopologyPreset", "EnvelopeType", "PanelCount", "TopChordContinuity",
@@ -453,7 +590,14 @@ class StructuralTrussViewProvider:
             view.addDisplayMode(coin.SoGroup(), "Group")
         if not hasattr(self, "_hidden_children"):
             self._hidden_children = {}
+        self._remap_hidden_children()
         self._visibility_updating = False
+
+    def _remap_hidden_children(self):
+        owner = getattr(self, "Object", None)
+        mapping = getattr(getattr(owner, "Proxy", None), "_copied_names", {})
+        self._hidden_children = {mapping.get(name, name): visible
+                                 for name, visible in self._hidden_children.items()}
 
     def getDisplayModes(self, view):
         return ["Group"]
@@ -469,8 +613,10 @@ class StructuralTrussViewProvider:
             return
         self._visibility_updating = True
         try:
-            children = (list(getattr(view.Object, "GeneratedMembers", ()))+
-                        list(getattr(view.Object, "GeneratedGussetPlates", ())))
+            children = ([child for child in getattr(view.Object, "GeneratedMembers", ())
+                         if getattr(child, "GenerationOwner", view.Object) == view.Object]+
+                        [child for child in getattr(view.Object, "GeneratedGussetPlates", ())
+                         if getattr(child, "ParentTruss", view.Object) == view.Object])
             if not view.Visibility:
                 if not hasattr(self, "_hidden_children"):
                     self._hidden_children = {}
@@ -492,6 +638,35 @@ class StructuralTrussViewProvider:
     def claimChildren(self):
         return (list(self.Object.RoleGroups)+
                 list(getattr(self.Object, "GeneratedGussetPlates", ())))
+
+    def onDelete(self, view, subelements):
+        """Remove this aggregate in the native Delete/Undo transaction.
+
+        Ownership checks protect an independently copied truss, including a
+        stale registry. Never recompute while FreeCAD is removing objects.
+        """
+        owner = view.Object
+        document = owner.Document
+        members = [child for child in owner.GeneratedMembers
+                   if getattr(child, "GenerationOwner", None) == owner]
+        plates = [child for child in getattr(owner, "GeneratedGussetPlates", ())
+                  if getattr(child, "ParentTruss", None) == owner]
+        owned = set(members+plates)
+        groups = []
+        for group in owner.RoleGroups:
+            if any(other != owner and group in getattr(other, "RoleGroups", ())
+                   for other in document.Objects):
+                continue
+            subgroups = [child for child in group.Group
+                         if getattr(child, "AssemblyInterconnectorGroup", False)
+                         and all(member in owned for member in child.Group)]
+            # A role group containing unrelated objects is not ours to delete.
+            if all(child in owned or child in subgroups for child in group.Group):
+                groups.extend(subgroups)
+                groups.append(group)
+        for child in dict.fromkeys(members+plates+groups):
+            document.removeObject(child.Name)
+        return True
 
     def doubleClicked(self, view):
         from .interactive.truss_controller import open_truss_panel
@@ -516,6 +691,7 @@ class StructuralTrussViewProvider:
 
     def loads(self, state):
         self._hidden_children = dict((state or {}).get("hidden_children", {}))
+        self._remap_hidden_children()
         self._visibility_updating = False
 
 
@@ -533,7 +709,90 @@ def accept_state(obj, candidate, children, gusset_plates=None):
     obj.GenerationMessage = "; ".join(candidate.warnings)
 
 
-def apply_truss(document, config, obj=None):
+def snapshot_regeneration(obj, children, plates):
+    """Detached rollback state for structural changes inside native recompute.
+
+    Native recompute cannot open a nested transaction. Retain the original
+    objects until the candidate is validated, including group membership and
+    enum options changed by profile application. Links retain object identity.
+    """
+    objects = [obj] + list(children.values()) + list(plates.values())
+    for group in obj.RoleGroups:
+        objects.append(group)
+        objects.extend(child for child in group.Group
+                       if getattr(child, "AssemblyInterconnectorGroup", False))
+    def detached(value):
+        if isinstance(value, list):
+            return list(value)
+        if isinstance(value, dict):
+            return dict(value)
+        if hasattr(value, "Value"):
+            return value.Value
+        copy = getattr(value, "copy", None)
+        return copy() if callable(copy) else value
+    snapshots = []
+    for current in dict.fromkeys(objects):
+        values, enums, modes = {}, {}, {}
+        for name in current.PropertiesList:
+            if name in ("Proxy", "ExpressionEngine"):
+                continue
+            values[name] = detached(getattr(current, name))
+            if current.getTypeIdOfProperty(name) == "App::PropertyEnumeration":
+                enums[name] = list(current.getEnumerationsOfProperty(name))
+            mode = current.getEditorMode(name)
+            modes[name] = (mode if isinstance(mode, int) else
+                           int("ReadOnly" in mode) + 2*int("Hidden" in mode))
+        view = current.ViewObject
+        view_values = {name: detached(getattr(view, name)) for name in
+                       ("Visibility", "ShapeColor", "LineColor", "PointColor", "Transparency",
+                        "LineWidth", "PointSize", "DrawStyle", "DisplayMode") if hasattr(view, name)}
+        caches = []
+        for proxy in (getattr(current, "Proxy", None), getattr(view, "Proxy", None)):
+            if hasattr(proxy, "__dict__"):
+                caches.append((proxy, {key: detached(value) for key, value in proxy.__dict__.items()}))
+        snapshots.append((current, values, enums, modes, view_values, caches))
+    return {"names": {value.Name for value in obj.Document.Objects}, "objects": snapshots}
+
+
+def restore_regeneration(document, snapshot):
+    """Restore without recompute; original objects have not been removed yet."""
+    proxies = [(proxy, values) for record in snapshot["objects"] for proxy, values in record[-1]]
+    for proxy, _ in proxies:
+        if hasattr(proxy, "_updating"):
+            proxy._updating = True
+        if hasattr(proxy, "_visibility_updating"):
+            proxy._visibility_updating = True
+    try:
+        for current, values, enums, modes, _view_values, _caches in snapshot["objects"]:
+            for name in tuple(current.PropertiesList):
+                if name not in values and name not in ("Proxy", "ExpressionEngine"):
+                    current.removeProperty(name)
+            for name, choices in enums.items():
+                setattr(current, name, choices)
+            for name, value in values.items():
+                setattr(current, name, value)
+            for name, mode in modes.items():
+                current.setEditorMode(name, mode)
+        # Group visibility propagates: restore individual visibility last.
+        for current, _values, _enums, _modes, view_values, _caches in snapshot["objects"]:
+            for name, value in view_values.items():
+                if name != "Visibility":
+                    setattr(current.ViewObject, name, value)
+        groups = [record for record in snapshot["objects"] if "Group" in record[1]]
+        others = [record for record in snapshot["objects"] if "Group" not in record[1]]
+        for current, _values, _enums, _modes, view_values, _caches in groups + others:
+            if "Visibility" in view_values:
+                current.ViewObject.Visibility = view_values["Visibility"]
+        for current in reversed(list(document.Objects)):
+            if current.Name not in snapshot["names"]:
+                document.removeObject(current.Name)
+    finally:
+        for proxy, values in proxies:
+            proxy.__dict__.clear()
+            proxy.__dict__.update(values)
+
+
+def apply_truss(document, config, obj=None, *, _recompute=True, _transaction=True):
     """Explicit one-transaction create/regenerate; one final document recompute."""
     config = resolve_linked_reference(document, config, obj)
     state = decode_state(obj.AppliedState) if obj is not None else None
@@ -549,7 +808,10 @@ def apply_truss(document, config, obj=None):
     prepared_gussets = prepare_gusset_plates(candidate)
     source = document.getObject(config.get("reference_source", "")) if config.get("reference_source") else None
     source_visibility = bool(source.ViewObject.Visibility) if source is not None else None
-    document.openTransaction("Atualizar Treliça" if obj else "Criar Treliça")
+    rollback = snapshot_regeneration(obj, children, gusset_plates) if obj is not None and not _transaction else None
+    obsolete = []
+    if _transaction:
+        document.openTransaction("Atualizar Treliça" if obj else "Criar Treliça")
     try:
         if obj is None:
             obj = document.addObject("App::FeaturePython", "StructuralTruss")
@@ -629,18 +891,19 @@ def apply_truss(document, config, obj=None):
             else:
                 groups[role].Group = members
                 if subgroup is not None:
-                    document.removeObject(subgroup.Name)
+                    obsolete.append(subgroup)
         obj.RoleGroups = [groups[role] for role in ROLES if role in groups]
         for key,child in children.items():
             if key not in result:
-                document.removeObject(child.Name)
+                obsolete.append(child)
         for node_key, plate in gusset_plates.items():
             if node_key not in plate_result:
-                document.removeObject(plate.Name)
+                obsolete.append(plate)
         accept_state(obj, candidate, result, plate_result)
         if not obj.ViewObject.Visibility:
             obj.ViewObject.Proxy.onChanged(obj.ViewObject, "Visibility")
-        document.recompute()
+        if _recompute:
+            document.recompute()
         for child in result.values():
             if ("Invalid" in child.State or child.Shape.isNull() or not child.Shape.isValid()
                     or child.Shape.Volume <= 0 or child.GenerationStatus != "Valid"):
@@ -652,15 +915,23 @@ def apply_truss(document, config, obj=None):
                     or abs(plate.Shape.Volume-expected_volume) > max(1e-5, expected_volume*1e-9)
                     or abs(_value(plate.Volume)-plate.Shape.Volume) > max(1e-5, plate.Shape.Volume*1e-9)):
                 raise ValueError("Falha ao aplicar chapa Gusset: "+plate.Name)
+        # Deletion is the final irreversible step in the native-recompute path;
+        # every candidate solid and registry has already passed validation.
+        for child in obsolete:
+            document.removeObject(child.Name)
         obj.Proxy._updating = False
         if source is not None:
             source.ViewObject.Visibility = False
-        document.commitTransaction()
+        if _transaction:
+            document.commitTransaction()
         return obj
     except Exception:
+        if rollback is not None:
+            restore_regeneration(document, rollback)
         if obj is not None:
             obj.Proxy._updating = False
-        document.abortTransaction()
+        if _transaction:
+            document.abortTransaction()
         for child in children.values():
             restored = document.getObject(child.Name)
             if restored is not None:
@@ -668,5 +939,6 @@ def apply_truss(document, config, obj=None):
                 restored.Proxy._last_generated_result = None
         if source is not None and source_visibility is not None:
             source.ViewObject.Visibility = source_visibility
-        document.recompute()
+        if _recompute:
+            document.recompute()
         raise
