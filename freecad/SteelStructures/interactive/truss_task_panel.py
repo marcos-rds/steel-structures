@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import math
+import weakref
 
 from PySide import QtCore, QtGui, QtWidgets
 
@@ -26,6 +27,50 @@ ROLE_LABELS = (
     ("END_POST_LEFT", "Fechamento esquerdo"),
     ("END_POST_RIGHT", "Fechamento direito"),
 )
+
+
+class _ReferenceSourceObserver:
+    """Refresh only the source caption; never mutate geometry or the draft."""
+    def __init__(self, panel):
+        import FreeCAD as App
+        self.app = App
+        self.panel = weakref.ref(panel)
+        self.closed = False
+        App.addDocumentObserver(self)
+        panel.form.destroyed.connect(self.close)
+
+    def close(self, *_args):
+        if not self.closed:
+            self.closed = True
+            self.app.removeDocumentObserver(self)
+
+    def _sync(self, document, excluded=None):
+        panel = self.panel()
+        if (not self.closed and panel is not None and not panel._closed
+                and not panel._suspended and panel.form is not None and document is panel.document):
+            panel._sync_reference_source(excluded=excluded)
+
+    def slotChangedObject(self, obj, _property):
+        panel = self.panel()
+        if panel is not None and obj.Name == panel.session.config.get("reference_source"):
+            self._sync(obj.Document)
+
+    def slotCreatedObject(self, obj):
+        self.slotChangedObject(obj, "")
+
+    def slotDeletedObject(self, obj):
+        panel = self.panel()
+        if panel is not None and obj.Name == panel.session.config.get("reference_source"):
+            self._sync(obj.Document, excluded=obj)
+
+    def slotRecomputedDocument(self, document):
+        self._sync(document)
+
+    def slotUndoDocument(self, document):
+        self._sync(document)
+
+    def slotRedoDocument(self, document):
+        self._sync(document)
 CONTINUITIES = (
     ("Contínuo", "Continuous"),
     ("Dividir nas mudanças de direção", "SegmentAtBreaks"),
@@ -222,13 +267,15 @@ class TrussTaskPanel:
     """Project Qt controls onto the shared draft; controller owns CAD resources."""
 
     def __init__(self, document, controller, initial_config, on_close=None,
-                 point_picker=None):
+                 point_picker=None, session=None):
         from ..trusses.editing import custom_state
         initial_config=custom_state(initial_config)
         self.document = document
         self.controller = controller
         from ..trusses.edit_session import TrussEditSession
-        if hasattr(controller, "bind_session"):
+        if session is not None:
+            self.session = session
+        elif hasattr(controller, "bind_session"):
             self.session = controller.bind_session(initial_config)
         else:
             self.session = TrussEditSession(document, getattr(controller, "object", None), initial_config)
@@ -239,6 +286,8 @@ class TrussTaskPanel:
         self._on_close = on_close
         self._point_picker = point_picker
         self._closed = False
+        self._suspended = False
+        self._reference_selection = None
         self._updating = True
         self._valid = False
         self._last_preview_config = None
@@ -253,6 +302,7 @@ class TrussTaskPanel:
         try:
             self._build_form(initial_config)
             self.form.destroyed.connect(self._form_destroyed)
+            self._reference_source_observer = _ReferenceSourceObserver(self)
         except Exception:
             # The controller still owns document cleanup; this form was never shown.
             self._closed = True
@@ -312,7 +362,8 @@ class TrussTaskPanel:
         self._preview_timer.setInterval(PREVIEW_DELAY_MS)
         self._preview_timer.timeout.connect(self._update_preview3d)
         self.show_3d.toggled.connect(self._toggle_preview3d)
-        self.session.initialize_projection(self.get_config())
+        if not self.session._projection_initialized:
+            self.session.initialize_projection(self.get_config())
         self._updating = False
         if initial_config.get("reference_mode")=="DraftRectangle" and not initial_config.get("reference_edge"):
             self.sections["Referência"][0].setChecked(True)
@@ -425,7 +476,7 @@ class TrussTaskPanel:
              ("Banzo superior", "TopChordSupports")),
             config.get("reference_alignment", "BottomChord"),
         )
-        self.reference_alignment_label = QtWidgets.QLabel("Linha de referência")
+        self.reference_alignment_label = QtWidgets.QLabel("Banzo de referência")
         self.reference_alignment.setToolTip(
             "P0 e P1 passam pela face externa física do banzo escolhido nas extremidades: "
             "face inferior do banzo inferior ou face superior do banzo superior."
@@ -646,6 +697,7 @@ class TrussTaskPanel:
         self._refresh()
 
     def _open_topology_editor(self):
+        self._cancel_reference_selection()
         if self._closed:
             return
         current = getattr(self, "_topology_editor", None)
@@ -833,7 +885,10 @@ class TrussTaskPanel:
 
     def _build_reference(self, root, config):
         form = self._section(root, "Referência", True)
-        source_section = root.takeAt(root.count()-1).widget()
+        source_section = root.itemAt(root.count()-1).widget()
+        # Delete the old layout item, keeping its widget; takeAt orphaned the
+        # item's height-for-width cache when the section was inserted again.
+        root.removeWidget(source_section)
         root.insertWidget(0, source_section)
         form.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
         form.setRowWrapPolicy(QtWidgets.QFormLayout.WrapLongRows)
@@ -844,6 +899,7 @@ class TrussTaskPanel:
         self.reference_edge=self._combo((("Selecione o lado da base",""),)+tuple((f"Lado {i} (Edge{i})",f"Edge{i}") for i in range(1,5)),config.get("reference_edge",""))
         self.reference_edge_label=QtWidgets.QLabel("Base do retângulo:")
         self.source_label=QtWidgets.QLabel(config.get("reference_source", ""))
+        self.source_label.setTextFormat(QtCore.Qt.PlainText)
         self.source_label.setWordWrap(True)
         start_widget, self.start_inputs = self._vector_inputs(config["start"])
         end_widget, self.end_inputs = self._vector_inputs(config["end"])
@@ -862,9 +918,27 @@ class TrussTaskPanel:
         self.pick_button.setEnabled(self._point_picker is not None)
         self.pick_button.clicked.connect(self._pick_points)
         form.addRow(self.pick_button)
+        from .truss_task_widgets import TrussReferenceActions
+        self.draft_reference_actions = TrussReferenceActions()
+        self.select_reference_button = QtWidgets.QPushButton("Selecionar existente")
+        self.select_reference_button.setObjectName("truss_select_reference")
+        self.select_reference_button.setToolTip("Clique e selecione uma Linha Draft na vista; Esc cancela a seleção. Marque Manter vínculo com a fonte para associá-la.")
+        self.select_reference_button.clicked.connect(lambda _checked=False: self._begin_reference_selection(line_only=True))
+        self.draw_reference_button = QtWidgets.QPushButton("Desenhar nova")
+        self.draw_reference_button.setObjectName("truss_draw_reference")
+        from FreeCAD import Gui
+        self.select_reference_button.setIcon(Gui.getIcon("view-select"))
+        self.draw_reference_button.setIcon(Gui.getIcon("Draft_Line"))
+        self.draw_reference_button.setToolTip("Desenhar nova linha de referência")
+        self.draw_reference_button.setAccessibleName("Desenhar nova linha de referência")
+        self.draw_reference_button.clicked.connect(self._draw_draft_reference)
+        for button in (self.select_reference_button, self.draw_reference_button):
+            button.setAutoDefault(False)
+            self.draft_reference_actions.add_button(button)
+        form.addRow(self.draft_reference_actions)
+        form.addRow(self.source_label)
         form.addRow(self.keep_reference_link)
         form.addRow(self.reference_edge_label,self.reference_edge)
-        form.addRow(self.source_label)
         self.advanced_header = header
         self.advanced = advanced
         for spin in self.start_inputs + self.end_inputs:
@@ -877,6 +951,7 @@ class TrussTaskPanel:
 
     def _reference_mode_changed(self):
         if self._updating: return
+        self._cancel_reference_selection()
         mode=self.reference_mode.currentData()
         self.session.config.update(reference_mode=mode,reference_source="",reference_edge="",reference_defined=mode=="TwoPoints")
         self.keep_reference_link.setChecked(False)
@@ -907,25 +982,97 @@ class TrussTaskPanel:
             self.session.config["reference_defined"]=False
             self._show_error(str(exc))
 
-    def _select_draft_reference(self):
+    def _select_draft_reference(self, *, line_only=False):
         try:
             selected=self.controller.selected_reference()
-            self.session.config.update(selected)
-            self.session.config["reference_defined"]=False
-            blocked=self.reference_mode.blockSignals(True)
-            self.reference_mode.setCurrentIndex(self.reference_mode.findData(selected["reference_mode"]))
-            self.reference_mode.blockSignals(blocked)
-            blocked=self.reference_edge.blockSignals(True)
-            self.reference_edge.setCurrentIndex(self.reference_edge.findData(selected["reference_edge"]))
-            self.reference_edge.blockSignals(blocked)
-            if not selected["reference_edge"]:
-                self.session.config["reference_defined"]=False
-                self.sections["Referência"][0].setChecked(True)
-                self._refresh()
-                return
-            self._apply_reference_values(self.controller.reference_geometry(self.get_config()))
+            if line_only and selected["reference_mode"]!="DraftLine":
+                raise ValueError("Selecione uma Linha Draft simples no documento da treliça.")
+            self._adopt_selected_reference(selected)
         except (ValueError,RuntimeError) as exc:
             self._show_error(str(exc))
+
+    def _adopt_selected_reference(self, selected):
+        # get_config() synchronizes widgets into the session. Read only the
+        # plane needed by the resolver until the clicked source is validated.
+        proposed=dict(self.session.config,plane_normal=self._read_vector(self.normal_inputs))
+        proposed.update(selected)
+        # Validate before changing the draft or any widget. Invalid clicks and
+        # Esc must leave the previous source, coordinates and Custom intact.
+        values=self.controller.reference_geometry(proposed) if selected["reference_edge"] else None
+        custom=self.session.config.get("custom_topology")
+        if custom and values and values.get("envelope_type",custom["envelope_type"])!=custom["envelope_type"]:
+            raise ValueError("Custom preservado: restaure o padrão antes de mudar o envelope da referência.")
+        self.session.config.update(selected)
+        self.session.config["reference_defined"]=False
+        for combo,key in ((self.reference_mode,"reference_mode"),(self.reference_edge,"reference_edge")):
+            blocked=combo.blockSignals(True)
+            combo.setCurrentIndex(combo.findData(selected[key]))
+            combo.blockSignals(blocked)
+        if values is None:
+            self.sections["Referência"][0].setChecked(True)
+            self._refresh()
+        else:
+            self._apply_reference_values(values)
+
+    def _begin_reference_selection(self, *, line_only=False):
+        if self._closed or self._suspended:
+            return
+        self._cancel_reference_selection()
+        self._point_generation += 1
+        self.controller.cancel_picker()
+        from .truss_reference_selection import TrussReferenceSelection
+        operation=TrussReferenceSelection(self,line_only=line_only)
+        self._reference_selection=operation
+        try:
+            operation.start()
+        except (ValueError,RuntimeError,ReferenceError) as exc:
+            operation.close()
+            self._show_error(str(exc))
+
+    def _cancel_reference_selection(self):
+        operation=getattr(self,"_reference_selection",None)
+        if operation is not None:
+            operation.close(refresh=False)
+
+    def _sync_reference_source(self, config=None, *, excluded=None):
+        config = self.session.config if config is None else config
+        mode = config.get("reference_mode", "TwoPoints")
+        source_mode = mode in ("DraftLine", "DraftRectangle")
+        self.source_label.setVisible(source_mode)
+        text = "Nenhuma linha selecionada" if mode=="DraftLine" else "Nenhuma fonte selecionada"
+        source = None
+        try:
+            name = config.get("reference_source", "")
+            if name:
+                source = self.document.getObject(name)
+            if source is not None and source is not excluded and source.Document is self.document:
+                from ..truss_reference import is_draft_line, is_draft_rectangle
+                valid = is_draft_line(source) if mode=="DraftLine" else is_draft_rectangle(source)
+                if source_mode and valid:
+                    text = "Referência selecionada: " + (source.Label or source.Name)
+                    if mode=="DraftRectangle" and config.get("reference_edge"):
+                        text += " · " + config["reference_edge"]
+        except (ValueError, RuntimeError, ReferenceError):
+            pass  # Deleted/foreign objects must never leave a stale caption.
+        operation=getattr(self,"_reference_selection",None)
+        self.source_label.setText(operation.prompt if operation is not None and not operation.closed else text)
+
+    def _sync_reference_actions(self, mode):
+        self.draft_reference_actions.setVisible(mode=="DraftLine")
+        self.pick_button.setVisible(mode!="DraftLine")
+        self.pick_button.setText("Usar seleção Draft" if mode=="DraftRectangle" else
+                                 "Selecionar três pontos" if mode=="ThreePoints" else "Selecionar dois pontos")
+
+    def _draw_draft_reference(self):
+        if self._closed or self._suspended:
+            return
+        self._cancel_reference_selection()
+        from .truss_draft_reference import start_reference_line
+        try:
+            start_reference_line(self)
+        except (ValueError, RuntimeError, ReferenceError) as exc:
+            if self.form is not None:
+                self._show_error(str(exc))
 
     @staticmethod
     def _read_vector(spins):
@@ -1016,7 +1163,7 @@ class TrussTaskPanel:
             return
         mode=self.reference_mode.currentData() if hasattr(self,"reference_mode") else "TwoPoints"
         if mode in ("DraftLine","DraftRectangle"):
-            self._select_draft_reference()
+            self._begin_reference_selection()
             return
         self._point_generation += 1
         generation = self._point_generation
@@ -1120,9 +1267,8 @@ class TrussTaskPanel:
             source_mode=mode in ("DraftLine","DraftRectangle")
             self.keep_reference_link.setVisible(source_mode)
             for widget in (self.reference_edge,self.reference_edge_label): widget.setVisible(mode=="DraftRectangle")
-            self.source_label.setVisible(source_mode)
-            self.source_label.setText(config.get("reference_source", "Nenhuma fonte selecionada"))
-            self.pick_button.setText("Usar seleção Draft" if source_mode else "Selecionar três pontos" if mode=="ThreePoints" else "Selecionar dois pontos")
+            self._sync_reference_actions(mode)
+            self._sync_reference_source(config)
             linked=config.get("reference_linked",False)
             self.span.setEnabled(not linked)
             self.height.setEnabled(not (linked and mode=="DraftRectangle"))
@@ -1275,6 +1421,7 @@ class TrussTaskPanel:
     def _submit(self, close):
         if self._closed:
             return bool(close)
+        self._cancel_reference_selection()
         self._preview_timer.stop()
         if not self._refresh():
             return False
@@ -1305,8 +1452,11 @@ class TrussTaskPanel:
     def _form_destroyed(self, *_args):
         # TaskDialogPython clears form before deleting it, without calling reject.
         # Its children (including the timer) may already be invalid C++ objects.
+        self._cancel_reference_selection()
         self.form = None
         self._preview_timer = None
+        if self._suspended:
+            return
         self._finish(cancel=True, external=True)
 
     def autoClosedOnDeletedDocument(self):
@@ -1318,6 +1468,10 @@ class TrussTaskPanel:
         if self._closed:
             return
         self._closed = True
+        self._cancel_reference_selection()
+        observer = getattr(self, "_reference_source_observer", None)
+        if observer is not None:
+            observer.close()
         self._point_generation += 1
         self._point_picker = None
         if self._preview_timer is not None:
@@ -1330,7 +1484,7 @@ class TrussTaskPanel:
             self.session.close()
             if callback is not None:
                 try:
-                    if external:
+                    if external or self._suspended:
                         callback(close_dialog=False)
                     else:
                         callback()

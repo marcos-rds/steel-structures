@@ -171,6 +171,7 @@ def make_panel():
     panel.session = TrussEditSession(None, None, config)
     panel.controller = Controller()
     panel._closed = False; panel._updating = False; panel._valid = False
+    panel._suspended = False
     panel._axis_direction = [1.0, 0.0, 0.0]
     panel._last_preview_config = None
     panel._point_generation = 0

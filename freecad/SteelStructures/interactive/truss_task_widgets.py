@@ -3,6 +3,49 @@
 from PySide import QtCore, QtGui, QtWidgets
 
 
+class TrussReferenceActions(QtWidgets.QWidget):
+    """Keep both native actions side by side; wrap captions at narrow widths."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        row = QtWidgets.QHBoxLayout(self)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(6)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
+        self.buttons = []
+        self.captions = []
+
+    def add_button(self, button):
+        self.buttons.append(button)
+        self.captions.append(button.text())
+        if not button.accessibleName():
+            button.setAccessibleName(button.text())
+        # Limit only horizontal padding; theme colors/states and vertical
+        # metrics remain native, including OpenDark's otherwise wide padding.
+        button.setStyleSheet("QPushButton { padding-left: 4px; padding-right: 4px; }")
+        button.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Fixed)
+        self.layout().addWidget(button, 1)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if not self.buttons:
+            return
+        width = (self.width()-self.layout().spacing())//len(self.buttons)
+        wrap = False
+        for button, caption in zip(self.buttons, self.captions):
+            option = QtWidgets.QStyleOptionButton()
+            button.initStyleOption(option)
+            option.rect.setWidth(width)
+            contents = button.style().subElementRect(QtWidgets.QStyle.SE_PushButtonContents, option, button)
+            available = contents.width()-button.iconSize().width()-4
+            wrap |= available < button.fontMetrics().horizontalAdvance(caption)
+        for button, caption in zip(self.buttons, self.captions):
+            text = caption.replace(' ', '\n') if wrap else caption
+            if button.text()!=text:
+                button.setText(text)
+            # Some native styles retain the first polished caption's minimum.
+            button.setMinimumWidth(0)
+
+
 def _paint_outline(widget, color):
     painter = QtGui.QPainter(widget)
     painter.setRenderHint(QtGui.QPainter.Antialiasing)

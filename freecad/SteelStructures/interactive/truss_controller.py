@@ -631,10 +631,16 @@ class TrussController:
             self.cancel_picker()
             raise
 
-    def selected_reference(self):
-        source,mode,edge=selection_reference(Gui.Selection.getSelectionEx())
+    def selected_reference(self, selection=None):
+        source,mode,edge=selection_reference(Gui.Selection.getSelectionEx() if selection is None else selection)
         if source.Document!=self.document:
             raise ValueError("Selecione uma fonte no documento da treliça.")
+        from ..member_adjustment_reference import would_create_adjustment_cycle
+        from ..truss_reference import reference_containers
+        if self.object is not None and any(
+                would_create_adjustment_cycle(self.object, obj)
+                for obj in (source, *reference_containers(source))):
+            raise ValueError("A referência depende da própria treliça; selecione uma fonte independente.")
         return dict(reference_mode=mode,reference_source=source.Name,reference_edge=edge,reference_linked=False)
 
     def reference_geometry(self, config):
@@ -708,15 +714,11 @@ class TrussController:
         self.finish()
 
 
-def open_truss_panel(document, obj=None):
+def _show_truss_panel(controller, config, session=None):
+    """Build a fresh Qt projection, optionally over a suspended editing session."""
     global _active_panel
-    if _active_panel is not None:
-        _active_panel.session.assert_context(document, obj)
-        return _active_panel
-    if Gui.Control.activeDialog():
-        raise ValueError("Conclua ou cancele o painel atual antes de abrir Criar Treliça.")
     from .truss_task_panel import TrussTaskPanel
-    controller = TrussController(document, obj)
+    document = controller.document
 
     def closed(close_dialog=True):
         global _active_panel
@@ -726,6 +728,25 @@ def open_truss_panel(document, obj=None):
             _active_panel = None
             if close_dialog:
                 Gui.Control.closeDialog()
+
+    panel = TrussTaskPanel(document, controller, config, on_close=closed,
+                           point_picker=controller.pick_points, session=session)
+    _active_panel = panel
+    task = Gui.Control.showDialog(panel)
+    task.setDocumentName(document.Name)
+    task.setAutoCloseOnDeletedDocument(True)
+    App.activeDraftCommand = panel
+    return panel
+
+
+def open_truss_panel(document, obj=None):
+    global _active_panel
+    if _active_panel is not None:
+        _active_panel.session.assert_context(document, obj)
+        return _active_panel
+    if Gui.Control.activeDialog():
+        raise ValueError("Conclua ou cancele o painel atual antes de abrir Criar Treliça.")
+    controller = TrussController(document, obj)
 
     config = config_from_object(obj, resolve_reference=False) if obj is not None else default_config()
     if obj is None:
@@ -746,14 +767,7 @@ def open_truss_panel(document, obj=None):
                     config["reference_defined"]=False
                 App.Console.PrintWarning(str(exc)+"\n")
     try:
-        panel = TrussTaskPanel(document, controller, config, on_close=closed,
-                               point_picker=controller.pick_points)
-        _active_panel = panel
-        task = Gui.Control.showDialog(panel)
-        task.setDocumentName(document.Name)
-        task.setAutoCloseOnDeletedDocument(True)
-        # Participate in Draft's existing finish-before-start protocol (WP, etc.).
-        App.activeDraftCommand = panel
+        panel = _show_truss_panel(controller, config)
     except Exception:
         controller.cancel()
         _active_panel = None
