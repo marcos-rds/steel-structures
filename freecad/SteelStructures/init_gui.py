@@ -9,6 +9,7 @@ from .paths import WORKBENCH_ICON
 
 GENERAL_TOOLS_NATIVE = ("Draft_Move", "Draft_Rotate", "Draft_Clone")
 GENERAL_TOOLS_ORDER = ("Draft_Move", "SteelStructures_MoveCopy", "Draft_Rotate", "Draft_Clone")
+DRAFT_DRAWING_COMMANDS = ("Draft_Line", "Draft_Wire", "Draft_Rectangle")
 _draft_tools_warning_emitted = False
 
 
@@ -105,6 +106,9 @@ class SteelStructuresWorkbench(Gui.Workbench):
         member_commands += ["SteelStructures_CreatePlate"]
         catalog_commands = ["SteelStructures_ProfileBrowser"]
         self.general_tools = load_general_tools(commands)
+        # load_general_tools initializes DraftTools and its official GUI commands.
+        available = set(Gui.listCommands())
+        self.drawing_tools = [name for name in DRAFT_DRAWING_COMMANDS if name in available]
         try:
             from draftutils import init_tools
             self.snapbar = init_tools.get_draft_snap_commands()
@@ -113,10 +117,14 @@ class SteelStructuresWorkbench(Gui.Workbench):
         self.appendToolbar("Steel Structures - Elementos", member_commands)
         if self.general_tools:
             self.appendToolbar("Ferramentas Gerais", self.general_tools)
+        if self.drawing_tools:
+            self.appendToolbar("Desenho Draft", self.drawing_tools)
         if self.snapbar:
             self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Draft Snap"), self.snapbar)
         self.appendMenu("Steel Structures", member_commands)
         self.appendMenu("Steel Structures", catalog_commands)
+        if self.drawing_tools:
+            self.appendMenu(["Steel Structures", "Desenho Draft"], self.drawing_tools)
         if self.general_tools:
             self.appendMenu("Ferramentas Gerais", self.general_tools)
 

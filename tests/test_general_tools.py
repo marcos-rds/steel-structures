@@ -158,6 +158,31 @@ class GeneralToolsTests(unittest.TestCase):
         workbench.Activated(); workbench.Activated()
         self.assertEqual((workbench.toolbars, workbench.menus), before)
 
+    def test_drawing_toolbar_and_submenu_reuse_official_commands(self):
+        names = ("Draft_Line", "Draft_Wire", "Draft_Rectangle")
+        native = {name: object() for name in names}
+        self.registered.update(native)
+        self.workbench.Initialize()
+        self.assertEqual(tuple(self.module.DRAFT_DRAWING_COMMANDS), names)
+        self.assertIn(("Desenho Draft", list(names)), self.workbench.toolbars)
+        self.assertIn((["Steel Structures", "Desenho Draft"], list(names)), self.workbench.menus)
+        self.assertLess([title for title, _ in self.workbench.toolbars].index("Ferramentas Gerais"),
+                        [title for title, _ in self.workbench.toolbars].index("Desenho Draft"))
+        for name, command in native.items():
+            self.assertIs(self.registered[name], command)
+            self.assertNotIn(name, self.add_calls)
+        before = (list(self.workbench.toolbars), list(self.workbench.menus))
+        self.workbench.Activated()
+        self.workbench.Activated()
+        self.assertEqual((self.workbench.toolbars, self.workbench.menus), before)
+        self.assertFalse(self.run_calls)  # No manual Draft workbench activation.
+
+    def test_missing_drawing_command_is_not_added_as_broken_action(self):
+        self.registered["Draft_Line"] = object()
+        self.workbench.Initialize()
+        self.assertIn(("Desenho Draft", ["Draft_Line"]), self.workbench.toolbars)
+        self.assertEqual(self.workbench.drawing_tools, ["Draft_Line"])
+
     def test_missing_draft_is_safe_and_warns_once(self):
         sys.modules["DraftTools"] = None
         self.registered.clear()
