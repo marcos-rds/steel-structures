@@ -112,8 +112,9 @@ class PanelContracts(unittest.TestCase):
 
     def test_main_panel_materializes_custom_after_edit(self):
         panel=object.__new__(self.panel_class())
-        panel._initial=config()
-        panel.get_config=lambda:copy.deepcopy(panel._initial)
+        panel.session=SimpleNamespace(config={})
+        panel.session.config=config()
+        panel.get_config=lambda:copy.deepcopy(panel.session.config)
         panel.controller=SimpleNamespace(candidate=build_candidate)
         panel.driver=SimpleNamespace(blockSignals=lambda _:False,findData=lambda x:x,setCurrentIndex=lambda _:None)
         panel.preset=SimpleNamespace(blockSignals=lambda _:False,findData=lambda x:x,setCurrentIndex=lambda value:setattr(panel,"shown_preset",value))
@@ -137,18 +138,19 @@ class PanelContracts(unittest.TestCase):
             def clear(self): self.keys=[]
             def addItem(self,label,key): self.keys.append(key)
         panel=object.__new__(self.panel_class())
-        panel._initial=config()
+        panel.session=SimpleNamespace(config={})
+        panel.session.config=config()
         panel.envelope_type=Combo(("Parallel","DuoPitch"),"Parallel")
         panel.preset=Combo(compatible_presets("DuoPitch"),"Fink")
         panel._sync_presets()
         self.assertEqual(panel.preset.currentData(),"Warren")
         self.assertIn("Warren",panel._preset_notice)
-        panel._initial=edit_candidate(build_candidate(config()),"add_node",point=(700.,300.,0.))
-        before=copy.deepcopy(panel._initial)
+        panel.session.config=edit_candidate(build_candidate(config()),"add_node",point=(700.,300.,0.))
+        before=copy.deepcopy(panel.session.config)
         panel.envelope_type.current="DuoPitch"
         panel._sync_presets()
         self.assertEqual(panel.envelope_type.currentData(),"Parallel")
-        self.assertEqual(panel._initial,before)
+        self.assertEqual(panel.session.config,before)
 
     def test_complete_span_is_explicit_and_overflow_unchanged(self):
         cls=definition("interactive/truss_task_panel.py","TrussTaskPanel",dict(math=math))

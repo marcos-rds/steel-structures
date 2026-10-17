@@ -43,7 +43,7 @@ def reference_presentation(model, envelope):
     if model.get("envelope_type") not in ("Parallel", "DuoPitch") and not model.get("reference_base"):
         return None
     alignment = model.get("reference_alignment", "BottomChord")
-    if alignment == "TopChordSupports":
+    if alignment == "TopChordSupports" or model.get("reference_surface") == "OuterFace":
         values = model.get("support_reference_local")
         if values is None:
             return None
@@ -58,7 +58,7 @@ def reference_presentation(model, envelope):
     return start, end
 
 
-def end_height_presentation(model, envelope):
+def end_height_presentation(model, envelope, format_length=None):
     """Dimensions are nominal local heights, independent of profile insertion."""
     kind = model.get("envelope_type")
     if kind not in ("Parallel", "DuoPitch"):
@@ -70,7 +70,8 @@ def end_height_presentation(model, envelope):
         top, bottom = envelope[0][index], envelope[1][index]
         height = bottom[1] - top[1]
         if height > 1e-9:
-            result.append((top, bottom, f"{prefix}{height:g} mm"))
+            text=format_length(height) if format_length else f"{height:.2f} mm"
+            result.append((top, bottom, prefix+text))
     return tuple(result)
 
 
@@ -121,7 +122,8 @@ class TrussPreview2D(QtWidgets.QGraphicsView):
     def set_model(self, model):
         nodes, edges, envelope = graph_presentation(model)
         reference = reference_presentation(model, envelope)
-        dimensions = end_height_presentation(model, envelope)
+        from .truss_units import length_text
+        dimensions = end_height_presentation(model, envelope, lambda value:length_text(value,self.locale()))
         gussets = tuple(tuple((float(x), -float(y)) for x, y in item["points"])
                         for item in model.get("gussets", ())
                         if item.get("materializable", True))

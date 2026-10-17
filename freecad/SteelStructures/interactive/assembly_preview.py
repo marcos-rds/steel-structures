@@ -101,4 +101,8 @@ class AssemblyPreview(QtWidgets.QWidget):
             painter.setPen(pen)
             painter.drawLine(a, b)
             painter.drawText(self.rect().adjusted(8, self.height()-25, -8, -4),
-                             QtCore.Qt.AlignCenter, f"Distância entre eixos: {spacing:g} mm")
+                             QtCore.Qt.AlignCenter, "Distância entre eixos: "+self._length_text(spacing))
+
+    def _length_text(self,value):
+        from .truss_units import length_text
+        return length_text(value,self.locale())

@@ -286,7 +286,10 @@ class GussetTrussGeometryTests(RegularizationAssertions, unittest.TestCase):
             reference_frame=lambda _config: ((0., 0., 0.), (1., 0., 0.),
                                               (0., 1., 0.), (0., 0., 1.)),
             transform_point=lambda point, _frame: point)
-        controller = controller_type(SimpleNamespace(Objects=[]))
+        document = SimpleNamespace(Name="GussetPreview", Objects=[])
+        globals_["App"].ActiveDocument = document
+        globals_["App"].listDocuments = lambda: {document.Name:document}
+        controller = controller_type(document)
         controller.candidate = lambda value: candidates[value["state"]]
         controller.preview3d({"state": "valid"})
         calls.append(True)

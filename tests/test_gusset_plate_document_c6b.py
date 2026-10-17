@@ -143,7 +143,8 @@ class GussetDocumentContractTests(unittest.TestCase):
         visible = SimpleNamespace(Name="A", ViewObject=SimpleNamespace(Visibility=True))
         hidden = SimpleNamespace(Name="B", ViewObject=SimpleNamespace(Visibility=False))
         owner = SimpleNamespace(AppliedState="state", GeneratedGussetPlates=[visible, hidden])
-        document = SimpleNamespace(getObject=lambda name: {"A": visible, "B": hidden}.get(name))
+        document = SimpleNamespace(Name="GussetVisibility",getObject=lambda name: {"A": visible, "B": hidden}.get(name))
+        controller.__init__.__globals__["App"].listDocuments=lambda: {document.Name:document}
         value = controller(document, owner)
         value._hide_persistent_gussets()
         self.assertEqual([visible.ViewObject.Visibility, hidden.ViewObject.Visibility], [False, False])

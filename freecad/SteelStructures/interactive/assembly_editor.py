@@ -21,10 +21,9 @@ class AssemblyEditor(_RoleProfileDialog):
         for key, label in ASSEMBLY_MODES:
             self.mode.addItem(label, key)
         self.mode.setCurrentIndex(self.mode.findData(self._last_mode))
-        self.spacing = QtWidgets.QDoubleSpinBox()
+        from .truss_length_spinbox import TrussLengthSpinBox
+        self.spacing = TrussLengthSpinBox()
         self.spacing.setRange(0., 1e6)
-        self.spacing.setDecimals(3)
-        self.spacing.setSuffix(" mm")
         self.spacing.setToolTip("Distância entre os eixos de inserção dos componentes; não é folga entre faces.")
         self.assembly_insertion = QtWidgets.QComboBox()
         self.assembly_insertion.addItem("Centro", "Center")
@@ -65,10 +64,8 @@ class AssemblyEditor(_RoleProfileDialog):
             self.physical_fit.addItem("Ajustar ao banzo", "ToChord")
         selected_fit = spec.get("physical_fit", "None")
         self.physical_fit.setCurrentIndex(max(0, self.physical_fit.findData(selected_fit)))
-        self.physical_fit_gap = QtWidgets.QDoubleSpinBox()
+        self.physical_fit_gap = TrussLengthSpinBox()
         self.physical_fit_gap.setRange(0., 1e6)
-        self.physical_fit_gap.setDecimals(3)
-        self.physical_fit_gap.setSuffix(" mm")
         self.physical_fit_gap.setValue(float(spec.get("physical_fit_gap", 0.)))
         self.physical_fit_gap.setToolTip(
             "Recuo axial ao longo do eixo do próprio membro; não representa folga normal nem espessura de chapa.")
@@ -160,12 +157,13 @@ class AssemblyEditor(_RoleProfileDialog):
             lambda profile: mode in compatible_modes(profile), self._profile_choices.get(mode))
 
     def _setup_run_length(self):
+        from .truss_units import length_text
         if len(self.nominal_lengths) == 1:
-            self.run_length = QtWidgets.QLabel(f"Comprimento nominal: {self.nominal_lengths[0]:g} mm")
+            self.run_length = QtWidgets.QLabel("Comprimento nominal: "+length_text(self.nominal_lengths[0],self.locale()))
         else:
             self.run_length = QtWidgets.QComboBox()
             for i, length in enumerate(self.nominal_lengths):
-                self.run_length.addItem(f"Comprimento nominal {i+1}: {length:g} mm", length)
+                self.run_length.addItem(f"Comprimento nominal {i+1}: "+length_text(length,self.locale()), length)
             self.run_length.setToolTip("Prévia de um comprimento deste role; todos são validados ao confirmar.")
             self.run_length.currentIndexChanged.connect(self._queue_refresh)
 
@@ -234,8 +232,9 @@ class AssemblyEditor(_RoleProfileDialog):
             self.preview.set_role(role, length)
             self.longitudinal.set_role(role, length)
             distributions = self.longitudinal.model["distributions"]
+            from .truss_units import length_text
             self.connectors.effective.setText("\n".join(
-                f"Espaçamento efetivo: {d.effective_spacing:g} mm · {d.effective_count} estações"
+                "Espaçamento efetivo: "+length_text(d.effective_spacing,self.locale())+f" · {d.effective_count} estações"
                 for _, d in distributions))
             self.message.setText(self._notice)
             self.message.setStyleSheet("")

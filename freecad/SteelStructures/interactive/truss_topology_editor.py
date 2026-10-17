@@ -3,6 +3,15 @@ from PySide import QtCore, QtGui, QtWidgets
 from .truss_preview import TrussPreview2D
 
 
+class _DiagnosticLabel(QtWidgets.QLabel):
+    textChanged=QtCore.Signal(bool)
+
+    def setText(self, text, severity="info"):
+        self.severity=severity
+        super().setText(text)
+        self.textChanged.emit(bool(text))
+
+
 class TopologyCanvas(TrussPreview2D):
     def __init__(self, editor):
         super().__init__(editor)
@@ -10,29 +19,57 @@ class TopologyCanvas(TrussPreview2D):
         self.setToolTip("")
         self.editor=editor
         self.setMaximumHeight(16777215)
-        self.setMinimumSize(650,350)
+        self.setMinimumSize(240,7*self.fontMetrics().height())
+        policy=QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                    QtWidgets.QSizePolicy.Preferred)
+        policy.setHeightForWidth(True)
+        self.setSizePolicy(policy)
         self.setMouseTracking(True)
         self.pending=None
         self.selected=None
         self.rubber=None
         self.snap_marker=None
 
-    def cancel_gesture(self):
+    def heightForWidth(self, width):
+        # Use the model bounds, not sceneRect (which includes viewport-dependent
+        # dimension margins). This is layout only, never a candidate rebuild.
+        bounds=getattr(self,"_geometry_bounds",QtCore.QRectF(0,0,5,1))
+        unit=self.fontMetrics().height()
+        useful=max(1,width-4*unit)
+        ceiling=min(24*unit,getattr(self,"_layout_height_limit",24*unit))
+        return round(max(9*unit,min(ceiling,
+                     useful*bounds.height()/max(1.,bounds.width())+2*unit)))
+
+    def sizeHint(self):
+        return QtCore.QSize(900,self.heightForWidth(900))
+
+    def set_model(self, model):
+        super().set_model(model)
+        self.updateGeometry()
+
+    def cancel_gesture(self, notify=True):
         active=self.pending is not None
         self.pending=None
         if self.rubber is not None:
             self.scene().removeItem(self.rubber)
             self.rubber=None
-        self.editor.message.setText("Gesto cancelado." if active else "Selecione uma entidade.")
+        if self.snap_marker is not None:
+            self.scene().removeItem(self.snap_marker)
+            self.snap_marker=None
+        if notify:
+            self.editor.message.setText("Gesto cancelado." if active else "Selecione uma entidade.")
         return active
 
     def refresh_candidate(self):
+        model=self.editor.panel.controller.preview(self.editor.panel.get_config())
+        self.set_candidate_model(model)
+
+    def set_candidate_model(self, model):
         self.rubber=None
         self.snap_marker=None
-        model=self.editor.panel.controller.preview(self.editor.panel.get_config())
         # Publish reconciliation before another editor action reads panel state.
         from copy import deepcopy
-        self.editor.panel._initial["connection_intents"] = deepcopy(
+        self.editor.panel.session.config["connection_intents"] = deepcopy(
             self.editor.panel.controller.last_candidate.config.get("connection_intents", {}))
         selected_node=getattr(self.editor,"_connection_node",None)
         previous_model = getattr(self, "_last_model", {})
@@ -53,6 +90,8 @@ class TopologyCanvas(TrussPreview2D):
         self.set_model(model)
         from ..trusses.validation import connected_components
         graph=self.editor.panel.controller.last_candidate.graph
+        if self.pending is not None and self.pending not in {n.key for n in graph.nodes}:
+            self.cancel_gesture()
         if selected_node is not None and selected_node not in {n.key for n in graph.nodes}:
             self.editor.select_node(None)
         components=connected_components(graph)
@@ -91,7 +130,10 @@ class TopologyCanvas(TrussPreview2D):
             if item.data(0) == "selection_halo":
                 self.scene().removeItem(item)
         key = getattr(self.editor, "_connection_node", None)
-        graph = self.editor.panel.controller.last_candidate.graph
+        candidate = self.editor.panel.controller.last_candidate
+        if candidate is None:
+            return
+        graph = candidate.graph
         node = next((n for n in graph.nodes if n.key == key), None)
         if node is None:
             return
@@ -102,6 +144,8 @@ class TopologyCanvas(TrussPreview2D):
         marker.setZValue(20)
 
     def mousePressEvent(self, event):
+        if not self.isEnabled():
+            return
         if event.button()!=QtCore.Qt.LeftButton:
             return super().mousePressEvent(event)
         mode=self.editor.current_mode()
@@ -165,11 +209,13 @@ class TopologyCanvas(TrussPreview2D):
                 return
             if mode!="select":
                 self.refresh_candidate()
-                self.editor.message.setText("Candidato Custom atualizado; OK no Gerador aplica ao documento.")
+                self.editor.message.setText("Rascunho Custom atualizado; Aplicar ou OK no painel confirma as alterações.")
         except (ValueError,KeyError,StopIteration) as exc:
-            self.editor.message.setText(str(exc))
+            self.editor.message.setText(str(exc),"error")
 
     def snap_at(self, position):
+        if not self.isEnabled() or self.editor.panel.controller.last_candidate is None:
+            return None
         from ..trusses.editor_snapping import snap_target
         p=self.mapToScene(position)
         q=self.mapToScene(position+QtCore.QPoint(8,0))
@@ -187,6 +233,8 @@ class TopologyCanvas(TrussPreview2D):
         return self.scene().addEllipse(-5,-5,10,10,pen)
 
     def mouseMoveEvent(self,event):
+        if not self.isEnabled():
+            return
         snap=self.snap_at(event.pos())
         if self.snap_marker is not None:
             self.scene().removeItem(self.snap_marker)
@@ -197,7 +245,7 @@ class TopologyCanvas(TrussPreview2D):
             self.snap_marker.setFlag(QtWidgets.QGraphicsItem.ItemIgnoresTransformations)
             self.snap_marker.setPos(x,-y)
             self.snap_marker.setZValue(20)
-        if self.pending is not None:
+        if self.pending is not None and self.editor.current_mode() in ("create","move_node"):
             graph=self.editor.panel.controller.last_candidate.graph
             a=graph.node(self.pending).position_local
             p=QtCore.QPointF(snap["point"][0],-snap["point"][1]) if snap else self.mapToScene(event.pos())
@@ -215,63 +263,55 @@ class TopologyCanvas(TrussPreview2D):
 
 
 class TopologyEditor(QtWidgets.QDialog):
+    """Expanded view of the panel's session; the panel still owns transactions."""
+
+    @property
+    def session(self):
+        return self.panel.session
+
     def __init__(self,panel):
         super().__init__(panel.form)
         self.panel=panel
-        self.setWindowTitle("Editar alma da treliça")
-        layout=QtWidgets.QVBoxLayout(self)
-        toolbar=QtWidgets.QHBoxLayout()
-        self.mode_group=QtWidgets.QButtonGroup(self)
-        self.mode_group.setExclusive(True)
-        self.mode_buttons={}
-        for label,key in (("Selecionar","select"),("Criar barra","create"),("Remover barra","remove"),
-                          ("Adicionar nó","add_node"),("Remover nó","remove_node"),("Mover nó","move_node")):
-            button=QtWidgets.QPushButton(label)
-            button.setCheckable(True)
-            button.setChecked(key=="select")
-            self.mode_group.addButton(button)
-            self.mode_buttons[key]=button
-            toolbar.addWidget(button)
-        layout.addLayout(toolbar)
-        mirror_bar=QtWidgets.QHBoxLayout()
-        invert=QtWidgets.QPushButton("Inverter alma")
-        invert.clicked.connect(lambda *_:self.transform_web("mirror"))
-        mirror_bar.addWidget(invert)
-        self.copy_button=QtWidgets.QToolButton()
-        self.copy_button.setText("Copiar espelhado")
-        self.copy_button.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
-        self.copy_button.clicked.connect(lambda *_:self.transform_web("copy_mirrored"))
-        self.copy_direction="LeftToRight"
-        self.copy_actions={}
-        copy_menu=QtWidgets.QMenu(self.copy_button)
-        for label,direction in (("Esquerda → Direita","LeftToRight"),("Direita → Esquerda","RightToLeft")):
-            action=copy_menu.addAction(label)
-            action.setCheckable(True)
-            action.setChecked(direction==self.copy_direction)
-            action.triggered.connect(lambda _checked=False,key=direction:self.copy_in_direction(key))
-            self.copy_actions[direction]=action
-        self.copy_button.setMenu(copy_menu)
-        self.copy_button.setToolTip("Copiar espelhado: Esquerda → Direita")
-        mirror_bar.addWidget(self.copy_button)
-        mirror_bar.addStretch(1)
-        layout.addLayout(mirror_bar)
-        self.allow_free=QtWidgets.QCheckBox("Permitir nó livre")
-        self.allow_free.setChecked(False)
-        layout.addWidget(self.allow_free)
+        self._panel_completion=None
+        self._submitting=False
+        self._qt_alive=True
+        self.destroyed.connect(lambda *_:setattr(self,"_qt_alive",False))
+        self.setWindowTitle("Editor de Treliças")
+        self.setSizeGripEnabled(True)
+        root=QtWidgets.QVBoxLayout(self)
+        root.setSpacing(4)
         self.canvas=TopologyCanvas(self)
-        layout.addWidget(self.canvas, 1)
-        self.message=QtWidgets.QLabel("")
+        self._build_toolbar(root)
+        root.addWidget(self.canvas)
+        self.message=_DiagnosticLabel("")
         self.message.setWordWrap(True)
         self.message.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
         self.message_scroll=QtWidgets.QScrollArea()
         self.message_scroll.setWidgetResizable(True)
-        self.message_scroll.setMaximumHeight(96)
+        self.message_scroll.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+        self.message_scroll.setMaximumHeight(6*self.fontMetrics().height())
+        self.message_scroll.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
+                                          QtWidgets.QSizePolicy.Maximum)
         self.message_scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.message_scroll.setWidget(self.message)
-        layout.addWidget(self.message_scroll)
+        self.message_toggle=QtWidgets.QToolButton()
+        self.message_toggle.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        self.message_toggle.setCheckable(True)
+        self.message_toggle.setArrowType(QtCore.Qt.RightArrow)
+        self.message_toggle.toggled.connect(self._toggle_messages)
+        self.message.textChanged.connect(self._update_message_area)
+        self.message_toggle.hide()
+        self.message_scroll.setVisible(False)
+        root.addWidget(self.message_toggle)
+        root.addWidget(self.message_scroll)
         self.diagnostic_legend=QtWidgets.QLabel("Componentes separados do maior componente destacados em magenta.")
         self.diagnostic_legend.setWordWrap(True)
-        layout.addWidget(self.diagnostic_legend)
+        root.addWidget(self.diagnostic_legend)
+        self.tabs=QtWidgets.QTabWidget(self)
+        root.addWidget(self.tabs,1)
+        self.connections_page,self.connections_scroll=self._add_controls_tab("Ligações")
+        connections_layout=QtWidgets.QVBoxLayout(self.connections_page)
+        connections_layout.setAlignment(QtCore.Qt.AlignTop)
         self.connection_box=QtWidgets.QGroupBox("Ligação do nó")
         connection_row=QtWidgets.QHBoxLayout(self.connection_box)
         controls=QtWidgets.QWidget(self.connection_box)
@@ -336,7 +376,7 @@ class TopologyEditor(QtWidgets.QDialog):
         self._transverse_form = self.transverse_preview.add_position_controls(
             self.gusset_region, self.gusset_position)
         connection_row.addWidget(self.transverse_preview, 1, QtCore.Qt.AlignTop)
-        layout.addWidget(self.connection_box)
+        connections_layout.addWidget(self.connection_box)
         self.connection_box.setEnabled(False)
         self._connection_node=None
         for widget in (self.connection_type,self.fastening,self.direct_policy,self.priority_member,
@@ -346,23 +386,303 @@ class TopologyEditor(QtWidgets.QDialog):
         for widget in (self.gusset_plate,self.gusset_normal,self.gusset_axial,
                        self.gusset_margin,self.gusset_overlap):
             widget.valueChanged.connect(self._connection_changed)
-        buttons=QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Close)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+        buttons=QtWidgets.QWidget()
+        actions=QtWidgets.QHBoxLayout(buttons)
+        actions.setContentsMargins(0,0,0,0)
+        actions.addStretch(1)
+        self.action_buttons=buttons
+        self.cancel_button=QtWidgets.QPushButton("Cancelar")
+        self.apply_button=QtWidgets.QPushButton("Aplicar")
+        self.ok_button=QtWidgets.QPushButton("OK")
+        for button,action in ((self.cancel_button,"cancel"),(self.apply_button,"apply"),(self.ok_button,"ok")):
+            actions.addWidget(button)
+            if action=="cancel":
+                actions.addSpacing(max(8,self.fontMetrics().horizontalAdvance(" ")*2))
+            button.setAutoDefault(False)
+            button.setDefault(False)
+            button.clicked.connect(lambda _checked=False,key=action:self._submit_action(key))
+        root.addWidget(buttons)
         self.mode_group.buttonClicked.connect(lambda *_:self.canvas.cancel_gesture())
-        self.canvas.refresh_candidate()
-        self.resize(900,600)
+        self.tabs.currentChanged.connect(self._tab_changed)
+        from .truss_editor_fields import TrussEditorFields
+        self.fields=TrussEditorFields(self)
+        for index,page in enumerate((self.fields.geometry_scroll,
+                                     self.fields.profiles_scroll,self.connections_scroll)):
+            self.tabs.tabBar().moveTab(self.tabs.indexOf(page),index)
+        self.tabs.setCurrentWidget(self.fields.geometry_scroll)
+        self.sync_from_panel()
+        available=self.screen().availableGeometry()
+        width=min(1200,available.width()-40)
+        margins=root.contentsMargins()
+        chrome=(margins.top()+margins.bottom()+(root.count()-1)*root.spacing()+self.topology_toolbar.sizeHint().height()
+                +self.tabs.tabBar().sizeHint().height()+buttons.sizeHint().height())
+        controls_height=max(page.sizeHint().height() for page in (
+            self.fields.geometry_page,self.fields.profiles_page,self.connections_page))
+        height=(self.canvas.heightForWidth(width-margins.left()-margins.right())
+                +controls_height
+                +2*self.fontMetrics().height()+chrome)
+        self.resize(width,min(height,940,available.height()-60))
+
+    def _build_toolbar(self, root):
+        from ..paths import ICONS_DIR
+        self.topology_toolbar=QtWidgets.QWidget(self)
+        row=QtWidgets.QHBoxLayout(self.topology_toolbar)
+        row.setContentsMargins(0,0,0,0)
+        row.setSpacing(3)
+        root.addWidget(self.topology_toolbar)
+
+        def tool(label, icon):
+            button=QtWidgets.QToolButton()
+            button.setText(label)
+            button.setAccessibleName(label)
+            button.setToolTip(label)
+            button.setIcon(QtGui.QIcon(str(ICONS_DIR/icon)))
+            button.setIconSize(QtCore.QSize(24,24))
+            button.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+            # The dialog keeps its Task View parent for lifecycle. OpenDark's
+            # QSint content-descendant rules otherwise style these as wide push
+            # buttons and override generic :checked. Override only this button.
+            button.setStyleSheet("""
+                QToolButton { margin: 0; padding: 3px; border: 1px solid transparent;
+                    border-radius: 5px; background: transparent;
+                    min-width: 24px; max-width: 24px; min-height: 24px; max-height: 24px; }
+                QToolButton:hover { background: rgba(76, 150, 183, 20); border-color: rgba(76, 150, 183, 90); }
+                QToolButton:focus { border-color: #4c96b7; }
+                QToolButton:pressed { background: rgba(76, 150, 183, 55); border-color: #4c96b7; }
+                QToolButton:checked, QToolButton:checked:hover, QToolButton:checked:focus {
+                    background: rgba(76, 150, 183, 32); border-color: #4c96b7; }
+                QToolButton:checked:hover { background: rgba(76, 150, 183, 48); }
+                QToolButton:disabled { background: transparent; border-color: transparent; }
+            """)
+            button.setFixedSize(32,32)
+            row.addWidget(button)
+            return button
+
+        def separator():
+            line=QtWidgets.QFrame()
+            line.setFrameShape(QtWidgets.QFrame.VLine)
+            row.addWidget(line)
+
+        self.mode_group=QtWidgets.QButtonGroup(self)
+        self.mode_group.setExclusive(True)
+        self.mode_buttons={}
+        for label,key,icon in (("Selecionar","select","TrussSelect.svg"),
+                ("Criar barra","create","TrussBarAdd.svg"),("Remover barra","remove","TrussBarRemove.svg"),
+                ("Adicionar nó","add_node","TrussNodeAdd.svg"),("Remover nó","remove_node","TrussNodeRemove.svg"),
+                ("Mover nó","move_node","TrussNodeMove.svg")):
+            if key in ("create","add_node"): separator()
+            button=tool(label,icon)
+            button.setCheckable(True)
+            button.setChecked(key=="select")
+            self.mode_group.addButton(button)
+            self.mode_buttons[key]=button
+        separator()
+        self.invert_button=tool("Inverter alma","TrussWebInvert.svg")
+        self.invert_button.clicked.connect(lambda *_:self.transform_web("mirror"))
+        self.copy_button=tool("Copiar espelhado","TrussWebMirrorCopy.svg")
+        self.copy_button.setObjectName("trussMirrorCopy")
+        self.copy_button.setStyleSheet(self.copy_button.styleSheet()+"""
+            QToolButton#trussMirrorCopy { min-width: 36px; max-width: 36px; padding-right: 3px; }
+            QToolButton::menu-button { width: 10px; margin: 0; padding: 0;
+                subcontrol-origin: padding; subcontrol-position: right center; }
+        """)
+        self.copy_button.setFixedSize(44,32)
+        self.copy_button.setPopupMode(QtWidgets.QToolButton.MenuButtonPopup)
+        self.copy_button.clicked.connect(lambda *_:self.transform_web("copy_mirrored"))
+        self.copy_direction="LeftToRight"
+        self.copy_actions={}
+        copy_menu=QtWidgets.QMenu(self.copy_button)
+        for label,direction in (("Esquerda → Direita","LeftToRight"),("Direita → Esquerda","RightToLeft")):
+            action=copy_menu.addAction(label)
+            action.setCheckable(True)
+            action.setChecked(direction==self.copy_direction)
+            action.triggered.connect(lambda _checked=False,key=direction:self.copy_in_direction(key))
+            self.copy_actions[direction]=action
+        self.copy_button.setMenu(copy_menu)
+        self.copy_button.setToolTip("Copiar espelhado: Esquerda → Direita")
+        separator()
+        self.allow_free=QtWidgets.QCheckBox("Permitir nó livre")
+        self.allow_free.setToolTip("Permite adicionar nós fora das barras; não altera a ferramenta ativa.")
+        row.addWidget(self.allow_free)
+        row.addStretch(1)
+
+    def _toggle_messages(self, expanded):
+        self.message_toggle.setArrowType(QtCore.Qt.DownArrow if expanded else QtCore.Qt.RightArrow)
+        self.message_scroll.setVisible(expanded and bool(self.message.text()))
+
+    def _update_message_area(self, present):
+        text=self.message.text()
+        invalid=not self.panel._valid
+        error=invalid or self.message.severity=="error"
+        warning=self.message.severity=="warning"
+        collapsible=error or warning or "\n" in text or len(text)>110
+        self.message_scroll.setMaximumHeight((6 if collapsible else 1)*self.fontMetrics().height()+8)
+        self.message_toggle.setVisible(present and collapsible)
+        count=len(text.splitlines())
+        self.message_toggle.setText("Entrada inválida — detalhes" if invalid else
+            "Erro — detalhes" if error else
+            ("Alertas e diagnósticos" if warning else "Mensagens")+f" ({count})")
+        self.message_toggle.setIcon(self.style().standardIcon(
+            QtWidgets.QStyle.SP_MessageBoxCritical if error else
+            QtWidgets.QStyle.SP_MessageBoxWarning if warning else QtWidgets.QStyle.SP_MessageBoxInformation))
+        self.message_toggle.setToolTip(text)
+        if error and present:
+            self.message_toggle.setChecked(True)
+        self.message_scroll.setVisible(present and (not collapsible or self.message_toggle.isChecked()))
+
+    def _add_controls_tab(self, label):
+        scroll=QtWidgets.QScrollArea(self.tabs)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        scroll.setMinimumHeight(max(104,6*self.fontMetrics().height())
+                                +self.style().pixelMetric(QtWidgets.QStyle.PM_ScrollBarExtent))
+        page=QtWidgets.QWidget(scroll)
+        scroll.setWidget(page)
+        self.tabs.addTab(scroll,label)
+        return page,scroll
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        canvas=getattr(self,"canvas",None)
+        if canvas is not None:
+            # A tall truss must still leave usable controls on a short screen.
+            limit=round(self.contentsRect().height()*.45)
+            if getattr(canvas,"_layout_height_limit",None)!=limit:
+                canvas._layout_height_limit=limit
+                canvas.updateGeometry()
+
+    def _tab_changed(self, *_args):
+        # Navigation cancels only the gesture, never the selected entity or draft.
+        self.canvas.cancel_gesture(notify=False)
+        self.mode_buttons["select"].setChecked(True)
+        if not hasattr(self,"_connection_node"):
+            return  # Tabs are also ordered during construction.
+        if not self.panel._valid:
+            self.message.setText(self.panel.message.text(),"error")
+        elif self._connection_node is not None:
+            self.message.setText("\n".join(self._node_messages()),"warning")
+        else:
+            self.message.setText(self.panel.message.text(),"warning")
+
+    def sync_from_panel(self):
+        """Present the panel's validated result, without building another model."""
+        self.fields.sync()
+        valid=self.panel._valid
+        for button in (self.apply_button,self.ok_button):
+            button.setEnabled(valid and not self._submitting)
+        self.canvas.setEnabled(valid)
+        self.topology_toolbar.setEnabled(valid)
+        self.connections_scroll.setEnabled(valid)
+        if valid:
+            self.canvas.set_candidate_model(self.panel._last_preview_model)
+            self.connection_box.setEnabled(self._connection_node is not None)
+            if self._connection_node is None:
+                self.message.setText(self.panel.message.text(),"warning")
+        else:
+            self.diagnostic_legend.hide()
+            self.message.setText(self.panel.message.text(),"error")
+            self.transverse_preview.set_preview(caption="Prévia desatualizada; corrija os parâmetros do rascunho.")
+
+    def exec(self):
+        """Close only this modal view when the session document loses activation."""
+        import FreeCAD as App
+        self._panel_completion=None
+        self._capture_checkpoint()
+        editor=self
+        alive=[True]
+        def destroyed(*_args):
+            alive[0]=False
+
+        self.destroyed.connect(destroyed)
+
+        class ActivationObserver:
+            def slotActivateDocument(self,document):
+                if alive[0] and document is not editor.panel.document:
+                    editor.reject()
+
+        observer=ActivationObserver()
+        App.addDocumentObserver(observer)
+        try:
+            return super().exec()
+        finally:
+            App.removeDocumentObserver(observer)
+
+    def reject(self):
+        # A document switch can close this modal while AssemblyEditor (or its
+        # catalog dialog) runs a nested exec. Release children before this view.
+        for dialog in reversed(self.findChildren(QtWidgets.QDialog)):
+            dialog.reject()
+        self._panel_completion="cancel"
+        super().reject()
+
+    def _capture_checkpoint(self):
+        from .truss_editor_checkpoint import TrussEditorCheckpoint
+        self._checkpoint=TrussEditorCheckpoint(self.panel,self)
+
+    def _commit_inputs(self):
+        # Qt button.click() need not move focus. Confirm pending numeric text
+        # through the existing widget handlers before reading the shared draft.
+        for widget in self.findChildren(QtWidgets.QDoubleSpinBox):
+            if not self._qt_alive or self.panel._closed:
+                return False
+            if widget.window() is not self:
+                continue
+            commit=getattr(widget,"_commit",None)
+            if commit is not None:
+                if not commit():
+                    self.panel._show_error("Conclua ou corrija o comprimento em edição antes de aplicar.")
+                    return False
+            else:
+                widget.interpretText()
+        return True
+
+    def _submit_action(self, action):
+        if self._submitting or self.panel._closed:
+            return
+        if action=="cancel":
+            self.reject()
+            return
+        self._submitting=True
+        self.action_buttons.setEnabled(False)
+        try:
+            self.canvas.cancel_gesture(notify=False)
+            if not self._commit_inputs():
+                return
+            if not self.panel.apply():
+                if self._qt_alive and not self.panel._closed and not self.panel._valid and self.session.valid:
+                    # A transaction can fail despite a valid draft. Revalidate
+                    # without applying so the user can retry; retain the actual
+                    # application error in the modal diagnostic area.
+                    failure=self.panel.message.text()
+                    self.panel._refresh()
+                    self.message.setText(failure,"error")
+                return
+            if not self._qt_alive or self.panel._closed:
+                return
+            self._capture_checkpoint()
+            self.sync_from_panel()
+            if action=="ok":
+                self._panel_completion="ok"
+                for dialog in reversed(self.findChildren(QtWidgets.QDialog)):
+                    dialog.reject()
+                super().accept()
+        finally:
+            self._submitting=False
+            if self._qt_alive and not self.panel._closed:
+                self.action_buttons.setEnabled(True)
+                for button in (self.apply_button,self.ok_button):
+                    button.setEnabled(self.panel._valid)
 
     @staticmethod
     def _length_spin():
-        widget=QtWidgets.QDoubleSpinBox()
+        from .truss_length_spinbox import TrussLengthSpinBox
+        widget=TrussLengthSpinBox()
         widget.setRange(0.,100000.)
-        widget.setDecimals(2)
-        widget.setSuffix(" mm")
-        widget.setKeyboardTracking(False)
         return widget
 
     def select_node(self,node_key):
+        if node_key is not None and not self.canvas.isEnabled():
+            return
         self._connection_node=node_key
         self._refresh_transverse_preview()
         if hasattr(self, "canvas"):
@@ -448,14 +768,14 @@ class TopologyEditor(QtWidgets.QDialog):
             "O gap axial mantém o plano de meia-esquadria e recua cada barra ao longo do próprio eixo." if valid_miter else
             "Meia-esquadria equilibrada requer exatamente duas barras da alma equivalentes.")
         if not valid_miter and intent.direct_policy.value == "BalancedMiter":
-            self.message.setText(self.direct_policy.toolTip())
+            self.message.setText(self.direct_policy.toolTip(),"warning")
         self._update_connection_visibility()
         if intent.form.value == "Gusset":
             messages = getattr(self.canvas, "_last_model", {}).get(
                 "connection_diagnostics_by_node", {}).get(node_key, ())
             if placement_invalid:
                 messages = ("A posição anterior ficou indisponível; usada Automática.",)+tuple(messages)
-            self.message.setText("\n".join(messages))
+            self.message.setText("\n".join(messages),"warning")
 
     def _refresh_transverse_preview(self):
         preview = getattr(self, "transverse_preview", None)
@@ -607,21 +927,25 @@ class TopologyEditor(QtWidgets.QDialog):
                 value["gusset"]["transverse_placement"] = ""
                 self.panel.set_connection_intent(self._connection_node, value)
                 self.canvas.refresh_candidate()
-            candidate = self.panel.controller.last_candidate
-            messages = [d["message"] for item in candidate.items
-                        if self._connection_node in (item.start_node_key,item.end_node_key)
-                        for d in (item.physical_fit_plan or {}).get("diagnostics", ())]
-            messages.extend(self.canvas._last_model.get(
-                "connection_diagnostics_by_node", {}).get(
-                    self._connection_node, ()))
+            messages = self._node_messages()
             if invalid:
                 messages.insert(0, "A posição anterior ficou indisponível; usada Automática.")
             self.message.setText("\n".join(dict.fromkeys(
-                message for message in messages if message)))
+                message for message in messages if message)),"warning")
         except (ValueError, KeyError) as exc:
-            self.message.setText(str(exc))
+            self.message.setText(str(exc),"error")
             self.transverse_preview.set_preview(
                 caption="Prévia indisponível para esta configuração.")
+
+    def _node_messages(self):
+        """Read current node diagnostics without reconciliation or a preview build."""
+        candidate=self.panel.controller.last_candidate
+        messages=[d["message"] for item in candidate.items
+                  if self._connection_node in (item.start_node_key,item.end_node_key)
+                  for d in (item.physical_fit_plan or {}).get("diagnostics",())]
+        messages.extend(self.canvas._last_model.get("connection_diagnostics_by_node",{}).get(
+            self._connection_node,()))
+        return list(dict.fromkeys(message for message in messages if message))
 
     @staticmethod
     def _gusset_value(widget):
@@ -647,7 +971,7 @@ class TopologyEditor(QtWidgets.QDialog):
             self.canvas.refresh_candidate()
             self.message.setText("Topologia Custom atualizada.")
         except (ValueError,RuntimeError) as exc:
-            self.message.setText(str(exc))
+            self.message.setText(str(exc),"error")
 
     def keyPressEvent(self,event):
         if event.key()==QtCore.Qt.Key_Escape and self.canvas.cancel_gesture():

@@ -11,7 +11,7 @@ import copy
 import math
 
 
-def upper_section_offset(config):
+def chord_section_extreme(config, role_name, upper):
     """Highest physical chord section relative to its nominal insertion axis.
 
     A horizontal probe is sufficient: roll and component layout rotate with
@@ -23,19 +23,23 @@ def upper_section_offset(config):
     from .assemblies import expand_run
     from .fitting_geometry import _section_interval
 
-    role = copy.deepcopy(config["role_specs"]["TOP_CHORD"])
+    role = copy.deepcopy(config["role_specs"][role_name])
     if role.get("assembly_spec"):
         role["assembly_spec"]["spec"]["interconnectors"] = []
-    item = RealizationItem("SUPPORT_PROBE", "TOP_CHORD", "L", "R",
+    item = RealizationItem("SUPPORT_PROBE", role_name, "L", "R",
                            (0., 0., 0.), (1., 0., 0.),
                            (0., 0., 0.), (1., 0., 0.), (0., 0., -1.),
                            MemberSpec(**role))
-    offsets = [_section_interval(component, (0., 1., 0.))[1]
+    offsets = [_section_interval(component, (0., 1., 0.))[1 if upper else 0]
                for component in expand_run(item)
                if component.element_kind == "Component"]
     if not offsets or not all(math.isfinite(value) for value in offsets):
-        raise ValueError("Não foi possível determinar o topo físico do banzo superior.")
-    return max(offsets)
+        raise ValueError("Não foi possível determinar a face externa física do banzo.")
+    return max(offsets) if upper else min(offsets)
+
+
+def upper_section_offset(config):
+    return chord_section_extreme(config, "TOP_CHORD", True)
 
 
 def _support_heights(span, height, left, right, apex, offset):
@@ -117,7 +121,12 @@ def resolve_support_alignment(config):
         raise ValueError("Alinhamento da linha de referência inválido.")
     length = float(config["span"])
     if mode == "BottomChord":
-        return {"nominal_span": length}
+        if config.get("reference_surface") != "OuterFace":
+            return {"nominal_span": length}
+        offset = chord_section_extreme(config, "BOTTOM_CHORD", False)
+        return {"nominal_span": length,
+                "support_reference_local": ((0., offset, 0.), (length, offset, 0.)),
+                "support_section_offset": offset}
     kind = config["envelope_type"]
     if kind not in ("Parallel", "DuoPitch"):
         raise ValueError("Alinhamento superior indisponível para esta forma de treliça.")
@@ -157,7 +166,8 @@ def resolve_support_alignment(config):
 
 def aligned_frame(config, raw_frame):
     """Nominal geometry frame; owner Placement stays in ``raw_frame``."""
-    if config.get("reference_alignment", "BottomChord") == "BottomChord":
+    if (config.get("reference_alignment", "BottomChord") == "BottomChord"
+            and config.get("reference_surface") != "OuterFace"):
         return raw_frame
     resolved = (config if config.get("support_reference_local")
                 else resolve_support_alignment(config))

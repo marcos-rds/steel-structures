@@ -37,8 +37,8 @@ def default_config():
     angle = profile_catalog.ref_for_designation('L 40 x 4')
     return dict(envelope_type="Parallel", span=10000., height=2000., apex_position=.5,
                 left_end_height=0., right_end_height=0., link_end_heights=True,
-                reference_alignment="BottomChord",
-                panel_count=6, topology_preset="Warren", top_continuity="Continuous",
+                reference_alignment="BottomChord", reference_surface="OuterFace",
+                panel_count=6, topology_preset="Pratt", top_continuity="Continuous",
                 bottom_continuity="Continuous", left_panels=None, right_panels=None,
                 start=[0.,0.,0.], end=[10000.,0.,0.], plane_normal=[0.,-1.,0.],
                 connection_intents={}, default_gusset_thickness=10.,
@@ -112,7 +112,7 @@ def ensure_support_properties(obj):
             setattr(obj, name, default)
     if "ReferenceAlignment" not in obj.PropertiesList:
         obj.addProperty("App::PropertyEnumeration", "ReferenceAlignment", "Referência",
-                        "Banzo inferior ou topo físico do banzo superior nos apoios")
+                        "Face externa física do banzo inferior ou superior nas extremidades")
         obj.ReferenceAlignment = ["BottomChord", "TopChordSupports"]
         obj.ReferenceAlignment = "BottomChord"
     if "NominalSpan" not in obj.PropertiesList:
@@ -287,7 +287,8 @@ def prepare_batch(candidate, children):
         if child is not None and hasattr(child, "AssemblySectionTransform"):
             values.setdefault("AssemblySectionTransform", "")  # Double -> Single clears previous T.
         prepared[item.key] = prepared_item(item, child, values)
-    if candidate.config.get("reference_alignment") == "TopChordSupports":
+    if (candidate.config.get("reference_alignment") == "TopChordSupports"
+            or candidate.config.get("reference_surface") == "OuterFace"):
         from .trusses.support_alignment_freecad import validate_support_alignment
         validate_support_alignment(candidate, prepared)
     return prepared

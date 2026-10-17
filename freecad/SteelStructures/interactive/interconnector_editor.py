@@ -47,10 +47,9 @@ class InterconnectorEditor(QtWidgets.QGroupBox):
         self.quantity_label = QtWidgets.QLabel()
         form.addRow(self.quantity_label, self.quantity)
         def distance():
-            spin = QtWidgets.QDoubleSpinBox()
+            from .truss_length_spinbox import TrussLengthSpinBox
+            spin = TrussLengthSpinBox()
             spin.setRange(0., 1e8)
-            spin.setDecimals(3)
-            spin.setSuffix(" mm")
             return spin
         self.spacing, self.start, self.end = distance(), distance(), distance()
         self.spacing.setValue(250.)

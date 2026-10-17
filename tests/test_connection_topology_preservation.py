@@ -129,20 +129,21 @@ class PreservationTests(unittest.TestCase):
             TrussPreview2D=object, __package__="freecad.SteelStructures.interactive"))
         before = self.initial(policy="BalancedMiter")
         after = self.change(before, topology_preset="WarrenVerticals")
-        panel = SimpleNamespace(_initial=copy.deepcopy(before.config),
+        panel = SimpleNamespace(session=SimpleNamespace(config=copy.deepcopy(before.config)),
             get_config=lambda: before.config,
             controller=SimpleNamespace(preview=lambda config: {"nodes": [{"key": self.node}]}, last_candidate=after))
         canvas = cls.__new__(cls)
+        canvas.pending = None
         canvas.editor = SimpleNamespace(panel=panel, diagnostic_legend=SimpleNamespace(setVisible=lambda x: None))
         preview_refreshes = []
         canvas.editor._refresh_transverse_preview = lambda: preview_refreshes.append(
-            copy.deepcopy(panel._initial["connection_intents"]))
+            copy.deepcopy(panel.session.config["connection_intents"]))
         canvas.set_model = lambda model: None
         canvas.scene = lambda: SimpleNamespace(items=lambda: [])
         canvas.update_selection_halo = lambda: None
         canvas.refresh_candidate()
-        self.assertEqual(panel._initial["connection_intents"], after.config["connection_intents"])
-        panel._initial["connection_intents"].clear()
+        self.assertEqual(panel.session.config["connection_intents"], after.config["connection_intents"])
+        panel.session.config["connection_intents"].clear()
         self.assertTrue(after.config["connection_intents"])
         refreshed = []
         canvas.editor._connection_node = self.node

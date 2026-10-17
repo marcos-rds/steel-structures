@@ -1,7 +1,8 @@
 """Focused final C3-B label and composition selection regressions."""
 import types
+import sys
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch, call
 
 from freecad.SteelStructures import profile_catalog
 from freecad.SteelStructures.profiles.selection_filter import ProfileChoices
@@ -17,16 +18,28 @@ class AssemblyRefinementTests(unittest.TestCase):
     def test_single_nominal_length_is_noninteractive_multiple_lengths_remain_selectable(self):
         qt = types.SimpleNamespace(QLabel=Mock(), QComboBox=Mock())
         editor_type = definition('interactive/assembly_editor.py', 'AssemblyEditor',
-                                dict(_RoleProfileDialog=object, QtWidgets=qt))
+                                dict(_RoleProfileDialog=object, QtWidgets=qt,
+                                     __name__='freecad.SteelStructures.interactive.assembly_editor',
+                                     __package__='freecad.SteelStructures.interactive'))
         editor = object.__new__(editor_type)
+        locale = object()
+        editor.locale = Mock(return_value=locale)
+        formatter = Mock(side_effect=lambda value, _locale: {
+            1000.: '1.000,00 mm', 2000.: '2.000,00 mm'}[value])
         editor._queue_refresh = Mock()
         editor.nominal_lengths = (1000.,)
-        editor._setup_run_length()
-        qt.QLabel.assert_called_once_with('Comprimento nominal: 1000 mm')
-        qt.QComboBox.assert_not_called()
-        editor.nominal_lengths = (1000.,2000.)
-        editor._setup_run_length()
+        with patch.dict(sys.modules, {
+                'freecad.SteelStructures.interactive.truss_units': types.SimpleNamespace(length_text=formatter)}):
+            editor._setup_run_length()
+            qt.QLabel.assert_called_once_with('Comprimento nominal: 1.000,00 mm')
+            qt.QComboBox.assert_not_called()
+            editor.nominal_lengths = (1000.,2000.)
+            editor._setup_run_length()
         self.assertEqual(qt.QComboBox.return_value.addItem.call_count,2)
+        qt.QComboBox.return_value.addItem.assert_has_calls([
+            call('Comprimento nominal 1: 1.000,00 mm', 1000.),
+            call('Comprimento nominal 2: 2.000,00 mm', 2000.)])
+        self.assertEqual(formatter.call_args_list, [call(1000.,locale), call(1000.,locale), call(2000.,locale)])
         qt.QComboBox.return_value.currentIndexChanged.connect.assert_called_once_with(editor._queue_refresh)
 
     def test_all_catalog_levels_use_validation_compatibility(self):

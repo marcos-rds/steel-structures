@@ -42,11 +42,12 @@ class DuoPitchControlsTests(unittest.TestCase):
         panel._end_heights_changed()
         self.assertEqual(panel.right_end_height.value(), 700)
 
-    def test_config_read_does_not_mutate_initial_state(self):
+    def test_controls_update_draft_without_mutating_loaded_baseline(self):
         panel = self.panel()
-        original = deepcopy(panel._initial)
+        original = panel.session.baseline_config
         panel.get_config()
-        self.assertEqual(panel._initial, original)
+        self.assertEqual(panel.session.baseline_config, original)
+        self.assertEqual(panel.session.config["envelope_type"], "DuoPitch")
 
 
 class DuoPitchPreviewTests(unittest.TestCase):
@@ -63,8 +64,8 @@ class DuoPitchPreviewTests(unittest.TestCase):
     def test_asymmetric_heights_are_shown_at_both_ends(self):
         model = self.model()
         dimensions = preview_module.end_height_presentation(model, self.envelope(model))
-        self.assertEqual(dimensions, (((0, -300), (0, 0), "E: 300 mm"),
-                                      ((10, -700), (10, 0), "D: 700 mm")))
+        self.assertEqual(dimensions, (((0, -300), (0, 0), "E: 300.00 mm"),
+                                      ((10, -700), (10, 0), "D: 700.00 mm")))
 
     def test_zero_heights_add_no_overlapping_dimensions(self):
         model = self.model()
@@ -85,6 +86,16 @@ class DuoPitchPreviewTests(unittest.TestCase):
         self.assertEqual(result[:2], ((0, -325), (10, -726)))
         self.assertEqual(len(result), 2)  # reference has no repeated caption
 
+    def test_bottom_face_uses_physical_points_in_both_forms(self):
+        for kind in ("Parallel", "DuoPitch"):
+            model = self.model()
+            model.update(envelope_type=kind, reference_surface="OuterFace",
+                         support_reference_local=[[0, -25.4, 0], [10, -25.4, 0]])
+            self.assertEqual(preview_module.reference_presentation(model, self.envelope(model)),
+                             ((0, 25.4), (10, 25.4)))
+            model.pop("support_reference_local")
+            self.assertIsNone(preview_module.reference_presentation(model, self.envelope(model)))
+
     def test_upper_reference_never_guesses_profile_offset(self):
         model = self.model()
         model["reference_alignment"] = "TopChordSupports"
@@ -104,7 +115,7 @@ class DuoPitchPreviewTests(unittest.TestCase):
         envelope = self.envelope(model)
         self.assertEqual(preview_module.reference_presentation(model, envelope), ((0, 0), (10, 0)))
         self.assertEqual(preview_module.end_height_presentation(model, envelope),
-                         (((0, -1000), (0, 0), "1000 mm"),))
+                         (((0, -1000), (0, 0), "1000.00 mm"),))
 
     def test_dimensions_stay_outside_contour_with_fixed_pixel_spacing(self):
         for height in (120, 170, 250):

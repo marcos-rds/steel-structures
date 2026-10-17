@@ -27,7 +27,8 @@ class EditorGestureTests(unittest.TestCase):
             QPoint=Point,QSize=lambda *args:args,QRect=lambda *args:args)
         cls=definition("interactive/truss_topology_editor.py","TopologyCanvas",dict(TrussPreview2D=CanvasBase,QtCore=qt))
         self.canvas=object.__new__(cls)
-        self.canvas.pending=self.canvas.rubber=None
+        self.canvas.isEnabled=lambda:True
+        self.canvas.pending=self.canvas.rubber=self.canvas.snap_marker=None
         self.messages=[]; self.actions=[]; self.items=[]
         self.controller=SimpleNamespace(last_candidate=build_candidate(config()))
         def apply(action,**args):
@@ -36,7 +37,7 @@ class EditorGestureTests(unittest.TestCase):
         self.mode="create"
         self.canvas.editor=SimpleNamespace(current_mode=lambda:self.mode,
             allow_free=SimpleNamespace(isChecked=lambda:True),
-            message=SimpleNamespace(setText=self.messages.append),
+            message=SimpleNamespace(setText=lambda text,*_:self.messages.append(text)),
             panel=SimpleNamespace(controller=self.controller,apply_topology_edit=apply))
         self.canvas.items=lambda *args:self.items
         self.canvas.mapToScene=lambda point:point
@@ -65,6 +66,12 @@ class EditorGestureTests(unittest.TestCase):
         self.mode="remove"; self.hit("edge",edge.key); self.click()
         self.assertEqual(self.controller.last_candidate.config["topology_mode"],"Custom")
         self.assertFalse(any(e.key==edge.key for e in self.controller.last_candidate.graph.edges))
+
+    def test_invalid_preview_blocks_graph_gestures(self):
+        self.canvas.isEnabled=lambda:False
+        self.mode="add_node"
+        self.click(750,-400)
+        self.assertEqual(self.actions,[])
 
     def test_add_and_move_only_internal_node(self):
         self.mode="add_node"; self.click(750,-400)

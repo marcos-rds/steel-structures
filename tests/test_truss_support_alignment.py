@@ -89,6 +89,49 @@ class SupportAlignmentTests(unittest.TestCase):
         self.assertIs(aligned_frame(value, raw), raw)
         self.assertEqual(resolve_support_alignment(value), {"nominal_span": 6000.})
 
+    def test_physical_bottom_in_both_forms_rotations_insertions_and_compositions(self):
+        from tests.test_truss_core import config as core_config
+        from freecad.SteelStructures.trusses.realization import build_candidate, reference_frame
+        for kind in ("Parallel", "DuoPitch"):
+            for assembly in ("Single", "SpacedPair", "DoubleChannelOutward"):
+                for rotation in (0., 23., 90., -90.):
+                    for insertion in ("centroid", "top", "bottom"):
+                        with self.subTest(kind=kind, assembly=assembly, rotation=rotation, insertion=insertion):
+                            value = core_config()
+                            value.update(envelope_type=kind, reference_alignment="BottomChord",
+                                         reference_surface="OuterFace", start=[100., 200., 300.],
+                                         end=[3700., 5000., 300.], plane_normal=[0., 0., 1.])
+                            role = value["role_specs"]["BOTTOM_CHORD"]
+                            role.update(profile_ref=asdict(profile_catalog.ref_for_designation('U 4" x 8,04')),
+                                        rotation=rotation, insertion=insertion)
+                            value["role_specs"]["BOTTOM_CHORD"] = configure_assembly(role, assembly, 80.)
+                            candidate = build_candidate(value)
+                            frame = reference_frame(candidate.config)
+                            for q, target in zip(candidate.config["support_reference_local"],
+                                                 (value["start"], value["end"])):
+                                self.assertLess(math.dist(transform(q, frame), target), 1e-7)
+                            normal = frame[2]
+                            low = min(_section_interval(item, normal)[0] for item in candidate.items
+                                      if item.role == "BOTTOM_CHORD")
+                            self.assertAlmostEqual(low, sum(a*b for a,b in zip(value["start"],normal)), places=7)
+
+    def test_legacy_candidate_stays_put_and_explicit_face_opt_in_moves_only_global_geometry(self):
+        from tests.test_truss_core import config as core_config
+        from freecad.SteelStructures.trusses.realization import build_candidate, reference_frame, input_reference_frame
+        from freecad.SteelStructures.trusses.serialization import encode_state, decode_state
+        value = core_config()
+        value["role_specs"]["BOTTOM_CHORD"] = fixture()["role_specs"]["TOP_CHORD"]
+        legacy = build_candidate(value)
+        restored = build_candidate(decode_state(encode_state(legacy))["candidate"]["config"])
+        self.assertEqual(restored.items, legacy.items)
+        self.assertEqual(reference_frame(restored.config), input_reference_frame(restored.config))
+        physical = build_candidate(dict(restored.config, reference_surface="OuterFace"), restored)
+        self.assertEqual(physical.graph, legacy.graph)
+        self.assertEqual(physical.runs, legacy.runs)
+        self.assertNotEqual(physical.items[0].start_global, legacy.items[0].start_global)
+        roundtrip = build_candidate(decode_state(encode_state(physical))["candidate"]["config"])
+        self.assertEqual(roundtrip.items, physical.items)
+
     def test_rectangle_roll_uses_exact_transverse_projection(self):
         value = fixture()
         for angle in (0., 23., 90., 137.):

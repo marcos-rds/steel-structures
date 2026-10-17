@@ -36,7 +36,8 @@ def input_reference_frame(config):
 
 def reference_frame(config):
     frame = input_reference_frame(config)
-    if config.get("reference_alignment") == "TopChordSupports":
+    if (config.get("reference_alignment") == "TopChordSupports"
+            or config.get("reference_surface") == "OuterFace"):
         from .support_alignment import aligned_frame
         return aligned_frame(config, frame)
     return frame
@@ -64,7 +65,10 @@ def build_candidate(config, applied=None):
     config.pop("support_section_offset", None)
     if config["reference_alignment"] not in ("BottomChord", "TopChordSupports"):
         raise ValueError("Alinhamento da referência inválido.")
-    if config["reference_alignment"] == "TopChordSupports":
+    # Absent marker retains the accepted axis reference in existing documents.
+    # New generators opt into the physical face; opening/canceling never migrates.
+    if (config["reference_alignment"] == "TopChordSupports"
+            or config.get("reference_surface") == "OuterFace"):
         from .support_alignment import resolve_support_alignment
         config.update(resolve_support_alignment(config))
     config.setdefault("default_gusset_thickness", 10.)

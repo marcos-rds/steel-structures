@@ -342,7 +342,14 @@ class TrussScenePreview:
 
 class TrussController:
     def __init__(self, document, obj=None):
+        if obj is not None and getattr(obj, "Document", document) is not document:
+            raise ValueError("A treliça pertence a outro documento.")
         self.document = document
+        document_name = getattr(document, "Name", None)
+        self._document_deleted = False
+        self._document_is_open = lambda: not self._document_deleted and App.listDocuments().get(document_name) is document
+        self._active_document = lambda: App.ActiveDocument
+        self._persistent_config_reader = lambda owner: config_from_object(owner, resolve_reference=False)
         self.object = obj
         self.opening_warnings = []
         if obj is not None:
@@ -365,6 +372,7 @@ class TrussController:
         self._view = None
         self.timings = {}
         self.closed = False
+        self.session = None
         self.last_candidate = None
 
     def _hide_persistent_gussets(self):
@@ -375,28 +383,56 @@ class TrussController:
             plate.ViewObject.Visibility = False
 
     def _restore_persistent_gussets(self):
-        for name, visibility in self._gusset_visibility.items():
+        visibility_by_name, self._gusset_visibility = self._gusset_visibility, {}
+        for name, visibility in visibility_by_name.items():
+            if not self._document_is_open():
+                break
             plate = self.document.getObject(name)
             if plate is not None:
                 plate.ViewObject.Visibility = visibility
-        self._gusset_visibility = {}
+
+    def bind_session(self, config):
+        from freecad.SteelStructures.trusses.edit_session import TrussEditSession
+        if getattr(self, "session", None) is None:
+            self.session = TrussEditSession(self.document, self.object, config,
+                                            getattr(self, "_document_is_open", None))
+            self.session.reconciliation_candidate = getattr(self, "_last_candidate", None)
+            self._last_candidate = None
+            reader = getattr(self, "_persistent_config_reader", None)
+            if self.object is not None and reader is not None:
+                self.session.persisted_config = reader(self.object)
+        self.session.assert_context(self.document, self.object)
+        reader = getattr(self, "_persistent_config_reader", None)
+        self.session.assert_persistence(reader(self.object) if self.object is not None and reader else None)
+        return self.session
+
+    @property
+    def last_candidate(self):
+        """Compatibility view of the semantic reconciliation history, even if stale."""
+        session = getattr(self, "session", None)
+        return session.reconciliation_candidate if session is not None else getattr(self, "_last_candidate", None)
+
+    @last_candidate.setter
+    def last_candidate(self, value):
+        session = getattr(self, "session", None)
+        if session is not None:
+            session.reconciliation_candidate = value
+        else:
+            self._last_candidate = value
 
     def candidate(self, config):
-        config = resolve_linked_reference(self.document, config, self.object)
-        if self.object is not None:
-            if self.last_candidate is not None:
-                # Candidate-to-candidate comparison is required for successive
-                # preset/envelope changes: a newly edited intent must not be
-                # mistaken for an accepted intent when the topology changes
-                # again before Apply.
-                applied = self.last_candidate
-            else:
-                applied_config = decode_state(self.object.AppliedState)["candidate"]["config"]
-                applied = build_candidate(applied_config)
-        else:
+        session = self.bind_session(config)
+        session.replace_config(config)
+        try:
+            resolved = resolve_linked_reference(self.document, session.snapshot(), self.object)
             applied = self.last_candidate
-        candidate = build_candidate(config, applied)
-        self.last_candidate = candidate
+            if applied is None and session.realized_config is not None:
+                applied = build_candidate(session.realized_config)
+            candidate = build_candidate(resolved, applied)
+        except (ValueError, RuntimeError) as exc:
+            session.invalidate(exc)
+            raise
+        session.record_candidate(candidate)
         return candidate
 
     def preview(self, config):
@@ -427,12 +463,16 @@ class TrussController:
                                           for p in value.participants],
                             diagnostics=[d.message for d in value.diagnostics])
                        for value in resolutions]
+        self.session.diagnostics = tuple(candidate.warnings) + tuple(
+            d.message for d in (*orphan_diagnostics, *gusset_diagnostics)) + tuple(
+            d.message for value in resolutions for d in value.diagnostics)
         return dict(nodes=[asdict(n) for n in candidate.graph.nodes],
                     edges=[asdict(e) for e in candidate.graph.edges],
                     stations=[asdict(s) for s in candidate.stations.stations],
                     envelope=paths(definition), warnings=list(candidate.warnings),
                     envelope_type=config["envelope_type"],
                     reference_alignment=config.get("reference_alignment", "BottomChord"),
+                    reference_surface=config.get("reference_surface"),
                     support_reference_local=config.get("support_reference_local"),
                     effective=candidate.config["panelization_result"], topology_mode=candidate.config["topology_mode"],
                     left_panels=candidate.stations.left_panels, right_panels=candidate.stations.right_panels,
@@ -474,6 +514,7 @@ class TrussController:
             return
         if self.closed:
             return
+        self._assert_active_document()
         candidate = self.candidate(config)
         key = dumps(candidate)
         if key == self._preview_signature:
@@ -538,14 +579,17 @@ class TrussController:
         self.timings["preview_seconds"] = perf_counter()-started
 
     def remove_preview(self):
-        if self._preview is not None:
-            self._preview.remove()
-            self._preview = None
+        preview, self._preview = self._preview, None
         self._preview_signature = None
-        self._restore_persistent_gussets()
+        try:
+            if preview is not None:
+                preview.remove()
+        finally:
+            self._restore_persistent_gussets()
 
     def pick_points(self, callback, count=2):
         """Native Draft snapping, without replacing the truss task dialog."""
+        self._assert_active_document()
         self.cancel_picker()
         import WorkingPlane
         normal = list(WorkingPlane.get_working_plane().axis)
@@ -601,45 +645,87 @@ class TrussController:
         return source_geometry(source,config["reference_mode"],config.get("reference_edge",""),config["plane_normal"],up)
 
     def cancel_picker(self):
-        if self._view is not None:
-            for kind,token in self._point_callbacks:
-                self._view.removeEventCallback(kind, token)
-            self._point_callbacks = []
-            self._view = None
+        view, self._view = self._view, None
+        callbacks, self._point_callbacks = self._point_callbacks, []
+        if view is not None:
+            if self.document is None or self._document_is_open():
+                for kind, token in callbacks:
+                    try:
+                        view.removeEventCallback(kind, token)
+                    except (RuntimeError, ReferenceError):
+                        # FreeCAD may have already destroyed the view/callback.
+                        pass
             Gui.Snapper.off()
 
-    def accept(self, config):
+    def _assert_active_document(self):
+        if self.document is not None and getattr(self, "_active_document", None) is not None and self._active_document() is not self.document:
+            raise ValueError("Ative o documento da treli\u00e7a antes de continuar a edi\u00e7\u00e3o.")
+
+    def apply(self, config):
+        self._assert_active_document()
         candidate = self.candidate(config)
-        # Remove preview outside the creation transaction so Undo/Redo never restores it.
-        self.remove_preview()
         self.cancel_picker()
+        if not self.session.needs_application:
+            return self.object
+        # Coin and picker resources stay outside the native apply transaction.
+        self.remove_preview()
         started = perf_counter()
-        self.object = apply_truss(self.document, candidate.config, self.object)
+        owner = apply_truss(self.document, candidate.config, self.object)
+        self.object = owner
+        reader = getattr(self, "_persistent_config_reader", None)
+        self.session.mark_applied(owner, reader(owner) if reader else None)
         self.timings["create_seconds"] = perf_counter()-started
+        return owner
+
+    def finish(self):
+        if self.closed:
+            return
         self.closed = True
+        owns_draft_command = getattr(getattr(App, "activeDraftCommand", None), "controller", None) is self
+        if owns_draft_command:
+            App.activeDraftCommand = None
+        try:
+            self.cancel_picker()
+        finally:
+            try:
+                if owns_draft_command and getattr(Gui, "Snapper", None) is not None:
+                    Gui.Snapper.off()
+            finally:
+                try:
+                    self.remove_preview()
+                finally:
+                    if getattr(self, "session", None) is not None:
+                        self.session.close()
+
+    def accept(self, config):
+        owner = self.apply(config)
+        self.finish()
         Gui.Selection.clearSelection()
-        Gui.Selection.addSelection(self.object)
-        return self.object
+        Gui.Selection.addSelection(owner)
+        return owner
 
     def cancel(self):
-        self.closed = True
-        self.cancel_picker()
-        self.remove_preview()
+        self.finish()
 
 
 def open_truss_panel(document, obj=None):
     global _active_panel
     if _active_panel is not None:
+        _active_panel.session.assert_context(document, obj)
         return _active_panel
     if Gui.Control.activeDialog():
         raise ValueError("Conclua ou cancele o painel atual antes de abrir Criar Treliça.")
     from .truss_task_panel import TrussTaskPanel
     controller = TrussController(document, obj)
 
-    def closed():
+    def closed(close_dialog=True):
         global _active_panel
-        _active_panel = None
-        Gui.Control.closeDialog()
+        if getattr(App, "activeDraftCommand", None) is panel:
+            App.activeDraftCommand = None
+        if _active_panel is panel:
+            _active_panel = None
+            if close_dialog:
+                Gui.Control.closeDialog()
 
     config = config_from_object(obj, resolve_reference=False) if obj is not None else default_config()
     if obj is None:
@@ -663,7 +749,11 @@ def open_truss_panel(document, obj=None):
         panel = TrussTaskPanel(document, controller, config, on_close=closed,
                                point_picker=controller.pick_points)
         _active_panel = panel
-        Gui.Control.showDialog(panel)
+        task = Gui.Control.showDialog(panel)
+        task.setDocumentName(document.Name)
+        task.setAutoCloseOnDeletedDocument(True)
+        # Participate in Draft's existing finish-before-start protocol (WP, etc.).
+        App.activeDraftCommand = panel
     except Exception:
         controller.cancel()
         _active_panel = None

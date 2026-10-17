@@ -58,6 +58,8 @@ def run(output):
 
     base = truss.default_config()
     base.update(envelope_type="DuoPitch",span=3000.,end=[3000.,0.,0.],height=900.,panel_count=6)
+    # A real prior axis-reference state, not a legacy label on new geometry.
+    base.pop("reference_surface")
     # First exercise actual existing document with missing additive properties.
     legacy = truss.apply_truss(doc, base)
     before = snapshot(legacy)
@@ -72,6 +74,7 @@ def run(output):
     doc.recompute()
     check("legacy_additive_restore_zero_bottom", valid(legacy) and legacy.LeftEndHeight.Value == 0
           and str(legacy.ReferenceAlignment)=="BottomChord" and same(snapshot(legacy),before))
+    check("legacy_restore_does_not_opt_into_face", "reference_surface" not in truss.config_from_object(legacy))
     accepted=legacy.AppliedState
     original_apply=truss.apply_result
     calls=[]
@@ -316,6 +319,19 @@ def run(output):
     doc.recompute()
     check("parallel_copy_property_independent",valid(pcopied) and snapshot(pfrozen)==unchanged)
     physical(pcopied)
+    bottom_names=[]
+    for kind in ("Parallel","DuoPitch"):
+        for assembly in ("Single","SpacedPair"):
+            cfg=truss.default_config()
+            cfg.update(envelope_type=kind,span=3000.,end=[3000.,0.,0.],height=900.,
+                       left_end_height=180.,right_end_height=300.,link_end_heights=False)
+            cfg["role_specs"]["BOTTOM_CHORD"]["rotation"]=23.
+            cfg["role_specs"]["BOTTOM_CHORD"]=configure_assembly(
+                cfg["role_specs"]["BOTTOM_CHORD"],assembly,80.)
+            bottom=truss.apply_truss(doc,cfg)
+            check("bottom_face_valid_"+kind+assembly,valid(bottom))
+            physical(bottom)
+            bottom_names.append(bottom.Name)
     owner_names=[legacy.Name,composite.Name,linked.Name,frozen.Name,duplicate.Name,custom.Name,
                  *parallel_names,plinked.Name,pfrozen.Name,pcopied.Name]
     path=output/"duopitch.fcstd"
@@ -325,6 +341,9 @@ def run(output):
     doc.recompute()
     check("save_reopen_owners",all(valid(doc.getObject(n)) for n in owner_names))
     for n in owner_names[1:]:
+        physical(doc.getObject(n))
+    for n in bottom_names:
+        check("bottom_face_reopen_"+n,valid(doc.getObject(n)))
         physical(doc.getObject(n))
     copied=doc.getObject(owner_names[-1])
     source=doc.getObject(owner_names[-2])

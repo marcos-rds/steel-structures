@@ -114,6 +114,7 @@ class Check:
 class Controller:
     def __init__(self):
         self.previews = []; self.previews3d = []; self.accepts = []; self.cancels = 0
+        self.applies = []
         self.error = None; self.accept_error = None
 
     def preview(self, config):
@@ -135,6 +136,11 @@ class Controller:
 
     def accept(self, config):
         self.accepts.append(deepcopy(config))
+        if self.accept_error:
+            raise ValueError(self.accept_error)
+
+    def apply(self, config):
+        self.applies.append(deepcopy(config))
         if self.accept_error:
             raise ValueError(self.accept_error)
 
@@ -161,8 +167,8 @@ def config_fixture():
 def make_panel():
     config = config_fixture()
     panel = object.__new__(panel_module.TrussTaskPanel)
-    panel._initial = deepcopy(config)
-    panel._role_specs = deepcopy(config["role_specs"])
+    from freecad.SteelStructures.trusses.edit_session import TrussEditSession
+    panel.session = TrussEditSession(None, None, config)
     panel.controller = Controller()
     panel._closed = False; panel._updating = False; panel._valid = False
     panel._axis_direction = [1.0, 0.0, 0.0]
@@ -192,6 +198,27 @@ def make_panel():
 
 
 class TrussPanelContractTests(unittest.TestCase):
+    def test_apply_keeps_panel_open_then_ok_closes(self):
+        panel = make_panel()
+        panel.height.setValue(7)
+        self.assertTrue(panel.apply())
+        self.assertFalse(panel._closed)
+        self.assertFalse(panel.session.closed)
+        self.assertEqual(panel.controller.applies[0]["height"], 7)
+        panel.height.setValue(8)
+        self.assertTrue(panel.accept())
+        self.assertTrue(panel._closed)
+        self.assertEqual(panel.controller.accepts[0]["height"], 8)
+        self.assertFalse(panel.apply())
+
+    def test_apply_failure_keeps_panel_open(self):
+        panel = make_panel()
+        panel.controller.accept_error = "Native apply failed"
+        self.assertFalse(panel.apply())
+        self.assertFalse(panel._closed)
+        self.assertFalse(panel.session.closed)
+        self.assertIn("Native apply failed", panel.message.text)
+
     def test_nominal_lengths_collapse_numerically_equal_choices(self):
         self.assertEqual(panel_module.distinct_nominal_lengths(
             (1000., 1000.+5e-8, 1250., 1250.+5e-7)), (1000., 1250.))
@@ -199,14 +226,14 @@ class TrussPanelContractTests(unittest.TestCase):
     def test_get_config_uses_endpoint_distance_and_preserves_independent_physical_roles(self):
         panel = make_panel()
         panel.end_inputs = [Number(0), Number(6), Number(8)]
-        panel._role_specs["END_POST_RIGHT"]["rotation"] = 45.0
+        panel.session.config["role_specs"]["END_POST_RIGHT"]["rotation"] = 45.0
         panel.span.setValue(999)
         result = panel.get_config()
         self.assertEqual(result["span"], 10.0)
         self.assertEqual(len(result["role_specs"]), 6)
         self.assertEqual(result["role_specs"]["END_POST_RIGHT"]["rotation"], 45.0)
         result["role_specs"]["END_POST_RIGHT"]["rotation"] = 1
-        self.assertEqual(panel._role_specs["END_POST_RIGHT"]["rotation"], 45.0)
+        self.assertEqual(panel.session.config["role_specs"]["END_POST_RIGHT"]["rotation"], 45.0)
 
     def test_point_edit_updates_span_without_changing_explicit_normal(self):
         panel = make_panel()
@@ -309,6 +336,12 @@ class TrussPanelContractTests(unittest.TestCase):
         panel._refresh()
         self.assertIn("2 painéis à esquerda + 2 à direita", panel.closure.text)
 
+    def test_disabling_preview_does_not_parse_incomplete_coordinates(self):
+        panel = make_panel()
+        panel.get_config = lambda: self.fail("Disabling preview must not read a partial edit")
+        panel._toggle_preview3d(False)
+        self.assertFalse(panel.controller.previews3d[-1][1])
+
     def test_accept_uses_current_state_and_closes_once(self):
         panel = make_panel()
         closed = []
@@ -373,7 +406,10 @@ class TrussPanelContractTests(unittest.TestCase):
         callbacks[0]([1, 2, 3], [4, 5, 6])
         panel._update_preview3d()
         self.assertEqual(panel.controller.cancels, 1)
-        self.assertEqual(panel.get_config(), previous)
+        self.assertEqual(panel.session.config, previous)
+        self.assertTrue(panel.session.closed)
+        with self.assertRaises(ValueError):
+            panel.get_config()
         self.assertEqual(panel.controller.previews3d, [])
 
     def test_picker_sets_both_points_and_never_changes_normal(self):

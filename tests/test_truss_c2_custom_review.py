@@ -187,24 +187,25 @@ class CustomStateReview(unittest.TestCase):
         cls=definition("interactive/truss_task_panel.py","TrussTaskPanel",
                        dict(__package__="freecad.SteelStructures.interactive"))
         panel=object.__new__(cls)
+        panel.session=SimpleNamespace(config={})
         c=build_candidate(config())
         edge=next(e for e in c.graph.edges if e.role=="DIAGONAL")
-        panel._initial=edit_candidate(c,"remove_edge",key=edge.key)
+        panel.session.config=edit_candidate(c,"remove_edge",key=edge.key)
         panel._updating=False
         panel.shown="K"
         panel.preset=SimpleNamespace(currentData=lambda:panel.shown,blockSignals=lambda _:False,
             findData=lambda v:v,setCurrentIndex=lambda v:setattr(panel,"shown",v))
         panel._refresh=lambda:None
-        panel.get_config=lambda:dict(copy.deepcopy(panel._initial),topology_preset=panel.shown)
+        panel.get_config=lambda:dict(copy.deepcopy(panel.session.config),topology_preset=panel.shown)
         panel.controller=SimpleNamespace(candidate=build_candidate)
         panel._preset_changed()
         self.assertEqual(panel.shown,"Custom")
         self.assertEqual(panel.get_config()["base_preset"],"K")
         panel._restore_topology()
         self.assertEqual(panel.shown,"K")
-        self.assertEqual(panel._initial["topology_mode"],"Preset")
-        self.assertIsNone(panel._initial["custom_topology"])
-        self.assertNotIn("base_preset",panel._initial)
+        self.assertEqual(panel.session.config["topology_mode"],"Preset")
+        self.assertIsNone(panel.session.config["custom_topology"])
+        self.assertNotIn("base_preset",panel.session.config)
 
     def test_base_seed_persists_separately_and_restore_returns_preset(self):
         c=build_candidate(config(topology_preset="K"))

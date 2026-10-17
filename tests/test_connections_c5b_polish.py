@@ -124,7 +124,7 @@ class PolishTests(unittest.TestCase):
             def currentData(self): return self.items[self.index][1] if self.items and self.index>=0 else None
             def blockSignals(self,_value): return False
             def setEnabled(self,_value): pass
-            def setText(self,value): self.text=value
+            def setText(self,value,*_args): self.text=value
             def setToolTip(self,value): self.tip=value
             def toolTip(self): return self.tip
             def setVisible(self,value): self.visible=value
@@ -136,6 +136,7 @@ class PolishTests(unittest.TestCase):
             QtWidgets=SimpleNamespace(QDialog=object),
             __package__='freecad.SteelStructures.interactive'))
         editor=object.__new__(cls)
+        editor.canvas=SimpleNamespace(isEnabled=lambda: True,update_selection_halo=lambda: None)
         value,node=three_web_config()
         c=build_candidate(value)
         editor.panel=SimpleNamespace(get_config=lambda:c.config,controller=SimpleNamespace(last_candidate=c))

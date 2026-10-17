@@ -250,6 +250,7 @@ class ManualFixTests(unittest.TestCase):
         item = SimpleNamespace(key="MEMBER", spec=SimpleNamespace(color=(1., .5, 0.)))
         make_candidate = lambda signature: SimpleNamespace(signature=signature, items=(item,))
         document = SimpleNamespace(Objects=[])
+        app.ActiveDocument = document
 
         created = controller_type(document)
         created.candidate = lambda config: make_candidate(config["signature"])
@@ -316,8 +317,8 @@ class ManualFixTests(unittest.TestCase):
 
     def test_role_controls_follow_candidate_edges(self):
         panel = make_panel()
-        panel.role_buttons = {key: Number(0) for key in panel._role_specs}
-        panel.role_labels = {key: Number(0) for key in panel._role_specs}
+        panel.role_buttons = {key: Number(0) for key in panel.session.config["role_specs"]}
+        panel.role_labels = {key: Number(0) for key in panel.session.config["role_specs"]}
         panel._refresh()
         self.assertTrue(panel.role_buttons["TOP_CHORD"].visible)
         self.assertFalse(panel.role_buttons["VERTICAL"].visible)
