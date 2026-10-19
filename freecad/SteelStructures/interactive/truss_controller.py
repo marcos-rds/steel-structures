@@ -650,6 +650,22 @@ class TrussController:
         up=list(WorkingPlane.get_working_plane().v)
         return source_geometry(source,config["reference_mode"],config.get("reference_edge",""),config["plane_normal"],up)
 
+    def selected_linear_reference(self, selection, normal, *, allow_rectangle=False):
+        from types import SimpleNamespace
+        from ..truss_edge_snapshot import selected_path, capture_edge, is_draft_line
+        from ..truss_reference import is_draft_rectangle
+        import WorkingPlane
+        root,source,subname,indexed=selected_path(selection,self.document,self.object)
+        # Opening with a whole Draft rectangle keeps its legacy envelope/base.
+        # An explicitly selected rectangle edge follows the Snapshot path.
+        if is_draft_line(source) or (allow_rectangle and not indexed and is_draft_rectangle(source)):
+            selected=self.selected_reference([SimpleNamespace(Object=source,
+                SubElementNames=(indexed,) if indexed else ())])
+            config=dict(self.session.config,**selected)
+            config["plane_normal"]=normal
+            return selected,self.reference_geometry(config) if selected["reference_edge"] else None,None
+        return capture_edge(root,source,subname,indexed,normal,list(WorkingPlane.get_working_plane().v))
+
     def cancel_picker(self):
         view, self._view = self._view, None
         callbacks, self._point_callbacks = self._point_callbacks, []
@@ -749,25 +765,23 @@ def open_truss_panel(document, obj=None):
     controller = TrussController(document, obj)
 
     config = config_from_object(obj, resolve_reference=False) if obj is not None else default_config()
+    selection = ()
     if obj is None:
         import WorkingPlane
         plane = WorkingPlane.get_working_plane()
         config.update(start=list(plane.position),
                       end=list(plane.position.add(plane.u * config["span"])),
                       plane_normal=list(plane.axis))
-        if Gui.Selection.getSelectionEx():
-            try:
-                config.update(controller.selected_reference())
-                if config.get("reference_edge"):
-                    config.update(controller.reference_geometry(config))
-                else:
-                    config["reference_defined"]=False
-            except ValueError as exc:
-                if config.get("reference_mode") in ("DraftLine","DraftRectangle"):
-                    config["reference_defined"]=False
-                App.Console.PrintWarning(str(exc)+"\n")
+        selection = Gui.Selection.getSelectionEx("", 0)
     try:
         panel = _show_truss_panel(controller, config)
+        if selection:
+            try:
+                selected, values, origin = controller.selected_linear_reference(
+                    selection, panel._read_vector(panel.normal_inputs), allow_rectangle=True)
+                panel._adopt_selected_reference(selected, values=values, origin=origin)
+            except (ValueError, RuntimeError, ReferenceError) as exc:
+                App.Console.PrintWarning(str(exc)+"\n")
     except Exception:
         controller.cancel()
         _active_panel = None

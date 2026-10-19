@@ -8,10 +8,11 @@ from shiboken6 import isValid
 
 
 class TrussReferenceSelection:
-    def __init__(self, panel, *, line_only=False):
+    def __init__(self, panel, *, line_only=False, allow_edges=False):
         self.panel = panel
         self.document = panel.document
         self.line_only = line_only
+        self.allow_edges = allow_edges
         self.closed = False
         self.pending = False
         self.shortcut = None
@@ -20,10 +21,15 @@ class TrussReferenceSelection:
         self.prompt = ("Clique em uma Linha Draft na vista. Esc cancela a seleção."
                        if line_only else
                        "Clique em uma Linha Draft ou aresta de Retângulo Draft. Esc cancela a seleção.")
+        if allow_edges:
+            self.prompt = "Clique em uma linha ou aresta reta. Esc cancela a seleção."
+
+    def _selection(self):
+        return Gui.Selection.getSelectionEx("",0) if self.allow_edges else Gui.Selection.getSelectionEx()
 
     def start(self):
         # A valid preselection is still a shortcut, never a prerequisite.
-        selection = Gui.Selection.getSelectionEx()
+        selection = self._selection()
         if selection:
             try:
                 self._adopt(selection)
@@ -36,7 +42,10 @@ class TrussReferenceSelection:
         self.shortcut = QtGui.QShortcut(QtGui.QKeySequence("Escape"), self.panel.form)
         self.shortcut.setContext(QtCore.Qt.WindowShortcut)
         self.shortcut.activated.connect(self.cancel)
-        Gui.Selection.addObserver(self)
+        if self.allow_edges:
+            Gui.Selection.addObserver(self,0)
+        else:
+            Gui.Selection.addObserver(self)
         self.observing = True
         App.addDocumentObserver(self)
         self.observing_document = True
@@ -47,6 +56,11 @@ class TrussReferenceSelection:
         panel.session.assert_context(self.document, panel.controller.object)
         panel.controller._assert_active_document()
         panel.controller.bind_session(panel.session.config)
+        if self.allow_edges:
+            selected,values,origin=panel.controller.selected_linear_reference(
+                selection,panel._read_vector(panel.normal_inputs))
+            panel._adopt_selected_reference(selected,values=values,origin=origin)
+            return
         selected = panel.controller.selected_reference(selection)
         if self.line_only and selected["reference_mode"] != "DraftLine":
             raise ValueError("Selecione uma Linha Draft simples; arestas de sólidos e perfis ainda não são suportadas.")
@@ -64,7 +78,7 @@ class TrussReferenceSelection:
             return
         # Use the exact event's SelectionEx entry, not every previously selected
         # object. Invalid clicks may remain selected in the native viewport.
-        for item in Gui.Selection.getSelectionEx():
+        for item in self._selection():
             if (item.Object.Document is self.document and item.Object.Name == object_name
                     and (not subelement or subelement in item.SubElementNames)):
                 selected = SimpleNamespace(Object=item.Object,

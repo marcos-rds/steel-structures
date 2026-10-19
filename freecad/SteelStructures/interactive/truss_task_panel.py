@@ -52,7 +52,7 @@ class _ReferenceSourceObserver:
 
     def slotChangedObject(self, obj, _property):
         panel = self.panel()
-        if panel is not None and obj.Name == panel.session.config.get("reference_source"):
+        if panel is not None and obj.Name == panel._reference_origin_name():
             self._sync(obj.Document)
 
     def slotCreatedObject(self, obj):
@@ -60,7 +60,7 @@ class _ReferenceSourceObserver:
 
     def slotDeletedObject(self, obj):
         panel = self.panel()
-        if panel is not None and obj.Name == panel.session.config.get("reference_source"):
+        if panel is not None and obj.Name == panel._reference_origin_name():
             self._sync(obj.Document, excluded=obj)
 
     def slotRecomputedDocument(self, document):
@@ -280,6 +280,10 @@ class TrussTaskPanel:
         else:
             self.session = TrussEditSession(document, getattr(controller, "object", None), initial_config)
         self.session.assert_context(document, getattr(controller, "object", None))
+        if initial_config.get("reference_mode","TwoPoints")!="TwoPoints":
+            self.session._edge_snapshot_origin=None
+        if initial_config.get("reference_mode") in ("DraftLine","DraftRectangle"):
+            self.session._reference_link_preference=initial_config.get("reference_linked",False)
         for side in ("END_POST_LEFT", "END_POST_RIGHT"):
             if side not in self.session.config["role_specs"]:
                 self.session.config["role_specs"][side] = deepcopy(self.session.config["role_specs"]["END_POST"])
@@ -892,8 +896,8 @@ class TrussTaskPanel:
         root.insertWidget(0, source_section)
         form.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
         form.setRowWrapPolicy(QtWidgets.QFormLayout.WrapLongRows)
-        self.reference_mode=self._combo((("Dois pontos","TwoPoints"),("Linha Draft","DraftLine"),
-                                        ("Retângulo Draft","DraftRectangle"),("Três pontos","ThreePoints")),config.get("reference_mode","TwoPoints"))
+        self.reference_mode=self._combo((("Dois pontos","TwoPoints"),("Linha ou aresta","DraftLine"),
+                                        ("Retângulo Draft","DraftRectangle"),("Três pontos","ThreePoints")),self._reference_ui_mode(config))
         self.keep_reference_link=QtWidgets.QCheckBox("Manter vínculo com a fonte")
         self.keep_reference_link.setChecked(config.get("reference_linked",False))
         self.reference_edge=self._combo((("Selecione o lado da base",""),)+tuple((f"Lado {i} (Edge{i})",f"Edge{i}") for i in range(1,5)),config.get("reference_edge",""))
@@ -922,8 +926,8 @@ class TrussTaskPanel:
         self.draft_reference_actions = TrussReferenceActions()
         self.select_reference_button = QtWidgets.QPushButton("Selecionar existente")
         self.select_reference_button.setObjectName("truss_select_reference")
-        self.select_reference_button.setToolTip("Clique e selecione uma Linha Draft na vista; Esc cancela a seleção. Marque Manter vínculo com a fonte para associá-la.")
-        self.select_reference_button.clicked.connect(lambda _checked=False: self._begin_reference_selection(line_only=True))
+        self.select_reference_button.setToolTip("Selecionar uma Linha Draft vinculável ou capturar uma aresta reta fixa (Snapshot). Esc cancela a seleção.")
+        self.select_reference_button.clicked.connect(lambda _checked=False: self._begin_reference_selection(line_only=True,allow_edges=True))
         self.draw_reference_button = QtWidgets.QPushButton("Desenhar nova")
         self.draw_reference_button.setObjectName("truss_draw_reference")
         from FreeCAD import Gui
@@ -946,15 +950,40 @@ class TrussTaskPanel:
         for spin in self.normal_inputs:
             spin.valueChanged.connect(self._refresh)
         self.reference_mode.currentIndexChanged.connect(self._reference_mode_changed)
-        self.keep_reference_link.toggled.connect(self._refresh)
+        self.keep_reference_link.toggled.connect(self._reference_link_changed)
         self.reference_edge.currentIndexChanged.connect(self._reference_edge_changed)
 
     def _reference_mode_changed(self):
         if self._updating: return
         self._cancel_reference_selection()
         mode=self.reference_mode.currentData()
+        if not self._has_edge_snapshot() and self.session.config.get("reference_mode") in ("DraftLine","DraftRectangle"):
+            self.session._reference_link_preference=self.keep_reference_link.isChecked()
+        self.session._edge_snapshot_origin=None
         self.session.config.update(reference_mode=mode,reference_source="",reference_edge="",reference_defined=mode=="TwoPoints")
-        self.keep_reference_link.setChecked(False)
+        blocked=self.keep_reference_link.blockSignals(True)
+        self.keep_reference_link.setChecked(mode in ("DraftLine","DraftRectangle") and
+                                           getattr(self.session,"_reference_link_preference",False))
+        self.keep_reference_link.blockSignals(blocked)
+        self._refresh()
+
+    def _has_edge_snapshot(self, config=None):
+        config=self.session.config if config is None else config
+        return bool(getattr(self.session,"_edge_snapshot_origin",None) and config.get("reference_mode")=="TwoPoints")
+
+    def _reference_ui_mode(self, config=None):
+        config=self.session.config if config is None else config
+        return "DraftLine" if self._has_edge_snapshot(config) else config.get("reference_mode","TwoPoints")
+
+    def _reference_origin_name(self):
+        return (self.session._edge_snapshot_origin["name"] if self._has_edge_snapshot()
+                else self.session.config.get("reference_source"))
+
+    def _reference_link_changed(self, _value=None):
+        if self._updating:
+            return
+        if not self._has_edge_snapshot():
+            self.session._reference_link_preference=self.keep_reference_link.isChecked()
         self._refresh()
 
     def _apply_reference_values(self, values):
@@ -991,22 +1020,34 @@ class TrussTaskPanel:
         except (ValueError,RuntimeError) as exc:
             self._show_error(str(exc))
 
-    def _adopt_selected_reference(self, selected):
+    def _adopt_selected_reference(self, selected, *, values=None, origin=None):
         # get_config() synchronizes widgets into the session. Read only the
         # plane needed by the resolver until the clicked source is validated.
         proposed=dict(self.session.config,plane_normal=self._read_vector(self.normal_inputs))
         proposed.update(selected)
         # Validate before changing the draft or any widget. Invalid clicks and
         # Esc must leave the previous source, coordinates and Custom intact.
-        values=self.controller.reference_geometry(proposed) if selected["reference_edge"] else None
+        if values is None and selected["reference_edge"]:
+            values=self.controller.reference_geometry(proposed)
         custom=self.session.config.get("custom_topology")
         if custom and values and values.get("envelope_type",custom["envelope_type"])!=custom["envelope_type"]:
             raise ValueError("Custom preservado: restaure o padrão antes de mudar o envelope da referência.")
+        previous_snapshot=self._has_edge_snapshot()
+        if origin is not None:
+            if not previous_snapshot:
+                self.session._reference_link_preference=self.keep_reference_link.isChecked()
+        self.session._edge_snapshot_origin=deepcopy(origin)
+        if origin is not None or previous_snapshot:
+            blocked=self.keep_reference_link.blockSignals(True)
+            self.keep_reference_link.setChecked(False if origin is not None else
+                getattr(self.session,"_reference_link_preference",False))
+            self.keep_reference_link.blockSignals(blocked)
         self.session.config.update(selected)
         self.session.config["reference_defined"]=False
         for combo,key in ((self.reference_mode,"reference_mode"),(self.reference_edge,"reference_edge")):
             blocked=combo.blockSignals(True)
-            combo.setCurrentIndex(combo.findData(selected[key]))
+            data="DraftLine" if key=="reference_mode" and origin is not None else selected[key]
+            combo.setCurrentIndex(combo.findData(data))
             combo.blockSignals(blocked)
         if values is None:
             self.sections["Referência"][0].setChecked(True)
@@ -1014,14 +1055,14 @@ class TrussTaskPanel:
         else:
             self._apply_reference_values(values)
 
-    def _begin_reference_selection(self, *, line_only=False):
+    def _begin_reference_selection(self, *, line_only=False, allow_edges=False):
         if self._closed or self._suspended:
             return
         self._cancel_reference_selection()
         self._point_generation += 1
         self.controller.cancel_picker()
         from .truss_reference_selection import TrussReferenceSelection
-        operation=TrussReferenceSelection(self,line_only=line_only)
+        operation=TrussReferenceSelection(self,line_only=line_only,allow_edges=allow_edges)
         self._reference_selection=operation
         try:
             operation.start()
@@ -1036,21 +1077,27 @@ class TrussTaskPanel:
 
     def _sync_reference_source(self, config=None, *, excluded=None):
         config = self.session.config if config is None else config
-        mode = config.get("reference_mode", "TwoPoints")
+        mode = self._reference_ui_mode(config)
         source_mode = mode in ("DraftLine", "DraftRectangle")
         self.source_label.setVisible(source_mode)
         text = "Nenhuma linha selecionada" if mode=="DraftLine" else "Nenhuma fonte selecionada"
         source = None
+        snapshot=self._has_edge_snapshot(config)
+        if snapshot:
+            text="Geometria capturada — Snapshot"
         try:
-            name = config.get("reference_source", "")
+            name = self.session._edge_snapshot_origin["name"] if snapshot else config.get("reference_source", "")
             if name:
                 source = self.document.getObject(name)
             if source is not None and source is not excluded and source.Document is self.document:
                 from ..truss_reference import is_draft_line, is_draft_rectangle
-                valid = is_draft_line(source) if mode=="DraftLine" else is_draft_rectangle(source)
+                valid = (source.ID==self.session._edge_snapshot_origin["object_id"] if snapshot else
+                         is_draft_line(source) if mode=="DraftLine" else is_draft_rectangle(source))
                 if source_mode and valid:
                     text = "Referência selecionada: " + (source.Label or source.Name)
-                    if mode=="DraftRectangle" and config.get("reference_edge"):
+                    if snapshot:
+                        text += " · " + self.session._edge_snapshot_origin["edge"] + " — Snapshot"
+                    elif mode=="DraftRectangle" and config.get("reference_edge"):
                         text += " · " + config["reference_edge"]
         except (ValueError, RuntimeError, ReferenceError):
             pass  # Deleted/foreign objects must never leave a stale caption.
@@ -1117,6 +1164,8 @@ class TrussTaskPanel:
         if hasattr(self,"reference_mode"):
             config.update(reference_mode=self.reference_mode.currentData(),reference_linked=self.keep_reference_link.isChecked(),
                           reference_edge=self.reference_edge.currentData() if self.reference_mode.currentData()=="DraftRectangle" else "Edge1")
+            if self.reference_mode.currentData()=="DraftLine" and self._has_edge_snapshot():
+                config.update(reference_mode="TwoPoints",reference_linked=False,reference_source="",reference_edge="")
         if hasattr(self, "left_end_height"):
             linked = self.link_end_heights.isChecked()
             left = float(self.left_end_height.value())
@@ -1263,9 +1312,13 @@ class TrussTaskPanel:
             angle_item=self.driver.model().item(self.driver.findData("ByTargetDiagonalAngle"))
             angle_item.setEnabled(not custom and bool(PRESETS[config["topology_preset"]].angle_family))
         if hasattr(self,"reference_mode"):
-            mode=config.get("reference_mode","TwoPoints")
+            mode=self._reference_ui_mode(config)
             source_mode=mode in ("DraftLine","DraftRectangle")
             self.keep_reference_link.setVisible(source_mode)
+            snapshot=self._has_edge_snapshot(config)
+            self.keep_reference_link.setEnabled(not snapshot)
+            self.keep_reference_link.setToolTip("Aresta capturada como coordenadas fixas. Sem vínculo com a origem." if snapshot else
+                                              "Acompanhar futuras alterações da fonte Draft.")
             for widget in (self.reference_edge,self.reference_edge_label): widget.setVisible(mode=="DraftRectangle")
             self._sync_reference_actions(mode)
             self._sync_reference_source(config)

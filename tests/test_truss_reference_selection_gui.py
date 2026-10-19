@@ -166,8 +166,8 @@ class ReferenceSelectionGuiTests(unittest.TestCase):
         self.document.recompute()
         before=deepcopy(self.panel.get_config())
         operation=self.begin()
-        for obj,sub in ((solid,'Edge1'),(solid,'Face1'),(solid,'Vertex1'),(circle,'Edge1'),
-                        (rectangle,'Edge2'),(null,''),(degenerate,''),(self.line,'Vertex1')):
+        for obj,sub in ((solid,''),(solid,'Face1'),(solid,'Vertex1'),(circle,'Edge1'),
+                        (rectangle,''),(null,''),(degenerate,''),(self.line,'Vertex1')):
             self.choose(obj,sub)
             self.assertFalse(operation.closed,(obj.Name,sub))
             self.assertEqual(self.panel.get_config(),before)

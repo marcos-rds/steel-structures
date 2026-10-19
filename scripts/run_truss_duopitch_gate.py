@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("--probe", choices=("alignment", "copy", "delete", "session", "apply", "lifecycle", "undo", "editor", "mass", "editor_actions", "draft_reference", "reference_layout", "reference_selection"), default="alignment")
+parser.add_argument("--probe", choices=("alignment", "copy", "delete", "session", "apply", "lifecycle", "undo", "editor", "mass", "editor_actions", "draft_reference", "reference_layout", "reference_selection", "edge_snapshot"), default="alignment")
 parser.add_argument("--qt-scale-factor", choices=("1", "1.5", "2"),
                     help="Qt display scale in the isolated reference layout probe only")
 parser.add_argument("--baseline-lifecycle", action="store_true",
@@ -22,9 +22,9 @@ parser.add_argument("--editor-qss", type=Path,
 parser.add_argument("--editor-theme", choices=("Classic", "FreeCAD Dark"),
                     help="Start the isolated editor gate with a built-in FreeCAD theme")
 args = parser.parse_args()
-if args.editor_qss and args.probe not in ("editor","editor_actions","draft_reference","reference_layout","reference_selection"):
+if args.editor_qss and args.probe not in ("editor","editor_actions","draft_reference","reference_layout","reference_selection","edge_snapshot"):
     parser.error("--editor-qss requires an editor probe")
-if args.editor_theme and args.probe not in ("editor","editor_actions","draft_reference","reference_layout","reference_selection"):
+if args.editor_theme and args.probe not in ("editor","editor_actions","draft_reference","reference_layout","reference_selection","edge_snapshot"):
     parser.error("--editor-theme requires an editor probe")
 if args.baseline_lifecycle and args.probe != "lifecycle":
     parser.error("--baseline-lifecycle requires --probe lifecycle")
@@ -41,7 +41,8 @@ probe = {"alignment": "manual_freecad_truss_duopitch.py",
          "editor_actions": "manual_freecad_truss_editor_actions.py",
          "draft_reference": "manual_freecad_truss_draft_reference.py",
          "reference_layout": "manual_freecad_truss_reference_layout.py",
-         "reference_selection": "manual_freecad_truss_reference_selection.py"}[args.probe]
+         "reference_selection": "manual_freecad_truss_reference_selection.py",
+         "edge_snapshot": "manual_freecad_truss_edge_snapshot.py"}[args.probe]
 output_root = root / "test-results/truss-duopitch"
 output_root.mkdir(parents=True, exist_ok=True)
 out = Path(tempfile.mkdtemp(prefix=str(time.time_ns()) + "_", dir=output_root))
@@ -54,7 +55,7 @@ home = out / "home"
 <FCText Name="LastModule">PartWorkbench</FCText>
 </FCParamGroup></FCParamGroup></FCParamGroup></FCParamGroup></FCParameters>''', encoding="utf8")
 install = Path("C:/Users/marco/Desktop/FREECAD/FreeCAD_1.1.4-Windows-x86_64-py311")
-if args.probe in ("draft_reference", "reference_layout", "reference_selection"):
+if args.probe in ("draft_reference", "reference_layout", "reference_selection", "edge_snapshot"):
     # Native numeric submission needs a visible Task View; copy GUI layout only
     # into the disposable profile, as the native drawing gate already does.
     seed = Path.home() / "AppData/Roaming/FreeCAD/v1-1/user.cfg"
@@ -82,7 +83,7 @@ if args.editor_theme:
                 prefs.remove(previous)
             prefs.append(group)
     config.write(home / "user.cfg", encoding="utf-8", xml_declaration=True)
-if args.probe in ("draft_reference", "reference_layout", "reference_selection"):
+if args.probe in ("draft_reference", "reference_layout", "reference_selection", "edge_snapshot"):
     config = ET.parse(home / "user.cfg")
     prefs = config.getroot().find(".//FCParamGroup[@Name='Preferences']")
     dock = prefs.find("FCParamGroup[@Name='DockWindows']")
@@ -127,7 +128,7 @@ with (out / "stdout.txt").open("w") as stdout, (out / "stderr.txt").open("w") as
         process.terminate()
         code = process.wait(timeout=10)
 result = json.loads((out / "result.json").read_text()) if (out / "result.json").exists() else None
-if args.probe in ("draft_reference", "reference_layout", "reference_selection") and result is not None:
+if args.probe in ("draft_reference", "reference_layout", "reference_selection", "edge_snapshot") and result is not None:
     result["native_log_errors"] = {name: [line for line in (out / name).read_text(errors="replace").splitlines()
         if re.search(r"Traceback|Internal C\+\+ object.*already deleted|Access violation|Fatal Python|Unhandled Base::Exception", line, re.I)]
         for name in ("stderr.txt", "FreeCAD.log")}

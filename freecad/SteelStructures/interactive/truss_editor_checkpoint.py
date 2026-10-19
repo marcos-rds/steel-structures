@@ -40,6 +40,8 @@ class TrussEditorCheckpoint:
         self.config = panel.session.snapshot()
         self.candidate = deepcopy(panel.controller.last_candidate)
         self.applied_state = panel.session.applied_state
+        self.edge_snapshot_origin=deepcopy(getattr(panel.session,"_edge_snapshot_origin",None))
+        self.reference_link_preference=getattr(panel.session,"_reference_link_preference",False)
         self.axis = deepcopy(panel._axis_direction)
         self.reference = self._reference(panel)
         self.reference_source = (panel.document.getObject(self.config.get("reference_source", ""))
@@ -90,6 +92,8 @@ class TrussEditorCheckpoint:
         panel._updating = True
         try:
             panel.session.replace_config(self.config)
+            panel.session._edge_snapshot_origin=deepcopy(self.edge_snapshot_origin)
+            panel.session._reference_link_preference=self.reference_link_preference
             panel.controller.last_candidate = deepcopy(self.candidate)
             panel.session.invalidate("")
             panel._axis_direction = deepcopy(self.axis)
