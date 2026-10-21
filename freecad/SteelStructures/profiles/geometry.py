@@ -44,6 +44,7 @@ def section_geometry_mode_has_effect(profile: ProfileDefinition) -> bool:
         ("i_section", "tapered_flange"),
         ("channel_section", "tapered_flange"),
         ("cold_formed_channel", "stiffened_u"),
+        ("cold_formed_channel", "simple_u"),
         ("hollow_section", "square"),
         ("hollow_section", "rectangular"),
     }
@@ -728,6 +729,11 @@ def build_section_geometry(
         names = ("bw", "bf", "D", "t", "ri")
         builder = (build_simplified_ue_section
                    if mode is SectionGeometryMode.SIMPLIFIED else build_ue_section)
+    elif key == ("cold_formed_channel", "simple_u"):
+        from .u_section import build_simple_u_section, build_simplified_simple_u_section
+        names = ("bw", "bf", "t", "ri")
+        builder = (build_simplified_simple_u_section
+                   if mode is SectionGeometryMode.SIMPLIFIED else build_simple_u_section)
     elif key[0] == "solid_section":
         from .solid_sections import (
             SOLID_SECTION_PARAMETERS, build_flat_bar, build_round_bar, build_square_bar,

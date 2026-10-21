@@ -74,6 +74,16 @@ class _FakeScene:
         self.ellipses = []
         self.ellipse_items = []
         self.line_items = []
+        self.path_items = []
+
+    def addPath(self, path, pen, brush):
+        item = types.SimpleNamespace(
+            path=path, pen=pen, brush=brush,
+            setPos=lambda x, y: setattr(item, "position", (x, y)),
+            setFlag=lambda flag, enabled: setattr(item, "flag", (flag, enabled)),
+        )
+        self.path_items.append(item)
+        return item
 
     def addLine(self, *args):
         self.lines.append(args)
@@ -125,7 +135,13 @@ def _load_preview_runtime_module():
             "setDashPattern": lambda self, value: setattr(self, "dash_pattern", tuple(value)),
             "color": lambda self: self._color,
         }),
-        QBrush=type("QBrush", (), {"__init__": lambda self, _color: None}),
+        QBrush=type("QBrush", (), {"__init__": lambda self, color: setattr(self, "color", color)}),
+        QPainterPath=type("QPainterPath", (), {
+            "__init__": lambda self: setattr(self, "points", []),
+            "moveTo": lambda self, x, y: self.points.append((x, y)),
+            "lineTo": lambda self, x, y: self.points.append((x, y)),
+            "closeSubpath": lambda self: setattr(self, "closed", True),
+        }),
         QColor=type("QColor", (), {"__init__": lambda self, *args: setattr(self, "rgb", args)}),
         QPalette=types.SimpleNamespace(Text=1),
         QPainter=types.SimpleNamespace(Antialiasing=1),
@@ -218,7 +234,12 @@ class ProfileBrowserModelTests(unittest.TestCase):
         self.model = ProfileBrowserModel(self.library)
 
     def test_catalog_tree_source_has_tubular_category_and_rolled_steel_is_unchanged(self):
-        self.assertEqual(len(self.library.list_categories()), 4)
+        self.assertEqual(len(self.library.list_categories()), 5)
+        self.assertEqual(
+            {category.catalog_id for category in self.library.list_categories()
+             if category.id == "aco-dobrado"},
+            {"abnt-nbr-6355-2012-a2", "abnt-nbr-6355-2012-a3"},
+        )
         self.assertEqual(len(self.library.list_series("rolled-steel")), 7)
         self.assertEqual(len(self.model.set_filter("rolled-steel")), 218)
         self.assertEqual(len(self.model.set_filter("tubular")), 2999)

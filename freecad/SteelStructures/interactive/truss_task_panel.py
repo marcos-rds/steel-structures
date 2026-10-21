@@ -225,37 +225,7 @@ class _RoleProfileDialog(QtWidgets.QDialog):
         buttons.rejected.connect(self.reject)
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(self.options)
-        from ..paths import ICONS_DIR
-        rotation_area = QtWidgets.QWidget()
-        rotation_layout = QtWidgets.QVBoxLayout(rotation_area)
-        rotation_layout.setContentsMargins(0, 0, 0, 0)
-        rotation_layout.setSpacing(3)
-        orientation = self.options.orientation_panel
-        orientation._controls_grid.removeWidget(self.options.rotation)
-        rotation_layout.addWidget(self.options.rotation)
-        quick = QtWidgets.QHBoxLayout()
-        quick.setSpacing(3)
-        self.rotation_buttons = []
-        for icon, delta in (("TrussRotateClockwise.svg", -90), ("TrussRotateCounterclockwise.svg", 90)):
-            button = QtWidgets.QToolButton()
-            stabilize_compact_tool_button(button)
-            button.setAutoRaise(True)
-            button.setIcon(QtGui.QIcon(str(ICONS_DIR / icon)))
-            button.setIconSize(QtCore.QSize(18, 18))
-            button.setFixedSize(26, 26)
-            button.setToolTip(f"Girar {delta:+d}\N{DEGREE SIGN}")
-            button.setAccessibleName(button.toolTip())
-            button.clicked.connect(lambda _checked=False, step=delta:
-                self.options.rotation.setValue((self.options.rotation.value() + step + 180) % 360 - 180))
-            quick.addWidget(button)
-            self.rotation_buttons.append(button)
-        quick.addStretch(1)
-        rotation_layout.addLayout(quick)
-        # Keep the shared responsive layout, changing only this dialog's slot.
-        orientation._widgets[0] = rotation_area
-        horizontal = orientation._horizontal
-        orientation._horizontal = None
-        orientation._apply_layout(horizontal)
+        self.rotation_buttons = self.options.rotation_buttons
         layout.addWidget(buttons)
         self.resize(460, 560)
 

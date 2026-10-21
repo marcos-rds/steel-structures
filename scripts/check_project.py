@@ -58,6 +58,10 @@ ESSENTIAL_FILES = (
     "freecad/SteelStructures/catalog_sources/abnt_nbr_16683_2018_solid_extracted.json",
     "scripts/generate_nbr16683_solid_catalog.py",
     "scripts/extract_nbr16683_solid_snapshot.py",
+    "freecad/SteelStructures/profiles/u_section.py",
+    "freecad/SteelStructures/catalogs/abnt_nbr_6355_2012_a2.json",
+    "freecad/SteelStructures/catalog_sources/abnt_nbr_6355_2012_a2_extracted.json",
+    "scripts/generate_nbr6355_simple_u_catalog.py",
     "freecad/SteelStructures/catalogs/gerdau_construcao_metalica_2023_01.json",
     "freecad/SteelStructures/catalogs/tuper_hollow_2024.json",
     "freecad/SteelStructures/catalog_sources/tuper_hollow_2024_extracted.json",
@@ -324,6 +328,17 @@ def run_checks() -> list[str]:
     except (OSError, ValueError, KeyError, TypeError) as exc:
         errors.append(f"catálogo ABNT NBR 16683 inválido: {exc}")
 
+    try:
+        from scripts.generate_nbr6355_simple_u_catalog import (
+            SNAPSHOT as SIMPLE_U_SNAPSHOT, OUTPUT as SIMPLE_U_OUTPUT,
+            render_catalog as render_simple_u_catalog,
+        )
+        simple_u_snapshot = json.loads(SIMPLE_U_SNAPSHOT.read_text(encoding="utf-8"))
+        if render_simple_u_catalog(simple_u_snapshot) != SIMPLE_U_OUTPUT.read_bytes():
+            errors.append("catálogo ABNT NBR 6355 A.2 diverge do snapshot/gerador auditados")
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        errors.append(f"catálogo ABNT NBR 6355 A.2 inválido: {exc}")
+
     for path in sorted(PROJECT_ROOT.rglob("*.py")):
         try:
             source = path.read_text(encoding="utf-8")
@@ -347,6 +362,7 @@ def main() -> int:
     print("OK: designações são únicas e todos os perfis possuem campos e valores válidos.")
     print("OK: catálogo Tuper 2024 contém 2.999 perfis tubulares rastreáveis em 3 séries.")
     print("OK: ABNT NBR 16683 contém 164 perfis normativos; fixtures isoladas da seleção pública.")
+    print("OK: ABNT NBR 6355 A.2 contém 125 perfis U simples rastreáveis; catálogo reproduzível.")
     print("OK: todos os arquivos Python compilam sintaticamente.")
     print("OK: todos os arquivos essenciais existem.")
     return 0

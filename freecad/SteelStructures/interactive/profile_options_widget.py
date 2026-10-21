@@ -33,6 +33,36 @@ def catalog_button_safe_width(native_width, line_spacing):
     return max(int(native_width), round(float(line_spacing) * 2.4), 36)
 
 
+def section_rotation_controls(rotation):
+    """Share the approved quarter-turn controls with every profile panel."""
+    from ..paths import ICONS_DIR
+    from .grid_task_panel import stabilize_compact_tool_button
+    area = QtWidgets.QWidget()
+    layout = QtWidgets.QVBoxLayout(area)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(3)
+    layout.addWidget(rotation)
+    quick = QtWidgets.QHBoxLayout()
+    quick.setSpacing(3)
+    buttons = []
+    for icon, delta in (("TrussRotateClockwise.svg", -90), ("TrussRotateCounterclockwise.svg", 90)):
+        button = QtWidgets.QToolButton()
+        stabilize_compact_tool_button(button)
+        button.setAutoRaise(True)
+        button.setIcon(QtGui.QIcon(str(ICONS_DIR / icon)))
+        button.setIconSize(QtCore.QSize(18, 18))
+        button.setFixedSize(26, 26)
+        button.setToolTip(f"Girar {delta:+d}\N{DEGREE SIGN}")
+        button.setAccessibleName(button.toolTip())
+        button.clicked.connect(lambda _checked=False, step=delta:
+            rotation.setValue((rotation.value() + step + 180) % 360 - 180))
+        quick.addWidget(button)
+        buttons.append(button)
+    quick.addStretch(1)
+    layout.addLayout(quick)
+    return area, buttons
+
+
 def _color_luminance(color):
     channels = (color.redF(), color.greenF(), color.blueF())
     linear = tuple(
@@ -263,6 +293,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
         self.rotation.setDecimals(2)
         self.rotation.setSuffix("°")
         self.rotation.valueChanged.connect(self.orientation_preview.set_rotation)
+        self.rotation_area, self.rotation_buttons = section_rotation_controls(self.rotation)
         self.color_button = QtWidgets.QPushButton("")
         self.color_button.setToolTip("Escolher cor")
         self.color_button.setAccessibleName("Escolher cor")
@@ -309,7 +340,7 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
         selection_form.addRow("", self.generate_radii)
         self.orientation_panel = _OrientationPanel(
             self.orientation_preview, self.insertion_selector,
-            self.rotation, self.color_button
+            self.rotation_area, self.color_button
         )
         root.addWidget(identity)
         root.addWidget(selection)
@@ -330,7 +361,6 @@ class ProfileOptionsWidget(QtWidgets.QGroupBox):
             mode=ProfileBrowserDialog.SELECT_MODE,
             initial_profile_ref=self._current_profile_ref(),
             is_profile_selectable=profile_catalog.is_creation_profile,
-            insertion=self.insertion.currentText(),
             **({"profile_filter": lambda profile: profile_catalog.is_creation_profile(profile)
                 and self._catalog.predicate(profile)} if hasattr(self, "_catalog") else {}),
         )

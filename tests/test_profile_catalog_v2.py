@@ -343,7 +343,7 @@ class LegacyFacadeTests(unittest.TestCase):
         )
         self.assertEqual(
             profile_catalog.series_for_category("Aço Dobrado"),
-            ["U Enrijecido (Ue) — NBR 6355"],
+            ["U Dobrado Simples (U) — NBR 6355", "U Enrijecido (Ue) — NBR 6355"],
         )
         self.assertEqual(
             profile_catalog.series_for_category("Aço Tubular"),
@@ -354,7 +354,7 @@ class LegacyFacadeTests(unittest.TestCase):
         self.assertEqual(len(profile_catalog.designations("Aço Laminado", "Perfis I")), 8)
         self.assertEqual(len(profile_catalog.designations("Aço Laminado", "Perfis U")), 9)
         self.assertEqual(len(profile_catalog.designations("Aço Laminado", "Perfis T")), 10)
-        self.assertEqual(len(profile_catalog.profiles()), 3463)
+        self.assertEqual(len(profile_catalog.profiles()), 3588)
         self.assertEqual(len(profile_catalog.designations("Aço Laminado", "Cantoneiras - Polegadas")), 50)
         self.assertEqual(len(profile_catalog.designations("Aço Laminado", "Cantoneiras - Métricas")), 30)
         self.assertEqual(profile_catalog.get('U 3" x 6,10').family, "u")

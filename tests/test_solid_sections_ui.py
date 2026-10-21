@@ -208,6 +208,27 @@ class SolidSectionInsertionAndPreviewTests(unittest.TestCase):
         self.assertLess(x_axis[2] - x_axis[0], 6.0)
         self.assertEqual((x_axis[1], x_axis[3]), (0.0, 0.0))
 
+    def test_centroid_and_axis_labels_keep_pixel_sizes_across_bar_scales(self):
+        for variant, dimensions in (("circular", {"d": 3.0}),
+                                    ("circular", {"d": 300.0}),
+                                    ("rectangular", {"b": 10.0, "t": .5}),
+                                    ("rectangular", {"b": 1000.0, "t": 50.0})):
+            with self.subTest(variant=variant, dimensions=dimensions):
+                _module, renderer, scene = self.renderer()
+                renderer._add_axes(build_section_geometry(fixture(variant, dimensions)))
+                marker, = scene.ellipse_items
+                self.assertEqual(marker.flag, (1, True))
+                self.assertEqual(marker.position, (0., 0.))
+                self.assertEqual(marker.args[:4], (-3., -3., 6., 6.))
+                x_axis, y_axis = scene.lines
+                self.assertEqual([i.position for i in scene.text_items],
+                                 [(x_axis[0], 0.), (x_axis[2], 0.),
+                                  (0., y_axis[1]), (0., y_axis[3])])
+                for item, expected in zip(scene.text_items,
+                                          [(-18., -5.), (-2., -5.), (-10., -14.), (-10., 4.)]):
+                    for actual, value in zip(item.transform, expected):
+                        self.assertAlmostEqual(actual, value)
+
 
 if __name__ == "__main__":
     unittest.main()

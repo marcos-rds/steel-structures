@@ -160,9 +160,15 @@ class ProfileBrowserDialog(QtWidgets.QDialog):
     def _populate_tree(self):
         role = _user_role()
         visible = [p for p in self.library.list_profiles() if self._profile_filter(p)]
+        shown_categories = set()
         for category in self.library.list_categories():
+            # Catalogs retain their own category records; the browser filters
+            # by shared category id and presents its combined series only once.
+            if category.id in shown_categories:
+                continue
             if self._filter_catalog and not any(p.category_id == category.id for p in visible):
                 continue
+            shown_categories.add(category.id)
             root = QtWidgets.QTreeWidgetItem((category.name,))
             root.setData(0, role, (category.id, None))
             self.tree.addTopLevelItem(root)

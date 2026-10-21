@@ -287,6 +287,23 @@ _T_POINTS = {
     "top_left": (-0.72, 0.65),
     "top_right": (0.72, 0.65),
 }
+
+
+def _simple_u_schematic_definition():
+    """One readable family diagram; its dimensions never feed model geometry.
+
+    Reuse the physical builder for constant thickness and concentric bends.
+    Presentation dimensions deliberately exaggerate thickness for hit targets.
+    """
+    from .u_section import build_simple_u_section
+    representative = build_simple_u_section(bw=100, bf=65, t=12, ri=2)
+    scale = 50.0
+    segments = preview_segments_for_path(representative.outer_path, scale)
+    positions = {ref.id: (ref.point.x / scale, ref.point.y / scale)
+                 for ref in section_insertion_references(representative)}
+    return _schematic_outline(segments), positions, segments
+
+
 _SCHEMATICS = {
     ("i_section", "parallel_flange"): (_I_OUTLINE, _I_POINTS, _line_segments(_I_OUTLINE)),
     ("i_section", "tapered_flange"): (
@@ -294,6 +311,7 @@ _SCHEMATICS = {
     ),
     ("channel_section", "tapered_flange"): (_U_OUTLINE, _U_POINTS, _U_PATH),
     ("cold_formed_channel", "stiffened_u"): (_UE_OUTLINE, _UE_POINTS, _UE_PATH),
+    ("cold_formed_channel", "simple_u"): _simple_u_schematic_definition(),
     ("equal_angle", "equal_leg"): (_L_OUTLINE, _L_POINTS, _line_segments(_L_OUTLINE)),
     ("tee_section", "standard_tee"): (_T_OUTLINE, _T_POINTS, _line_segments(_T_OUTLINE)),
 }

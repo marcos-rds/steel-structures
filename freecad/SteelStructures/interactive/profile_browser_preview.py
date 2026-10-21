@@ -112,7 +112,7 @@ def _hollow_section_envelope(bounds, units_per_pixel):
 
 
 def _ue_section_envelope(bounds, visual_bounds, padding):
-    """Keep the Ue section horizontally centred without wasting vertical room."""
+    """Keep an open folded section centred without wasting vertical room."""
     left, right = bounds.min_x, bounds.max_x
     horizontal = max(
         left - visual_bounds.left(), visual_bounds.right() - right, padding,
@@ -217,19 +217,21 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
                 (geometry.geometry_type, geometry.geometry_variant) in (
                     ("channel_section", "tapered_flange"),
                     ("cold_formed_channel", "stiffened_u"),
+                    ("cold_formed_channel", "simple_u"),
                 )):
             self._add_insertion_marker(geometry, insertion)
 
         visual_bounds = self.scene().itemsBoundingRect()
         dimension_key = (geometry.geometry_type, geometry.geometry_variant)
-        if dimension_key[0] in ("hollow_section", "solid_section"):
+        if (dimension_key[0] in ("hollow_section", "solid_section")
+                or dimension_key == ("cold_formed_channel", "simple_u")):
             scene_units_per_pixel = self._hollow_units_per_pixel(geometry.bounds)
         else:
             scene_units_per_pixel = self._scene_units_per_pixel(geometry.bounds)
         margin_x = CANVAS_MARGIN_PIXELS * scene_units_per_pixel
         margin_y = CANVAS_MARGIN_PIXELS * scene_units_per_pixel
-        if (mode == DIMENSIONS_MODE
-                and dimension_key[0] in ("hollow_section", "solid_section")):
+        if ((mode == DIMENSIONS_MODE and dimension_key[0] == "hollow_section")
+                or dimension_key[0] == "solid_section"):
             rect = _hollow_section_envelope(
                 geometry.bounds, scene_units_per_pixel,
             )
@@ -239,8 +241,9 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
                 geometry.bounds, visual_bounds, max(margin_x, margin_y)
             )
             self.scene().setSceneRect(QtCore.QRectF(*rect))
-        elif mode == DIMENSIONS_MODE and dimension_key == (
-                "cold_formed_channel", "stiffened_u"):
+        elif mode == DIMENSIONS_MODE and dimension_key in (
+                ("cold_formed_channel", "stiffened_u"),
+                ("cold_formed_channel", "simple_u")):
             rect = _ue_section_envelope(
                 geometry.bounds, visual_bounds, max(margin_x, margin_y)
             )
@@ -296,6 +299,8 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
             self._add_tee_dimensions(geometry, dimensions)
         elif key == ("cold_formed_channel", "stiffened_u"):
             self._add_ue_dimensions(geometry, dimensions)
+        elif key == ("cold_formed_channel", "simple_u"):
+            self._add_simple_u_dimensions(geometry, dimensions)
         elif key in (
                 ("hollow_section", "square"),
                 ("hollow_section", "rectangular"),
@@ -399,6 +404,64 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
             target_x, target_y, TF_WITNESS_RADIUS_PIXELS, pen,
             QtGui.QBrush(QtGui.QColor(*DIMENSION_COLOR)),
         )
+
+    def _add_simple_u_dimensions(self, geometry, dimensions):
+        """Dimension the nominal planes and physical bends from named stations."""
+        pen = self._annotation_pen()
+        s = dict(geometry.dimension_stations)
+        left, right = s["external_web_x"], s["nominal_flange_tip_x"]
+        top, bottom = -s["nominal_top_y"], -s["nominal_bottom_y"]
+        units = self._hollow_units_per_pixel(geometry.bounds)
+        clearance = GEOMETRY_CLEARANCE_PIXELS * units
+        self._add_bf_dimension(
+            left, right, top, BF_OFFSET_PIXELS * units, clearance, units,
+            dimensions["bf"], pen,
+        )
+        self._add_vertical_dimension(
+            "bw", left, top, bottom, self._d_offset_pixels(geometry.bounds) * units,
+            clearance, units, dimensions["bw"], pen,
+        )
+        # Leaders occupy opposite ends of the opening; text stays outside the
+        # free flange ends. No segment index or preview measurement is a value.
+        tangent = s["flange_web_tangent_x"]
+        thickness_target = (
+            tangent + 0.65 * (right - tangent), top + s["thickness"],
+        )
+        ri, re = s["internal_radius"], s["internal_radius"] + s["thickness"]
+        radius_target = (left + re - ri / math.sqrt(2.0),
+                         bottom - re + ri / math.sqrt(2.0))
+        for symbol, target in (("t", thickness_target), ("ri", radius_target)):
+            if symbol == "ri":
+                # A 45-degree radial leader followed by a short horizontal
+                # landing keeps the nominal radius readable for every size.
+                diagonal = UE_T_LEADER_Y_PIXELS * units
+                elbow_x, anchor_y = target[0] + diagonal, target[1] - diagonal
+                anchor_x = max(elbow_x, right + UE_T_LEADER_X_PIXELS * units)
+                self._line(target[0], target[1], elbow_x, anchor_y, pen)
+                self._line(elbow_x, anchor_y, anchor_x, anchor_y, pen)
+                # Acute, closed technical arrowhead, invariant in device pixels.
+                along, across = 8.0 / math.sqrt(2.0), 1.2 / math.sqrt(2.0)
+                arrow = QtGui.QPainterPath()
+                arrow.moveTo(0.0, 0.0)
+                arrow.lineTo(along + across, -along + across)
+                arrow.lineTo(along - across, -along - across)
+                arrow.closeSubpath()
+                item = self.scene().addPath(arrow, pen, QtGui.QBrush(pen.color()))
+                item.setPos(*target)
+                item.setFlag(_ignores_transformations_flag(), True)
+            else:
+                anchor_x = right + UE_T_LEADER_X_PIXELS * units
+                anchor_y = top + UE_T_LEADER_Y_PIXELS * units
+                self._line(target[0], target[1], anchor_x, anchor_y, pen)
+                self._device_ellipse(
+                    target[0], target[1], TF_WITNESS_RADIUS_PIXELS, pen,
+                    QtGui.QBrush(QtGui.QColor(*DIMENSION_COLOR)),
+                )
+            parts = self._dimension_parts(symbol, dimensions[symbol])
+            if symbol == "ri":
+                parts = (parts[0], "R " + parts[1])
+            label = self._create_dimension_label(parts, pen.color())
+            self._position_label(label, anchor_x, anchor_y, UE_D_TEXT_OFFSET_PIXELS, -label.height / 2.0)
 
     def _add_ue_dimensions(self, geometry, dimensions):
         """Annotate the real Ue contour from its geometric stations."""
@@ -848,9 +911,10 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
 
     def _add_axes(self, geometry):
         bounds = geometry.bounds
+        solid = geometry.geometry_type == "solid_section"
         extension = (
             18.0 * self._hollow_units_per_pixel(bounds)
-            if geometry.geometry_type == "solid_section" else
+            if solid else
             _clamp(max(bounds.width, bounds.height) * 0.10, 18.0, 48.0)
         )
         x_pen = QtGui.QPen(QtGui.QColor(205, 45, 45))
@@ -863,10 +927,16 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
         top, bottom = -bounds.max_y - extension, -bounds.min_y + extension
         self._line(left, 0.0, right, 0.0, x_pen)
         self._line(0.0, top, 0.0, bottom, y_pen)
-        self._label_lines(("X",), left, 0.0, x_pen.color(), x_offset=-8.0, bold=True)
-        self._label_lines(("X",), right, 0.0, x_pen.color(), x_offset=8.0, bold=True)
-        self._label_lines(("Y",), 0.0, top, y_pen.color(), y_offset=-9.0, bold=True)
-        self._label_lines(("Y",), 0.0, bottom, y_pen.color(), y_offset=9.0, bold=True)
+        self._label_lines(("X",), left, 0.0, x_pen.color(), x_offset=-8.0, bold=True, device_offsets=solid)
+        self._label_lines(("X",), right, 0.0, x_pen.color(), x_offset=8.0, bold=True, device_offsets=solid)
+        self._label_lines(("Y",), 0.0, top, y_pen.color(), y_offset=-9.0, bold=True, device_offsets=solid)
+        self._label_lines(("Y",), 0.0, bottom, y_pen.color(), y_offset=9.0, bold=True, device_offsets=solid)
+        if solid:
+            self._device_ellipse(
+                0.0, 0.0, 3.0, self._annotation_pen(),
+                QtGui.QBrush(QtGui.QColor(255, 255, 255)),
+            )
+            return
         radius = _clamp(min(bounds.width, bounds.height) * 0.018, 2.5, 5.0)
         self.scene().addEllipse(
             -radius, -radius, radius * 2.0, radius * 2.0,
@@ -891,7 +961,7 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
         return item
 
     def _label_lines(self, lines, center_x, center_y, color, above=False,
-                     x_offset=0.0, y_offset=0.0, bold=False):
+                     x_offset=0.0, y_offset=0.0, bold=False, device_offsets=False):
         """Center every line independently and keep text size in screen pixels."""
         items = []
         total_height = 0.0
@@ -909,7 +979,13 @@ class SectionPreviewView(QtWidgets.QGraphicsView):
         start_y = center_y - total_height if above else center_y - total_height / 2.0
         start_y += y_offset
         for item, rect in items:
-            item.setPos(center_x + x_offset - rect.width() / 2.0, start_y)
+            if device_offsets:
+                item.setPos(center_x, center_y)
+                item.setTransform(QtGui.QTransform.fromTranslate(
+                    x_offset - rect.width() / 2.0, start_y - center_y,
+                ))
+            else:
+                item.setPos(center_x + x_offset - rect.width() / 2.0, start_y)
             start_y += rect.height()
 
     def _create_dimension_label(self, parts, color):

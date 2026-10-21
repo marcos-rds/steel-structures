@@ -36,9 +36,10 @@ class UeStage2Tests(unittest.TestCase):
         profile_catalog.reload()
         self.assertEqual(profile_catalog.categories().count("Aço Dobrado"), 1)
         self.assertEqual(profile_catalog.series_for_category("Aço Dobrado"), (
-            ["U Enrijecido (Ue) — NBR 6355"]
+            ["U Dobrado Simples (U) — NBR 6355", "U Enrijecido (Ue) — NBR 6355"]
         ))
-        self.assertEqual(len(profile_catalog.designations("Aço Dobrado")), 85)
+        self.assertEqual(len(profile_catalog.designations("Aço Dobrado")), 210)
+        self.assertEqual(len(profile_catalog.designations("Aço Dobrado", "U Enrijecido (Ue) — NBR 6355")), 85)
         self.assertTrue(all(profile.geometry_status == "released" for profile in self.profiles))
         keys = [tuple(profile.geometry[name] for name in ("bw", "bf", "D", "tn"))
                 for profile in self.profiles]

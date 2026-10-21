@@ -75,6 +75,26 @@ def section_insertion_references(geometry: SectionGeometry2D):
             ("flange_top_tip", "Ponta superior da mesa", Point2D(tip_x, bounds.max_y)),
             ("flange_bottom_tip", "Ponta inferior da mesa", Point2D(tip_x, bounds.min_y)),
         )
+    elif key == ("cold_formed_channel", "simple_u"):
+        stations = dict(geometry.dimension_stations)
+        rear_x, tip_x = stations["external_web_x"], stations["nominal_flange_tip_x"]
+        top, bottom = stations["nominal_top_y"], stations["nominal_bottom_y"]
+        flange_mid_x = (stations["flange_web_tangent_x"] + tip_x) / 2.0
+        values = (
+            ("centroid", "Centroide", geometry.origin),
+            ("web_center", "Centro da alma", Point2D(stations["web_mean_x"], 0.0)),
+            ("web_back", "Face externa da alma", Point2D(rear_x, 0.0)),
+            ("rear_top", "Canto externo superior", Point2D(rear_x, top)),
+            ("rear_bottom", "Canto externo inferior", Point2D(rear_x, bottom)),
+            ("flange_top_tip", "Ponta superior da mesa", Point2D(
+                tip_x, top,
+            )),
+            ("flange_bottom_tip", "Ponta inferior da mesa", Point2D(
+                tip_x, bottom,
+            )),
+            ("outer_top_mid", "Centro externo superior", Point2D(flange_mid_x, top)),
+            ("outer_bottom_mid", "Centro externo inferior", Point2D(flange_mid_x, bottom)),
+        )
     elif key == ("cold_formed_channel", "stiffened_u"):
         stations = dict(geometry.dimension_stations)
         upper_tip = Point2D(stations["nominal_flange_tip_x"] - 0.5 * stations["thickness"],

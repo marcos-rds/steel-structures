@@ -1,0 +1,7454 @@
+{
+  "schema_version": 2,
+  "catalog": {
+    "id": "abnt-nbr-6355-2012-a2",
+    "name": "Perfis U dobrados simples - ABNT NBR 6355:2012",
+    "catalog_version": "2012-a2",
+    "manufacturer": null,
+    "issuer": {
+      "id": "abnt",
+      "name": "Associação Brasileira de Normas Técnicas"
+    },
+    "source": {
+      "source_name": "ABNT NBR 6355:2012 - Anexo A - Tabela A.2",
+      "source_type": "normative",
+      "source_revision": "Segunda edição, 30.11.2012",
+      "source_date": "2012-12-30",
+      "notes": "Anexo A informativo; Figura A.2; Tabela A.2; aço sem revestimento. Propriedades publicadas pelo método linear; distintas da geometria física CAD."
+    },
+    "standard_references": [
+      "ABNT NBR 6355:2012",
+      "Anexo A (informativo)",
+      "Figura A.2",
+      "Tabela A.2"
+    ],
+    "material_notes": "Aço sem revestimento; t = tn."
+  },
+  "units": {
+    "length": "mm",
+    "centroid": "cm",
+    "radius_of_gyration": "cm",
+    "mass_per_length": "kg/m",
+    "area": "cm2",
+    "section_modulus": "cm3",
+    "second_moment_of_area": "cm4",
+    "warping_constant": "cm6"
+  },
+  "categories": [
+    {
+      "id": "aco-dobrado",
+      "name": "Aço Dobrado"
+    }
+  ],
+  "series": [
+    {
+      "id": "u-simple-nbr-6355",
+      "category_id": "aco-dobrado",
+      "name": "U Dobrado Simples (U) — NBR 6355",
+      "family": "U",
+      "geometry_type": "cold_formed_channel",
+      "geometry_variant": "simple_u",
+      "geometry_notes": "Alma e duas mesas, sem enrijecedores. Espessura constante e dobras circulares; propriedades tabeladas pelo método linear normativo."
+    }
+  ],
+  "profiles": [
+    {
+      "id": "u-50x25x1.20",
+      "designation": "U 50 × 25 × 1,20",
+      "aliases": [
+        "U50x25x1,20",
+        "U 50x25x1.20"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 50.0,
+        "bf": 25.0,
+        "tn": 1.2,
+        "t": 1.2,
+        "ri": 1.2
+      },
+      "physical_properties": {
+        "mass_per_length": 0.9,
+        "area": 1.15
+      },
+      "section_properties": {
+        "ix": 4.54,
+        "wx": 1.82,
+        "rx": 1.99,
+        "x0": 1.54,
+        "iy": 0.72,
+        "wy": 0.39,
+        "ry": 0.79,
+        "it": 0.006,
+        "cw": 3.03,
+        "r0": 2.63
+      },
+      "centroid": {
+        "x": 0.68
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 4,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U50x25x1,20",
+        "source_dimensions": {
+          "bw": 50.0,
+          "bf": 25.0,
+          "tn": 1.2,
+          "t": 1.2,
+          "ri": 1.2
+        },
+        "source_mass_per_length_kg_m": 0.9,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-50x25x1.50",
+      "designation": "U 50 × 25 × 1,50",
+      "aliases": [
+        "U50x25x1,50",
+        "U 50x25x1.50"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 50.0,
+        "bf": 25.0,
+        "tn": 1.5,
+        "t": 1.5,
+        "ri": 1.5
+      },
+      "physical_properties": {
+        "mass_per_length": 1.12,
+        "area": 1.43
+      },
+      "section_properties": {
+        "ix": 5.54,
+        "wx": 2.21,
+        "rx": 1.97,
+        "x0": 1.53,
+        "iy": 0.88,
+        "wy": 0.49,
+        "ry": 0.78,
+        "it": 0.011,
+        "cw": 3.67,
+        "r0": 2.61
+      },
+      "centroid": {
+        "x": 0.69
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 5,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U50x25x1,50",
+        "source_dimensions": {
+          "bw": 50.0,
+          "bf": 25.0,
+          "tn": 1.5,
+          "t": 1.5,
+          "ri": 1.5
+        },
+        "source_mass_per_length_kg_m": 1.12,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-50x25x2.00",
+      "designation": "U 50 × 25 × 2,00",
+      "aliases": [
+        "U50x25x2,00",
+        "U 50x25x2.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 50.0,
+        "bf": 25.0,
+        "tn": 2.0,
+        "t": 2.0,
+        "ri": 2.0
+      },
+      "physical_properties": {
+        "mass_per_length": 1.47,
+        "area": 1.87
+      },
+      "section_properties": {
+        "ix": 7.07,
+        "wx": 2.83,
+        "rx": 1.95,
+        "x0": 1.52,
+        "iy": 1.13,
+        "wy": 0.63,
+        "ry": 0.78,
+        "it": 0.025,
+        "cw": 4.64,
+        "r0": 2.59
+      },
+      "centroid": {
+        "x": 0.72
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 6,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U50x25x2,00",
+        "source_dimensions": {
+          "bw": 50.0,
+          "bf": 25.0,
+          "tn": 2.0,
+          "t": 2.0,
+          "ri": 2.0
+        },
+        "source_mass_per_length_kg_m": 1.47,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-50x25x2.25",
+      "designation": "U 50 × 25 × 2,25",
+      "aliases": [
+        "U50x25x2,25",
+        "U 50x25x2.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 50.0,
+        "bf": 25.0,
+        "tn": 2.25,
+        "t": 2.25,
+        "ri": 2.25
+      },
+      "physical_properties": {
+        "mass_per_length": 1.64,
+        "area": 2.08
+      },
+      "section_properties": {
+        "ix": 7.79,
+        "wx": 3.12,
+        "rx": 1.93,
+        "x0": 1.51,
+        "iy": 1.25,
+        "wy": 0.7,
+        "ry": 0.77,
+        "it": 0.035,
+        "cw": 5.09,
+        "r0": 2.57
+      },
+      "centroid": {
+        "x": 0.73
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 7,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U50x25x2,25",
+        "source_dimensions": {
+          "bw": 50.0,
+          "bf": 25.0,
+          "tn": 2.25,
+          "t": 2.25,
+          "ri": 2.25
+        },
+        "source_mass_per_length_kg_m": 1.64,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-50x25x2.65",
+      "designation": "U 50 × 25 × 2,65",
+      "aliases": [
+        "U50x25x2,65",
+        "U 50x25x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 50.0,
+        "bf": 25.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 1.9,
+        "area": 2.42
+      },
+      "section_properties": {
+        "ix": 8.85,
+        "wx": 3.54,
+        "rx": 1.91,
+        "x0": 1.5,
+        "iy": 1.42,
+        "wy": 0.81,
+        "ry": 0.77,
+        "it": 0.057,
+        "cw": 5.75,
+        "r0": 2.55
+      },
+      "centroid": {
+        "x": 0.75
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 8,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U50x25x2,65",
+        "source_dimensions": {
+          "bw": 50.0,
+          "bf": 25.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 1.9,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-50x25x3.00",
+      "designation": "U 50 × 25 × 3,00",
+      "aliases": [
+        "U50x25x3,00",
+        "U 50x25x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 50.0,
+        "bf": 25.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 2.12,
+        "area": 2.7
+      },
+      "section_properties": {
+        "ix": 9.71,
+        "wx": 3.89,
+        "rx": 1.9,
+        "x0": 1.5,
+        "iy": 1.57,
+        "wy": 0.91,
+        "ry": 0.76,
+        "it": 0.081,
+        "cw": 6.27,
+        "r0": 2.53
+      },
+      "centroid": {
+        "x": 0.77
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 9,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U50x25x3,00",
+        "source_dimensions": {
+          "bw": 50.0,
+          "bf": 25.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 2.12,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-75x40x1.20",
+      "designation": "U 75 × 40 × 1,20",
+      "aliases": [
+        "U75x40x1,20",
+        "U 75x40x1.20"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 75.0,
+        "bf": 40.0,
+        "tn": 1.2,
+        "t": 1.2,
+        "ri": 1.2
+      },
+      "physical_properties": {
+        "mass_per_length": 1.42,
+        "area": 1.81
+      },
+      "section_properties": {
+        "ix": 16.67,
+        "wx": 4.44,
+        "rx": 3.03,
+        "x0": 2.53,
+        "iy": 2.97,
+        "wy": 1.02,
+        "ry": 1.28,
+        "it": 0.009,
+        "cw": 28.54,
+        "r0": 4.15
+      },
+      "centroid": {
+        "x": 1.09
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 10,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U75x40x1,20",
+        "source_dimensions": {
+          "bw": 75.0,
+          "bf": 40.0,
+          "tn": 1.2,
+          "t": 1.2,
+          "ri": 1.2
+        },
+        "source_mass_per_length_kg_m": 1.42,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-75x40x1.50",
+      "designation": "U 75 × 40 × 1,50",
+      "aliases": [
+        "U75x40x1,50",
+        "U 75x40x1.50"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 75.0,
+        "bf": 40.0,
+        "tn": 1.5,
+        "t": 1.5,
+        "ri": 1.5
+      },
+      "physical_properties": {
+        "mass_per_length": 1.77,
+        "area": 2.25
+      },
+      "section_properties": {
+        "ix": 20.5,
+        "wx": 5.47,
+        "rx": 3.02,
+        "x0": 2.52,
+        "iy": 3.67,
+        "wy": 1.27,
+        "ry": 1.28,
+        "it": 0.017,
+        "cw": 34.98,
+        "r0": 4.14
+      },
+      "centroid": {
+        "x": 1.1
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 11,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U75x40x1,50",
+        "source_dimensions": {
+          "bw": 75.0,
+          "bf": 40.0,
+          "tn": 1.5,
+          "t": 1.5,
+          "ri": 1.5
+        },
+        "source_mass_per_length_kg_m": 1.77,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-75x40x2.00",
+      "designation": "U 75 × 40 × 2,00",
+      "aliases": [
+        "U75x40x2,00",
+        "U 75x40x2.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 75.0,
+        "bf": 40.0,
+        "tn": 2.0,
+        "t": 2.0,
+        "ri": 2.0
+      },
+      "physical_properties": {
+        "mass_per_length": 2.33,
+        "area": 2.97
+      },
+      "section_properties": {
+        "ix": 26.6,
+        "wx": 7.09,
+        "rx": 2.99,
+        "x0": 2.51,
+        "iy": 4.78,
+        "wy": 1.66,
+        "ry": 1.27,
+        "it": 0.04,
+        "cw": 45.13,
+        "r0": 4.11
+      },
+      "centroid": {
+        "x": 1.13
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 12,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U75x40x2,00",
+        "source_dimensions": {
+          "bw": 75.0,
+          "bf": 40.0,
+          "tn": 2.0,
+          "t": 2.0,
+          "ri": 2.0
+        },
+        "source_mass_per_length_kg_m": 2.33,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-75x40x2.25",
+      "designation": "U 75 × 40 × 2,25",
+      "aliases": [
+        "U75x40x2,25",
+        "U 75x40x2.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 75.0,
+        "bf": 40.0,
+        "tn": 2.25,
+        "t": 2.25,
+        "ri": 2.25
+      },
+      "physical_properties": {
+        "mass_per_length": 2.61,
+        "area": 3.32
+      },
+      "section_properties": {
+        "ix": 29.52,
+        "wx": 7.87,
+        "rx": 2.98,
+        "x0": 2.51,
+        "iy": 5.32,
+        "wy": 1.86,
+        "ry": 1.27,
+        "it": 0.056,
+        "cw": 49.94,
+        "r0": 4.1
+      },
+      "centroid": {
+        "x": 1.14
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 13,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U75x40x2,25",
+        "source_dimensions": {
+          "bw": 75.0,
+          "bf": 40.0,
+          "tn": 2.25,
+          "t": 2.25,
+          "ri": 2.25
+        },
+        "source_mass_per_length_kg_m": 2.61,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-75x40x2.65",
+      "designation": "U 75 × 40 × 2,65",
+      "aliases": [
+        "U75x40x2,65",
+        "U 75x40x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 75.0,
+        "bf": 40.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 3.04,
+        "area": 3.88
+      },
+      "section_properties": {
+        "ix": 34.01,
+        "wx": 9.07,
+        "rx": 2.96,
+        "x0": 2.5,
+        "iy": 6.15,
+        "wy": 2.16,
+        "ry": 1.26,
+        "it": 0.091,
+        "cw": 57.28,
+        "r0": 4.07
+      },
+      "centroid": {
+        "x": 1.16
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 14,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U75x40x2,65",
+        "source_dimensions": {
+          "bw": 75.0,
+          "bf": 40.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 3.04,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-75x40x3.00",
+      "designation": "U 75 × 40 × 3,00",
+      "aliases": [
+        "U75x40x3,00",
+        "U 75x40x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 75.0,
+        "bf": 40.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 3.42,
+        "area": 4.35
+      },
+      "section_properties": {
+        "ix": 37.76,
+        "wx": 10.07,
+        "rx": 2.94,
+        "x0": 2.49,
+        "iy": 6.85,
+        "wy": 2.42,
+        "ry": 1.25,
+        "it": 0.13,
+        "cw": 63.34,
+        "r0": 4.06
+      },
+      "centroid": {
+        "x": 1.17
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 15,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U75x40x3,00",
+        "source_dimensions": {
+          "bw": 75.0,
+          "bf": 40.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 3.42,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-75x40x3.35",
+      "designation": "U 75 × 40 × 3,35",
+      "aliases": [
+        "U75x40x3,35",
+        "U 75x40x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 75.0,
+        "bf": 40.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 3.79,
+        "area": 4.82
+      },
+      "section_properties": {
+        "ix": 41.34,
+        "wx": 11.02,
+        "rx": 2.93,
+        "x0": 2.48,
+        "iy": 7.52,
+        "wy": 2.68,
+        "ry": 1.25,
+        "it": 0.18,
+        "cw": 69.09,
+        "r0": 4.04
+      },
+      "centroid": {
+        "x": 1.19
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 16,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U75x40x3,35",
+        "source_dimensions": {
+          "bw": 75.0,
+          "bf": 40.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 3.79,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-75x40x3.75",
+      "designation": "U 75 × 40 × 3,75",
+      "aliases": [
+        "U75x40x3,75",
+        "U 75x40x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 75.0,
+        "bf": 40.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 4.2,
+        "area": 5.35
+      },
+      "section_properties": {
+        "ix": 45.23,
+        "wx": 12.06,
+        "rx": 2.91,
+        "x0": 2.48,
+        "iy": 8.26,
+        "wy": 2.96,
+        "ry": 1.24,
+        "it": 0.251,
+        "cw": 75.27,
+        "r0": 4.02
+      },
+      "centroid": {
+        "x": 1.21
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 17,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U75x40x3,75",
+        "source_dimensions": {
+          "bw": 75.0,
+          "bf": 40.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 4.2,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-75x40x4.25",
+      "designation": "U 75 × 40 × 4,25",
+      "aliases": [
+        "U75x40x4,25",
+        "U 75x40x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 75.0,
+        "bf": 40.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 4.71,
+        "area": 5.99
+      },
+      "section_properties": {
+        "ix": 49.81,
+        "wx": 13.28,
+        "rx": 2.88,
+        "x0": 2.47,
+        "iy": 9.14,
+        "wy": 3.3,
+        "ry": 1.23,
+        "it": 0.361,
+        "cw": 82.46,
+        "r0": 3.99
+      },
+      "centroid": {
+        "x": 1.23
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 18,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U75x40x4,25",
+        "source_dimensions": {
+          "bw": 75.0,
+          "bf": 40.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 4.71,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-75x40x4.75",
+      "designation": "U 75 × 40 × 4,75",
+      "aliases": [
+        "U75x40x4,75",
+        "U 75x40x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 75.0,
+        "bf": 40.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 5.2,
+        "area": 6.62
+      },
+      "section_properties": {
+        "ix": 54.07,
+        "wx": 14.42,
+        "rx": 2.86,
+        "x0": 2.46,
+        "iy": 9.97,
+        "wy": 3.64,
+        "ry": 1.23,
+        "it": 0.497,
+        "cw": 89.06,
+        "r0": 3.96
+      },
+      "centroid": {
+        "x": 1.26
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 19,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U75x40x4,75",
+        "source_dimensions": {
+          "bw": 75.0,
+          "bf": 40.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 5.2,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x1.20",
+      "designation": "U 100 × 40 × 1,20",
+      "aliases": [
+        "U100x40x1,20",
+        "U 100x40x1.20"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 1.2,
+        "t": 1.2,
+        "ri": 1.2
+      },
+      "physical_properties": {
+        "mass_per_length": 1.66,
+        "area": 2.11
+      },
+      "section_properties": {
+        "ix": 32.33,
+        "wx": 6.47,
+        "rx": 3.91,
+        "x0": 2.27,
+        "iy": 3.25,
+        "wy": 1.06,
+        "ry": 1.24,
+        "it": 0.01,
+        "cw": 56.25,
+        "r0": 4.69
+      },
+      "centroid": {
+        "x": 0.94
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 20,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x1,20",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 1.2,
+          "t": 1.2,
+          "ri": 1.2
+        },
+        "source_mass_per_length_kg_m": 1.66,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x1.50",
+      "designation": "U 100 × 40 × 1,50",
+      "aliases": [
+        "U100x40x1,50",
+        "U 100x40x1.50"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 1.5,
+        "t": 1.5,
+        "ri": 1.5
+      },
+      "physical_properties": {
+        "mass_per_length": 2.06,
+        "area": 2.63
+      },
+      "section_properties": {
+        "ix": 39.88,
+        "wx": 7.98,
+        "rx": 3.9,
+        "x0": 2.26,
+        "iy": 4.01,
+        "wy": 1.32,
+        "ry": 1.24,
+        "it": 0.02,
+        "cw": 69.11,
+        "r0": 4.67
+      },
+      "centroid": {
+        "x": 0.96
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 21,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x1,50",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 1.5,
+          "t": 1.5,
+          "ri": 1.5
+        },
+        "source_mass_per_length_kg_m": 2.06,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x2.00",
+      "designation": "U 100 × 40 × 2,00",
+      "aliases": [
+        "U100x40x2,00",
+        "U 100x40x2.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 2.0,
+        "t": 2.0,
+        "ri": 2.0
+      },
+      "physical_properties": {
+        "mass_per_length": 2.72,
+        "area": 3.47
+      },
+      "section_properties": {
+        "ix": 51.99,
+        "wx": 10.4,
+        "rx": 3.87,
+        "x0": 2.25,
+        "iy": 5.23,
+        "wy": 1.73,
+        "ry": 1.23,
+        "it": 0.046,
+        "cw": 89.52,
+        "r0": 4.64
+      },
+      "centroid": {
+        "x": 0.98
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 22,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x2,00",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 2.0,
+          "t": 2.0,
+          "ri": 2.0
+        },
+        "source_mass_per_length_kg_m": 2.72,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x2.25",
+      "designation": "U 100 × 40 × 2,25",
+      "aliases": [
+        "U100x40x2,25",
+        "U 100x40x2.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 2.25,
+        "t": 2.25,
+        "ri": 2.25
+      },
+      "physical_properties": {
+        "mass_per_length": 3.05,
+        "area": 3.88
+      },
+      "section_properties": {
+        "ix": 57.82,
+        "wx": 11.56,
+        "rx": 3.86,
+        "x0": 2.25,
+        "iy": 5.82,
+        "wy": 1.93,
+        "ry": 1.22,
+        "it": 0.065,
+        "cw": 99.25,
+        "r0": 4.63
+      },
+      "centroid": {
+        "x": 0.99
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 23,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x2,25",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 2.25,
+          "t": 2.25,
+          "ri": 2.25
+        },
+        "source_mass_per_length_kg_m": 3.05,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x2.65",
+      "designation": "U 100 × 40 × 2,65",
+      "aliases": [
+        "U100x40x2,65",
+        "U 100x40x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 3.56,
+        "area": 4.54
+      },
+      "section_properties": {
+        "ix": 66.87,
+        "wx": 13.37,
+        "rx": 3.84,
+        "x0": 2.24,
+        "iy": 6.74,
+        "wy": 2.25,
+        "ry": 1.22,
+        "it": 0.106,
+        "cw": 114.2,
+        "r0": 4.61
+      },
+      "centroid": {
+        "x": 1.01
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 24,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x2,65",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 3.56,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x3.00",
+      "designation": "U 100 × 40 × 3,00",
+      "aliases": [
+        "U100x40x3,00",
+        "U 100x40x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 4.01,
+        "area": 5.1
+      },
+      "section_properties": {
+        "ix": 74.48,
+        "wx": 14.9,
+        "rx": 3.82,
+        "x0": 2.23,
+        "iy": 7.52,
+        "wy": 2.53,
+        "ry": 1.21,
+        "it": 0.153,
+        "cw": 126.66,
+        "r0": 4.59
+      },
+      "centroid": {
+        "x": 1.02
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 25,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x3,00",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 4.01,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x3.35",
+      "designation": "U 100 × 40 × 3,35",
+      "aliases": [
+        "U100x40x3,35",
+        "U 100x40x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 4.44,
+        "area": 5.66
+      },
+      "section_properties": {
+        "ix": 81.83,
+        "wx": 16.37,
+        "rx": 3.8,
+        "x0": 2.22,
+        "iy": 8.27,
+        "wy": 2.79,
+        "ry": 1.21,
+        "it": 0.212,
+        "cw": 138.56,
+        "r0": 4.57
+      },
+      "centroid": {
+        "x": 1.04
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 26,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x3,35",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 4.44,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x3.75",
+      "designation": "U 100 × 40 × 3,75",
+      "aliases": [
+        "U100x40x3,75",
+        "U 100x40x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 4.94,
+        "area": 6.29
+      },
+      "section_properties": {
+        "ix": 89.89,
+        "wx": 17.98,
+        "rx": 3.78,
+        "x0": 2.21,
+        "iy": 9.09,
+        "wy": 3.09,
+        "ry": 1.2,
+        "it": 0.294,
+        "cw": 151.48,
+        "r0": 4.54
+      },
+      "centroid": {
+        "x": 1.06
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 27,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x3,75",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 4.94,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x4.25",
+      "designation": "U 100 × 40 × 4,25",
+      "aliases": [
+        "U100x40x4,25",
+        "U 100x40x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 5.54,
+        "area": 7.06
+      },
+      "section_properties": {
+        "ix": 99.49,
+        "wx": 19.9,
+        "rx": 3.75,
+        "x0": 2.2,
+        "iy": 10.08,
+        "wy": 3.45,
+        "ry": 1.2,
+        "it": 0.424,
+        "cw": 166.66,
+        "r0": 4.51
+      },
+      "centroid": {
+        "x": 1.08
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 28,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x4,25",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 5.54,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x4.75",
+      "designation": "U 100 × 40 × 4,75",
+      "aliases": [
+        "U100x40x4,75",
+        "U 100x40x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 6.13,
+        "area": 7.81
+      },
+      "section_properties": {
+        "ix": 108.55,
+        "wx": 21.71,
+        "rx": 3.73,
+        "x0": 2.19,
+        "iy": 11.02,
+        "wy": 3.8,
+        "ry": 1.19,
+        "it": 0.587,
+        "cw": 180.78,
+        "r0": 4.48
+      },
+      "centroid": {
+        "x": 1.1
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 29,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x4,75",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 6.13,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x40x6.30",
+      "designation": "U 100 × 40 × 6,30",
+      "aliases": [
+        "U100x40x6,30",
+        "U 100x40x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 40.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 7.88,
+        "area": 10.04
+      },
+      "section_properties": {
+        "ix": 133.35,
+        "wx": 26.67,
+        "rx": 3.65,
+        "x0": 2.15,
+        "iy": 13.6,
+        "wy": 4.82,
+        "ry": 1.16,
+        "it": 1.326,
+        "cw": 218.3,
+        "r0": 4.39
+      },
+      "centroid": {
+        "x": 1.18
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 30,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x40x6,30",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 40.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 7.88,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x1.20",
+      "designation": "U 100 × 50 × 1,20",
+      "aliases": [
+        "U100x50x1,20",
+        "U 100x50x1.20"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 1.2,
+        "t": 1.2,
+        "ri": 1.2
+      },
+      "physical_properties": {
+        "mass_per_length": 1.85,
+        "area": 2.35
+      },
+      "section_properties": {
+        "ix": 38.19,
+        "wx": 7.64,
+        "rx": 4.03,
+        "x0": 3.1,
+        "iy": 5.99,
+        "wy": 1.62,
+        "ry": 1.6,
+        "it": 0.011,
+        "cw": 102.97,
+        "r0": 5.33
+      },
+      "centroid": {
+        "x": 1.3
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 31,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x50x1,20",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 1.2,
+          "t": 1.2,
+          "ri": 1.2
+        },
+        "source_mass_per_length_kg_m": 1.85,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x1.50",
+      "designation": "U 100 × 50 × 1,50",
+      "aliases": [
+        "U100x50x1,50",
+        "U 100x50x1.50"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 1.5,
+        "t": 1.5,
+        "ri": 1.5
+      },
+      "physical_properties": {
+        "mass_per_length": 2.3,
+        "area": 2.93
+      },
+      "section_properties": {
+        "ix": 47.15,
+        "wx": 9.43,
+        "rx": 4.01,
+        "x0": 3.09,
+        "iy": 7.41,
+        "wy": 2.01,
+        "ry": 1.59,
+        "it": 0.022,
+        "cw": 126.77,
+        "r0": 5.31
+      },
+      "centroid": {
+        "x": 1.32
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 32,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x50x1,50",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 1.5,
+          "t": 1.5,
+          "ri": 1.5
+        },
+        "source_mass_per_length_kg_m": 2.3,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x2.00",
+      "designation": "U 100 × 50 × 2,00",
+      "aliases": [
+        "U100x50x2,00",
+        "U 100x50x2.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 2.0,
+        "t": 2.0,
+        "ri": 2.0
+      },
+      "physical_properties": {
+        "mass_per_length": 3.04,
+        "area": 3.87
+      },
+      "section_properties": {
+        "ix": 61.59,
+        "wx": 12.32,
+        "rx": 3.99,
+        "x0": 3.08,
+        "iy": 9.71,
+        "wy": 2.65,
+        "ry": 1.58,
+        "it": 0.052,
+        "cw": 164.78,
+        "r0": 5.28
+      },
+      "centroid": {
+        "x": 1.34
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 33,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x50x2,00",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 2.0,
+          "t": 2.0,
+          "ri": 2.0
+        },
+        "source_mass_per_length_kg_m": 3.04,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x2.25",
+      "designation": "U 100 × 50 × 2,25",
+      "aliases": [
+        "U100x50x2,25",
+        "U 100x50x2.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 2.25,
+        "t": 2.25,
+        "ri": 2.25
+      },
+      "physical_properties": {
+        "mass_per_length": 3.4,
+        "area": 4.33
+      },
+      "section_properties": {
+        "ix": 68.57,
+        "wx": 13.71,
+        "rx": 3.98,
+        "x0": 3.07,
+        "iy": 10.82,
+        "wy": 2.97,
+        "ry": 1.58,
+        "it": 0.073,
+        "cw": 183.02,
+        "r0": 5.27
+      },
+      "centroid": {
+        "x": 1.35
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 34,
+        "source_page": 21,
+        "source_pdf_page": 27,
+        "source_designation": "U100x50x2,25",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 2.25,
+          "t": 2.25,
+          "ri": 2.25
+        },
+        "source_mass_per_length_kg_m": 3.4,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x2.65",
+      "designation": "U 100 × 50 × 2,65",
+      "aliases": [
+        "U100x50x2,65",
+        "U 100x50x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 3.98,
+        "area": 5.07
+      },
+      "section_properties": {
+        "ix": 79.42,
+        "wx": 15.88,
+        "rx": 3.96,
+        "x0": 3.07,
+        "iy": 12.57,
+        "wy": 3.46,
+        "ry": 1.57,
+        "it": 0.119,
+        "cw": 211.18,
+        "r0": 5.25
+      },
+      "centroid": {
+        "x": 1.37
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 35,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x50x2,65",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 3.98,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x3.00",
+      "designation": "U 100 × 50 × 3,00",
+      "aliases": [
+        "U100x50x3,00",
+        "U 100x50x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 4.48,
+        "area": 5.7
+      },
+      "section_properties": {
+        "ix": 88.6,
+        "wx": 17.72,
+        "rx": 3.94,
+        "x0": 3.06,
+        "iy": 14.05,
+        "wy": 3.89,
+        "ry": 1.57,
+        "it": 0.171,
+        "cw": 234.81,
+        "r0": 5.23
+      },
+      "centroid": {
+        "x": 1.39
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 36,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x50x3,00",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 4.48,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x3.35",
+      "designation": "U 100 × 50 × 3,35",
+      "aliases": [
+        "U100x50x3,35",
+        "U 100x50x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 4.97,
+        "area": 6.33
+      },
+      "section_properties": {
+        "ix": 97.48,
+        "wx": 19.5,
+        "rx": 3.92,
+        "x0": 3.05,
+        "iy": 15.49,
+        "wy": 4.31,
+        "ry": 1.56,
+        "it": 0.237,
+        "cw": 257.51,
+        "r0": 5.21
+      },
+      "centroid": {
+        "x": 1.41
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 37,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x50x3,35",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 4.97,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x3.75",
+      "designation": "U 100 × 50 × 3,75",
+      "aliases": [
+        "U100x50x3,75",
+        "U 100x50x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 5.52,
+        "area": 7.04
+      },
+      "section_properties": {
+        "ix": 107.26,
+        "wx": 21.45,
+        "rx": 3.9,
+        "x0": 3.04,
+        "iy": 17.09,
+        "wy": 4.78,
+        "ry": 1.56,
+        "it": 0.33,
+        "cw": 282.34,
+        "r0": 5.19
+      },
+      "centroid": {
+        "x": 1.42
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 38,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x50x3,75",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 5.52,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x4.25",
+      "designation": "U 100 × 50 × 4,25",
+      "aliases": [
+        "U100x50x4,25",
+        "U 100x50x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 6.21,
+        "area": 7.91
+      },
+      "section_properties": {
+        "ix": 118.97,
+        "wx": 23.79,
+        "rx": 3.88,
+        "x0": 3.03,
+        "iy": 19.01,
+        "wy": 5.35,
+        "ry": 1.55,
+        "it": 0.476,
+        "cw": 311.76,
+        "r0": 5.16
+      },
+      "centroid": {
+        "x": 1.45
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 39,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x50x4,25",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 6.21,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x4.75",
+      "designation": "U 100 × 50 × 4,75",
+      "aliases": [
+        "U100x50x4,75",
+        "U 100x50x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 6.88,
+        "area": 8.76
+      },
+      "section_properties": {
+        "ix": 130.09,
+        "wx": 26.02,
+        "rx": 3.85,
+        "x0": 3.02,
+        "iy": 20.86,
+        "wy": 5.91,
+        "ry": 1.54,
+        "it": 0.658,
+        "cw": 339.43,
+        "r0": 5.13
+      },
+      "centroid": {
+        "x": 1.47
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 40,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x50x4,75",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 6.88,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x50x6.30",
+      "designation": "U 100 × 50 × 6,30",
+      "aliases": [
+        "U100x50x6,30",
+        "U 100x50x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 50.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 8.87,
+        "area": 11.3
+      },
+      "section_properties": {
+        "ix": 161.01,
+        "wx": 32.2,
+        "rx": 3.78,
+        "x0": 2.99,
+        "iy": 26.07,
+        "wy": 7.55,
+        "ry": 1.52,
+        "it": 1.493,
+        "cw": 414.74,
+        "r0": 5.05
+      },
+      "centroid": {
+        "x": 1.55
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 41,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x50x6,30",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 50.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 8.87,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x75x2.65",
+      "designation": "U 100 × 75 × 2,65",
+      "aliases": [
+        "U100x75x2,65",
+        "U 100x75x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 75.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 5.02,
+        "area": 6.39
+      },
+      "section_properties": {
+        "ix": 110.82,
+        "wx": 22.16,
+        "rx": 4.16,
+        "x0": 5.27,
+        "iy": 38.21,
+        "wy": 7.47,
+        "ry": 2.44,
+        "it": 0.15,
+        "cw": 645.05,
+        "r0": 7.15
+      },
+      "centroid": {
+        "x": 2.38
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 42,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x75x2,65",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 75.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 5.02,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x75x3.00",
+      "designation": "U 100 × 75 × 3,00",
+      "aliases": [
+        "U100x75x3,00",
+        "U 100x75x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 75.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 5.66,
+        "area": 7.2
+      },
+      "section_properties": {
+        "ix": 123.88,
+        "wx": 24.78,
+        "rx": 4.15,
+        "x0": 5.26,
+        "iy": 42.85,
+        "wy": 8.4,
+        "ry": 2.44,
+        "it": 0.216,
+        "cw": 719.59,
+        "r0": 7.13
+      },
+      "centroid": {
+        "x": 2.4
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 43,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x75x3,00",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 75.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 5.66,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x75x3.35",
+      "designation": "U 100 × 75 × 3,35",
+      "aliases": [
+        "U100x75x3,35",
+        "U 100x75x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 75.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 6.28,
+        "area": 8.01
+      },
+      "section_properties": {
+        "ix": 136.59,
+        "wx": 27.32,
+        "rx": 4.13,
+        "x0": 5.26,
+        "iy": 47.4,
+        "wy": 9.33,
+        "ry": 2.43,
+        "it": 0.299,
+        "cw": 791.79,
+        "r0": 7.11
+      },
+      "centroid": {
+        "x": 2.42
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 44,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x75x3,35",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 75.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 6.28,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x75x3.75",
+      "designation": "U 100 × 75 × 3,75",
+      "aliases": [
+        "U100x75x3,75",
+        "U 100x75x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 75.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 7.0,
+        "area": 8.91
+      },
+      "section_properties": {
+        "ix": 150.69,
+        "wx": 30.14,
+        "rx": 4.11,
+        "x0": 5.25,
+        "iy": 52.49,
+        "wy": 10.37,
+        "ry": 2.43,
+        "it": 0.417,
+        "cw": 871.49,
+        "r0": 7.1
+      },
+      "centroid": {
+        "x": 2.44
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 45,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x75x3,75",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 75.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 7.0,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x75x4.25",
+      "designation": "U 100 × 75 × 4,25",
+      "aliases": [
+        "U100x75x4,25",
+        "U 100x75x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 75.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 7.87,
+        "area": 10.03
+      },
+      "section_properties": {
+        "ix": 167.67,
+        "wx": 33.53,
+        "rx": 4.09,
+        "x0": 5.24,
+        "iy": 58.68,
+        "wy": 11.66,
+        "ry": 2.42,
+        "it": 0.603,
+        "cw": 966.96,
+        "r0": 7.07
+      },
+      "centroid": {
+        "x": 2.46
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 46,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x75x4,25",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 75.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 7.87,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x75x4.75",
+      "designation": "U 100 × 75 × 4,75",
+      "aliases": [
+        "U100x75x4,75",
+        "U 100x75x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 75.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 8.74,
+        "area": 11.13
+      },
+      "section_properties": {
+        "ix": 183.96,
+        "wx": 36.79,
+        "rx": 4.06,
+        "x0": 5.23,
+        "iy": 64.69,
+        "wy": 12.91,
+        "ry": 2.41,
+        "it": 0.836,
+        "cw": 1057.95,
+        "r0": 7.05
+      },
+      "centroid": {
+        "x": 2.49
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 47,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x75x4,75",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 75.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 8.74,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x75x6.30",
+      "designation": "U 100 × 75 × 6,30",
+      "aliases": [
+        "U100x75x6,30",
+        "U 100x75x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 75.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 11.34,
+        "area": 14.45
+      },
+      "section_properties": {
+        "ix": 230.15,
+        "wx": 46.03,
+        "rx": 3.99,
+        "x0": 5.21,
+        "iy": 82.13,
+        "wy": 16.67,
+        "ry": 2.38,
+        "it": 1.909,
+        "cw": 1312.73,
+        "r0": 6.98
+      },
+      "centroid": {
+        "x": 2.57
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 48,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x75x6,30",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 75.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 11.34,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-100x75x8.00",
+      "designation": "U 100 × 75 × 8,00",
+      "aliases": [
+        "U100x75x8,00",
+        "U 100x75x8.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 100.0,
+        "bf": 75.0,
+        "tn": 8.0,
+        "t": 8.0,
+        "ri": 12.0
+      },
+      "physical_properties": {
+        "mass_per_length": 13.83,
+        "area": 17.62
+      },
+      "section_properties": {
+        "ix": 266.67,
+        "wx": 53.33,
+        "rx": 3.89,
+        "x0": 5.22,
+        "iy": 97.33,
+        "wy": 20.3,
+        "ry": 2.35,
+        "it": 3.756,
+        "cw": 1547.82,
+        "r0": 6.92
+      },
+      "centroid": {
+        "x": 2.7
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 49,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U100x75x8,00",
+        "source_dimensions": {
+          "bw": 100.0,
+          "bf": 75.0,
+          "tn": 8.0,
+          "t": 8.0,
+          "ri": 12.0
+        },
+        "source_mass_per_length_kg_m": 13.83,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x1.20",
+      "designation": "U 125 × 50 × 1,20",
+      "aliases": [
+        "U125x50x1,20",
+        "U 125x50x1.20"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 1.2,
+        "t": 1.2,
+        "ri": 1.2
+      },
+      "physical_properties": {
+        "mass_per_length": 2.08,
+        "area": 2.65
+      },
+      "section_properties": {
+        "ix": 63.82,
+        "wx": 10.21,
+        "rx": 4.91,
+        "x0": 2.85,
+        "iy": 6.4,
+        "wy": 1.67,
+        "ry": 1.55,
+        "it": 0.013,
+        "cw": 174.04,
+        "r0": 5.88
+      },
+      "centroid": {
+        "x": 1.16
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 50,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x1,20",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 1.2,
+          "t": 1.2,
+          "ri": 1.2
+        },
+        "source_mass_per_length_kg_m": 2.08,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x1.50",
+      "designation": "U 125 × 50 × 1,50",
+      "aliases": [
+        "U125x50x1,50",
+        "U 125x50x1.50"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 1.5,
+        "t": 1.5,
+        "ri": 1.5
+      },
+      "physical_properties": {
+        "mass_per_length": 2.59,
+        "area": 3.3
+      },
+      "section_properties": {
+        "ix": 78.93,
+        "wx": 12.63,
+        "rx": 4.89,
+        "x0": 2.84,
+        "iy": 7.92,
+        "wy": 2.07,
+        "ry": 1.55,
+        "it": 0.025,
+        "cw": 214.57,
+        "r0": 5.86
+      },
+      "centroid": {
+        "x": 1.18
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 51,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x1,50",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 1.5,
+          "t": 1.5,
+          "ri": 1.5
+        },
+        "source_mass_per_length_kg_m": 2.59,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x2.00",
+      "designation": "U 125 × 50 × 2,00",
+      "aliases": [
+        "U125x50x2,00",
+        "U 125x50x2.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 2.0,
+        "t": 2.0,
+        "ri": 2.0
+      },
+      "physical_properties": {
+        "mass_per_length": 3.43,
+        "area": 4.37
+      },
+      "section_properties": {
+        "ix": 103.38,
+        "wx": 16.54,
+        "rx": 4.86,
+        "x0": 2.83,
+        "iy": 10.39,
+        "wy": 2.73,
+        "ry": 1.54,
+        "it": 0.058,
+        "cw": 279.58,
+        "r0": 5.83
+      },
+      "centroid": {
+        "x": 1.2
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 52,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x2,00",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 2.0,
+          "t": 2.0,
+          "ri": 2.0
+        },
+        "source_mass_per_length_kg_m": 3.43,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x2.25",
+      "designation": "U 125 × 50 × 2,25",
+      "aliases": [
+        "U125x50x2,25",
+        "U 125x50x2.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 2.25,
+        "t": 2.25,
+        "ri": 2.25
+      },
+      "physical_properties": {
+        "mass_per_length": 3.84,
+        "area": 4.9
+      },
+      "section_properties": {
+        "ix": 115.26,
+        "wx": 18.44,
+        "rx": 4.85,
+        "x0": 2.82,
+        "iy": 11.59,
+        "wy": 3.06,
+        "ry": 1.54,
+        "it": 0.083,
+        "cw": 310.91,
+        "r0": 5.82
+      },
+      "centroid": {
+        "x": 1.21
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 53,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x2,25",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 2.25,
+          "t": 2.25,
+          "ri": 2.25
+        },
+        "source_mass_per_length_kg_m": 3.84,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x2.65",
+      "designation": "U 125 × 50 × 2,65",
+      "aliases": [
+        "U125x50x2,65",
+        "U 125x50x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 4.5,
+        "area": 5.73
+      },
+      "section_properties": {
+        "ix": 133.8,
+        "wx": 21.41,
+        "rx": 4.83,
+        "x0": 2.81,
+        "iy": 13.47,
+        "wy": 3.57,
+        "ry": 1.53,
+        "it": 0.134,
+        "cw": 359.45,
+        "r0": 5.8
+      },
+      "centroid": {
+        "x": 1.23
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 54,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x2,65",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 4.5,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x3.00",
+      "designation": "U 125 × 50 × 3,00",
+      "aliases": [
+        "U125x50x3,00",
+        "U 125x50x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 5.07,
+        "area": 6.45
+      },
+      "section_properties": {
+        "ix": 149.55,
+        "wx": 23.93,
+        "rx": 4.81,
+        "x0": 2.8,
+        "iy": 15.07,
+        "wy": 4.01,
+        "ry": 1.53,
+        "it": 0.193,
+        "cw": 400.35,
+        "r0": 5.78
+      },
+      "centroid": {
+        "x": 1.24
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 55,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x3,00",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 5.07,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x3.35",
+      "designation": "U 125 × 50 × 3,35",
+      "aliases": [
+        "U125x50x3,35",
+        "U 125x50x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 5.63,
+        "area": 7.17
+      },
+      "section_properties": {
+        "ix": 164.87,
+        "wx": 26.38,
+        "rx": 4.8,
+        "x0": 2.8,
+        "iy": 16.62,
+        "wy": 4.45,
+        "ry": 1.52,
+        "it": 0.268,
+        "cw": 439.81,
+        "r0": 5.76
+      },
+      "centroid": {
+        "x": 1.26
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 56,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x3,35",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 5.63,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x3.75",
+      "designation": "U 125 × 50 × 3,75",
+      "aliases": [
+        "U125x50x3,75",
+        "U 125x50x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 6.26,
+        "area": 7.98
+      },
+      "section_properties": {
+        "ix": 181.85,
+        "wx": 29.1,
+        "rx": 4.78,
+        "x0": 2.79,
+        "iy": 18.35,
+        "wy": 4.93,
+        "ry": 1.52,
+        "it": 0.373,
+        "cw": 483.18,
+        "r0": 5.73
+      },
+      "centroid": {
+        "x": 1.28
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 57,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x3,75",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 6.26,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x4.25",
+      "designation": "U 125 × 50 × 4,25",
+      "aliases": [
+        "U125x50x4,25",
+        "U 125x50x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 7.04,
+        "area": 8.97
+      },
+      "section_properties": {
+        "ix": 202.28,
+        "wx": 32.37,
+        "rx": 4.75,
+        "x0": 2.77,
+        "iy": 20.44,
+        "wy": 5.53,
+        "ry": 1.51,
+        "it": 0.539,
+        "cw": 534.87,
+        "r0": 5.7
+      },
+      "centroid": {
+        "x": 1.3
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 58,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x4,25",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 7.04,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x4.75",
+      "designation": "U 125 × 50 × 4,75",
+      "aliases": [
+        "U125x50x4,75",
+        "U 125x50x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 7.81,
+        "area": 9.95
+      },
+      "section_properties": {
+        "ix": 221.87,
+        "wx": 35.5,
+        "rx": 4.72,
+        "x0": 2.76,
+        "iy": 22.45,
+        "wy": 6.11,
+        "ry": 1.5,
+        "it": 0.747,
+        "cw": 583.83,
+        "r0": 5.67
+      },
+      "centroid": {
+        "x": 1.32
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 59,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x4,75",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 7.81,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x50x6.30",
+      "designation": "U 125 × 50 × 6,30",
+      "aliases": [
+        "U125x50x6,30",
+        "U 125x50x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 50.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 10.1,
+        "area": 12.87
+      },
+      "section_properties": {
+        "ix": 277.25,
+        "wx": 44.36,
+        "rx": 4.64,
+        "x0": 2.73,
+        "iy": 28.16,
+        "wy": 7.81,
+        "ry": 1.48,
+        "it": 1.701,
+        "cw": 719.09,
+        "r0": 5.58
+      },
+      "centroid": {
+        "x": 1.4
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 60,
+        "source_page": 22,
+        "source_pdf_page": 28,
+        "source_designation": "U125x50x6,30",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 50.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 10.1,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x75x2.65",
+      "designation": "U 125 × 75 × 2,65",
+      "aliases": [
+        "U125x75x2,65",
+        "U 125x75x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 75.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 5.54,
+        "area": 7.06
+      },
+      "section_properties": {
+        "ix": 183.39,
+        "wx": 29.34,
+        "rx": 5.1,
+        "x0": 4.92,
+        "iy": 41.25,
+        "wy": 7.74,
+        "ry": 2.42,
+        "it": 0.165,
+        "cw": 1090.88,
+        "r0": 7.49
+      },
+      "centroid": {
+        "x": 2.17
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 61,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U125x75x2,65",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 75.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 5.54,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x75x3.00",
+      "designation": "U 125 × 75 × 3,00",
+      "aliases": [
+        "U125x75x3,00",
+        "U 125x75x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 75.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 6.24,
+        "area": 7.95
+      },
+      "section_properties": {
+        "ix": 205.37,
+        "wx": 32.86,
+        "rx": 5.08,
+        "x0": 4.92,
+        "iy": 46.29,
+        "wy": 8.72,
+        "ry": 2.41,
+        "it": 0.238,
+        "cw": 1218.99,
+        "r0": 7.47
+      },
+      "centroid": {
+        "x": 2.19
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 62,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U125x75x3,00",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 75.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 6.24,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x75x3.35",
+      "designation": "U 125 × 75 × 3,35",
+      "aliases": [
+        "U125x75x3,35",
+        "U 125x75x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 75.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 6.94,
+        "area": 8.84
+      },
+      "section_properties": {
+        "ix": 226.84,
+        "wx": 36.29,
+        "rx": 5.06,
+        "x0": 4.91,
+        "iy": 51.25,
+        "wy": 9.68,
+        "ry": 2.41,
+        "it": 0.33,
+        "cw": 1343.56,
+        "r0": 7.45
+      },
+      "centroid": {
+        "x": 2.21
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 63,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U125x75x3,35",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 75.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 6.94,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x75x3.75",
+      "designation": "U 125 × 75 × 3,75",
+      "aliases": [
+        "U125x75x3,75",
+        "U 125x75x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 75.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 7.73,
+        "area": 9.85
+      },
+      "section_properties": {
+        "ix": 250.76,
+        "wx": 40.12,
+        "rx": 5.05,
+        "x0": 4.9,
+        "iy": 56.79,
+        "wy": 10.77,
+        "ry": 2.4,
+        "it": 0.461,
+        "cw": 1481.66,
+        "r0": 7.43
+      },
+      "centroid": {
+        "x": 2.22
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 64,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U125x75x3,75",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 75.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 7.73,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x75x4.25",
+      "designation": "U 125 × 75 × 4,25",
+      "aliases": [
+        "U125x75x4,25",
+        "U 125x75x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 75.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 8.71,
+        "area": 11.09
+      },
+      "section_properties": {
+        "ix": 279.74,
+        "wx": 44.76,
+        "rx": 5.02,
+        "x0": 4.89,
+        "iy": 63.56,
+        "wy": 12.1,
+        "ry": 2.39,
+        "it": 0.667,
+        "cw": 1648.01,
+        "r0": 7.41
+      },
+      "centroid": {
+        "x": 2.25
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 65,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U125x75x4,25",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 75.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 8.71,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x75x4.75",
+      "designation": "U 125 × 75 × 4,75",
+      "aliases": [
+        "U125x75x4,75",
+        "U 125x75x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 75.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 9.67,
+        "area": 12.32
+      },
+      "section_properties": {
+        "ix": 307.72,
+        "wx": 49.24,
+        "rx": 5.0,
+        "x0": 4.88,
+        "iy": 70.14,
+        "wy": 13.42,
+        "ry": 2.39,
+        "it": 0.926,
+        "cw": 1807.54,
+        "r0": 7.38
+      },
+      "centroid": {
+        "x": 2.27
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 66,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U125x75x4,75",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 75.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 9.67,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x75x6.30",
+      "designation": "U 125 × 75 × 6,30",
+      "aliases": [
+        "U125x75x6,30",
+        "U 125x75x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 75.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 12.58,
+        "area": 16.02
+      },
+      "section_properties": {
+        "ix": 388.2,
+        "wx": 62.11,
+        "rx": 4.92,
+        "x0": 4.85,
+        "iy": 89.36,
+        "wy": 17.35,
+        "ry": 2.36,
+        "it": 2.117,
+        "cw": 2260.41,
+        "r0": 7.3
+      },
+      "centroid": {
+        "x": 2.35
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 67,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U125x75x6,30",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 75.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 12.58,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-125x75x8.00",
+      "designation": "U 125 × 75 × 8,00",
+      "aliases": [
+        "U125x75x8,00",
+        "U 125x75x8.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 125.0,
+        "bf": 75.0,
+        "tn": 8.0,
+        "t": 8.0,
+        "ri": 12.0
+      },
+      "physical_properties": {
+        "mass_per_length": 15.4,
+        "area": 19.62
+      },
+      "section_properties": {
+        "ix": 455.07,
+        "wx": 72.81,
+        "rx": 4.82,
+        "x0": 4.86,
+        "iy": 106.87,
+        "wy": 21.25,
+        "ry": 2.33,
+        "it": 4.182,
+        "cw": 2688.83,
+        "r0": 7.23
+      },
+      "centroid": {
+        "x": 2.47
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 68,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U125x75x8,00",
+        "source_dimensions": {
+          "bw": 125.0,
+          "bf": 75.0,
+          "tn": 8.0,
+          "t": 8.0,
+          "ri": 12.0
+        },
+        "source_mass_per_length_kg_m": 15.4,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x50x2.00",
+      "designation": "U 150 × 50 × 2,00",
+      "aliases": [
+        "U150x50x2,00",
+        "U 150x50x2.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 50.0,
+        "tn": 2.0,
+        "t": 2.0,
+        "ri": 2.0
+      },
+      "physical_properties": {
+        "mass_per_length": 3.82,
+        "area": 4.87
+      },
+      "section_properties": {
+        "ix": 158.88,
+        "wx": 21.18,
+        "rx": 5.71,
+        "x0": 2.62,
+        "iy": 10.93,
+        "wy": 2.79,
+        "ry": 1.5,
+        "it": 0.065,
+        "cw": 430.47,
+        "r0": 6.46
+      },
+      "centroid": {
+        "x": 1.09
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 69,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x50x2,00",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 50.0,
+          "tn": 2.0,
+          "t": 2.0,
+          "ri": 2.0
+        },
+        "source_mass_per_length_kg_m": 3.82,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x50x2.25",
+      "designation": "U 150 × 50 × 2,25",
+      "aliases": [
+        "U150x50x2,25",
+        "U 150x50x2.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 50.0,
+        "tn": 2.25,
+        "t": 2.25,
+        "ri": 2.25
+      },
+      "physical_properties": {
+        "mass_per_length": 4.28,
+        "area": 5.46
+      },
+      "section_properties": {
+        "ix": 177.32,
+        "wx": 23.64,
+        "rx": 5.7,
+        "x0": 2.61,
+        "iy": 12.2,
+        "wy": 3.13,
+        "ry": 1.49,
+        "it": 0.092,
+        "cw": 479.1,
+        "r0": 6.44
+      },
+      "centroid": {
+        "x": 1.1
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 70,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x50x2,25",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 50.0,
+          "tn": 2.25,
+          "t": 2.25,
+          "ri": 2.25
+        },
+        "source_mass_per_length_kg_m": 4.28,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x50x2.65",
+      "designation": "U 150 × 50 × 2,65",
+      "aliases": [
+        "U150x50x2,65",
+        "U 150x50x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 50.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 5.02,
+        "area": 6.39
+      },
+      "section_properties": {
+        "ix": 206.17,
+        "wx": 27.49,
+        "rx": 5.68,
+        "x0": 2.6,
+        "iy": 14.18,
+        "wy": 3.65,
+        "ry": 1.49,
+        "it": 0.15,
+        "cw": 554.61,
+        "r0": 6.42
+      },
+      "centroid": {
+        "x": 1.12
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 71,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x50x2,65",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 50.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 5.02,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x50x3.00",
+      "designation": "U 150 × 50 × 3,00",
+      "aliases": [
+        "U150x50x3,00",
+        "U 150x50x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 50.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 5.66,
+        "area": 7.2
+      },
+      "section_properties": {
+        "ix": 230.76,
+        "wx": 30.77,
+        "rx": 5.66,
+        "x0": 2.59,
+        "iy": 15.87,
+        "wy": 4.1,
+        "ry": 1.48,
+        "it": 0.216,
+        "cw": 618.42,
+        "r0": 6.4
+      },
+      "centroid": {
+        "x": 1.13
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 72,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x50x3,00",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 50.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 5.66,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x50x3.35",
+      "designation": "U 150 × 50 × 3,35",
+      "aliases": [
+        "U150x50x3,35",
+        "U 150x50x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 50.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 6.28,
+        "area": 8.01
+      },
+      "section_properties": {
+        "ix": 254.76,
+        "wx": 33.97,
+        "rx": 5.64,
+        "x0": 2.58,
+        "iy": 17.52,
+        "wy": 4.55,
+        "ry": 1.48,
+        "it": 0.299,
+        "cw": 680.15,
+        "r0": 6.38
+      },
+      "centroid": {
+        "x": 1.15
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 73,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x50x3,35",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 50.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 6.28,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x50x3.75",
+      "designation": "U 150 × 50 × 3,75",
+      "aliases": [
+        "U150x50x3,75",
+        "U 150x50x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 50.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 7.0,
+        "area": 8.91
+      },
+      "section_properties": {
+        "ix": 281.45,
+        "wx": 37.53,
+        "rx": 5.62,
+        "x0": 2.57,
+        "iy": 19.35,
+        "wy": 5.04,
+        "ry": 1.47,
+        "it": 0.417,
+        "cw": 748.21,
+        "r0": 6.35
+      },
+      "centroid": {
+        "x": 1.16
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 74,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x50x3,75",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 50.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 7.0,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x50x4.25",
+      "designation": "U 150 × 50 × 4,25",
+      "aliases": [
+        "U150x50x4,25",
+        "U 150x50x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 50.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 7.87,
+        "area": 10.03
+      },
+      "section_properties": {
+        "ix": 313.74,
+        "wx": 41.83,
+        "rx": 5.59,
+        "x0": 2.56,
+        "iy": 21.57,
+        "wy": 5.66,
+        "ry": 1.47,
+        "it": 0.603,
+        "cw": 829.62,
+        "r0": 6.32
+      },
+      "centroid": {
+        "x": 1.19
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 75,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x50x4,25",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 50.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 7.87,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x50x4.75",
+      "designation": "U 150 × 50 × 4,75",
+      "aliases": [
+        "U150x50x4,75",
+        "U 150x50x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 50.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 8.74,
+        "area": 11.13
+      },
+      "section_properties": {
+        "ix": 344.84,
+        "wx": 45.98,
+        "rx": 5.57,
+        "x0": 2.55,
+        "iy": 23.7,
+        "wy": 6.25,
+        "ry": 1.46,
+        "it": 0.836,
+        "cw": 907.06,
+        "r0": 6.29
+      },
+      "centroid": {
+        "x": 1.21
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 76,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x50x4,75",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 50.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 8.74,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x50x6.30",
+      "designation": "U 150 × 50 × 6,30",
+      "aliases": [
+        "U150x50x6,30",
+        "U 150x50x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 50.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 11.34,
+        "area": 14.45
+      },
+      "section_properties": {
+        "ix": 433.86,
+        "wx": 57.85,
+        "rx": 5.48,
+        "x0": 2.51,
+        "iy": 29.8,
+        "wy": 8.01,
+        "ry": 1.44,
+        "it": 1.909,
+        "cw": 1123.08,
+        "r0": 6.2
+      },
+      "centroid": {
+        "x": 1.28
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 77,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x50x6,30",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 50.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 11.34,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x50x8.00",
+      "designation": "U 150 × 50 × 8,00",
+      "aliases": [
+        "U150x50x8,00",
+        "U 150x50x8.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 50.0,
+        "tn": 8.0,
+        "t": 8.0,
+        "ri": 12.0
+      },
+      "physical_properties": {
+        "mass_per_length": 13.83,
+        "area": 17.62
+      },
+      "section_properties": {
+        "ix": 503.31,
+        "wx": 67.11,
+        "rx": 5.34,
+        "x0": 2.5,
+        "iy": 35.23,
+        "wy": 9.72,
+        "ry": 1.41,
+        "it": 3.756,
+        "cw": 1320.98,
+        "r0": 6.07
+      },
+      "centroid": {
+        "x": 1.38
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 78,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x50x8,00",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 50.0,
+          "tn": 8.0,
+          "t": 8.0,
+          "ri": 12.0
+        },
+        "source_mass_per_length_kg_m": 13.83,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x75x2.65",
+      "designation": "U 150 × 75 × 2,65",
+      "aliases": [
+        "U150x75x2,65",
+        "U 150x75x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 75.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 6.06,
+        "area": 7.72
+      },
+      "section_properties": {
+        "ix": 278.09,
+        "wx": 37.08,
+        "rx": 6.0,
+        "x0": 4.63,
+        "iy": 43.77,
+        "wy": 7.95,
+        "ry": 2.38,
+        "it": 0.181,
+        "cw": 1677.77,
+        "r0": 7.94
+      },
+      "centroid": {
+        "x": 2.0
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 79,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x75x2,65",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 75.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 6.06,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x75x3.00",
+      "designation": "U 150 × 75 × 3,00",
+      "aliases": [
+        "U150x75x3,00",
+        "U 150x75x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 75.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 6.83,
+        "area": 8.7
+      },
+      "section_properties": {
+        "ix": 311.8,
+        "wx": 41.57,
+        "rx": 5.99,
+        "x0": 4.62,
+        "iy": 49.14,
+        "wy": 8.96,
+        "ry": 2.38,
+        "it": 0.261,
+        "cw": 1876.92,
+        "r0": 7.92
+      },
+      "centroid": {
+        "x": 2.01
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 80,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x75x3,00",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 75.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 6.83,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x75x3.35",
+      "designation": "U 150 × 75 × 3,35",
+      "aliases": [
+        "U150x75x3,35",
+        "U 150x75x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 75.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 7.6,
+        "area": 9.68
+      },
+      "section_properties": {
+        "ix": 344.82,
+        "wx": 45.98,
+        "rx": 5.97,
+        "x0": 4.61,
+        "iy": 54.42,
+        "wy": 9.95,
+        "ry": 2.37,
+        "it": 0.362,
+        "cw": 2071.06,
+        "r0": 7.91
+      },
+      "centroid": {
+        "x": 2.03
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 81,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x75x3,35",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 75.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 7.6,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x75x3.75",
+      "designation": "U 150 × 75 × 3,75",
+      "aliases": [
+        "U150x75x3,75",
+        "U 150x75x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 75.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 8.47,
+        "area": 10.79
+      },
+      "section_properties": {
+        "ix": 381.72,
+        "wx": 50.9,
+        "rx": 5.95,
+        "x0": 4.6,
+        "iy": 60.35,
+        "wy": 11.07,
+        "ry": 2.37,
+        "it": 0.505,
+        "cw": 2286.9,
+        "r0": 7.88
+      },
+      "centroid": {
+        "x": 2.05
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 82,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x75x3,75",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 75.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 8.47,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x75x4.25",
+      "designation": "U 150 × 75 × 4,25",
+      "aliases": [
+        "U150x75x4,25",
+        "U 150x75x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 75.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 9.54,
+        "area": 12.16
+      },
+      "section_properties": {
+        "ix": 426.6,
+        "wx": 56.88,
+        "rx": 5.92,
+        "x0": 4.59,
+        "iy": 67.58,
+        "wy": 12.45,
+        "ry": 2.36,
+        "it": 0.731,
+        "cw": 2547.82,
+        "r0": 7.86
+      },
+      "centroid": {
+        "x": 2.07
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 83,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x75x4,25",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 75.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 9.54,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x75x4.75",
+      "designation": "U 150 × 75 × 4,75",
+      "aliases": [
+        "U150x75x4,75",
+        "U 150x75x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 75.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 10.6,
+        "area": 13.51
+      },
+      "section_properties": {
+        "ix": 470.11,
+        "wx": 62.68,
+        "rx": 5.9,
+        "x0": 4.58,
+        "iy": 74.63,
+        "wy": 13.81,
+        "ry": 2.35,
+        "it": 1.015,
+        "cw": 2799.05,
+        "r0": 7.83
+      },
+      "centroid": {
+        "x": 2.09
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 84,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x75x4,75",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 75.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 10.6,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x75x6.30",
+      "designation": "U 150 × 75 × 6,30",
+      "aliases": [
+        "U150x75x6,30",
+        "U 150x75x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 75.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 13.81,
+        "area": 17.6
+      },
+      "section_properties": {
+        "ix": 596.48,
+        "wx": 79.53,
+        "rx": 5.82,
+        "x0": 4.55,
+        "iy": 95.3,
+        "wy": 17.87,
+        "ry": 2.33,
+        "it": 2.326,
+        "cw": 3518.53,
+        "r0": 7.75
+      },
+      "centroid": {
+        "x": 2.17
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 85,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x75x6,30",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 75.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 13.81,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-150x75x8.00",
+      "designation": "U 150 × 75 × 8,00",
+      "aliases": [
+        "U150x75x8,00",
+        "U 150x75x8.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 150.0,
+        "bf": 75.0,
+        "tn": 8.0,
+        "t": 8.0,
+        "ri": 12.0
+      },
+      "physical_properties": {
+        "mass_per_length": 16.97,
+        "area": 21.62
+      },
+      "section_properties": {
+        "ix": 704.95,
+        "wx": 93.99,
+        "rx": 5.71,
+        "x0": 4.54,
+        "iy": 114.65,
+        "wy": 21.96,
+        "ry": 2.3,
+        "it": 4.608,
+        "cw": 4209.87,
+        "r0": 7.65
+      },
+      "centroid": {
+        "x": 2.28
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 86,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U150x75x8,00",
+        "source_dimensions": {
+          "bw": 150.0,
+          "bf": 75.0,
+          "tn": 8.0,
+          "t": 8.0,
+          "ri": 12.0
+        },
+        "source_mass_per_length_kg_m": 16.97,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x50x2.00",
+      "designation": "U 200 × 50 × 2,00",
+      "aliases": [
+        "U200x50x2,00",
+        "U 200x50x2.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 50.0,
+        "tn": 2.0,
+        "t": 2.0,
+        "ri": 2.0
+      },
+      "physical_properties": {
+        "mass_per_length": 4.61,
+        "area": 5.87
+      },
+      "section_properties": {
+        "ix": 317.32,
+        "wx": 31.73,
+        "rx": 7.35,
+        "x0": 2.28,
+        "iy": 11.74,
+        "wy": 2.88,
+        "ry": 1.41,
+        "it": 0.078,
+        "cw": 848.4,
+        "r0": 7.83
+      },
+      "centroid": {
+        "x": 0.92
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 87,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U200x50x2,00",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 50.0,
+          "tn": 2.0,
+          "t": 2.0,
+          "ri": 2.0
+        },
+        "source_mass_per_length_kg_m": 4.61,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x50x2.25",
+      "designation": "U 200 × 50 × 2,25",
+      "aliases": [
+        "U200x50x2,25",
+        "U 200x50x2.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 50.0,
+        "tn": 2.25,
+        "t": 2.25,
+        "ri": 2.25
+      },
+      "physical_properties": {
+        "mass_per_length": 5.17,
+        "area": 6.58
+      },
+      "section_properties": {
+        "ix": 354.62,
+        "wx": 35.46,
+        "rx": 7.34,
+        "x0": 2.28,
+        "iy": 13.11,
+        "wy": 3.22,
+        "ry": 1.41,
+        "it": 0.111,
+        "cw": 945.18,
+        "r0": 7.81
+      },
+      "centroid": {
+        "x": 0.93
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 88,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U200x50x2,25",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 50.0,
+          "tn": 2.25,
+          "t": 2.25,
+          "ri": 2.25
+        },
+        "source_mass_per_length_kg_m": 5.17,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x50x2.65",
+      "designation": "U 200 × 50 × 2,65",
+      "aliases": [
+        "U200x50x2,65",
+        "U 200x50x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 50.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 6.06,
+        "area": 7.72
+      },
+      "section_properties": {
+        "ix": 413.21,
+        "wx": 41.32,
+        "rx": 7.32,
+        "x0": 2.27,
+        "iy": 15.24,
+        "wy": 3.76,
+        "ry": 1.41,
+        "it": 0.181,
+        "cw": 1095.9,
+        "r0": 7.79
+      },
+      "centroid": {
+        "x": 0.95
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 89,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U200x50x2,65",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 50.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 6.06,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x50x3.00",
+      "designation": "U 200 × 50 × 3,00",
+      "aliases": [
+        "U200x50x3,00",
+        "U 200x50x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 50.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 6.83,
+        "area": 8.7
+      },
+      "section_properties": {
+        "ix": 463.39,
+        "wx": 46.34,
+        "rx": 7.3,
+        "x0": 2.26,
+        "iy": 17.07,
+        "wy": 4.23,
+        "ry": 1.4,
+        "it": 0.261,
+        "cw": 1223.68,
+        "r0": 7.77
+      },
+      "centroid": {
+        "x": 0.96
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 90,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U200x50x3,00",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 50.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 6.83,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x50x3.35",
+      "designation": "U 200 × 50 × 3,35",
+      "aliases": [
+        "U200x50x3,35",
+        "U 200x50x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 50.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 7.6,
+        "area": 9.68
+      },
+      "section_properties": {
+        "ix": 512.58,
+        "wx": 51.26,
+        "rx": 7.28,
+        "x0": 2.25,
+        "iy": 18.85,
+        "wy": 4.68,
+        "ry": 1.4,
+        "it": 0.362,
+        "cw": 1347.72,
+        "r0": 7.74
+      },
+      "centroid": {
+        "x": 0.98
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 91,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U200x50x3,35",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 50.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 7.6,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x50x3.75",
+      "designation": "U 200 × 50 × 3,75",
+      "aliases": [
+        "U200x50x3,75",
+        "U 200x50x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 50.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 8.47,
+        "area": 10.79
+      },
+      "section_properties": {
+        "ix": 567.56,
+        "wx": 56.76,
+        "rx": 7.25,
+        "x0": 2.24,
+        "iy": 20.83,
+        "wy": 5.2,
+        "ry": 1.39,
+        "it": 0.505,
+        "cw": 1484.95,
+        "r0": 7.72
+      },
+      "centroid": {
+        "x": 0.99
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 92,
+        "source_page": 23,
+        "source_pdf_page": 29,
+        "source_designation": "U200x50x3,75",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 50.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 8.47,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x50x4.25",
+      "designation": "U 200 × 50 × 4,25",
+      "aliases": [
+        "U200x50x4,25",
+        "U 200x50x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 50.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 9.54,
+        "area": 12.16
+      },
+      "section_properties": {
+        "ix": 634.48,
+        "wx": 63.45,
+        "rx": 7.22,
+        "x0": 2.23,
+        "iy": 23.23,
+        "wy": 5.83,
+        "ry": 1.38,
+        "it": 0.731,
+        "cw": 1649.85,
+        "r0": 7.69
+      },
+      "centroid": {
+        "x": 1.02
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 93,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x50x4,25",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 50.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 9.54,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x50x4.75",
+      "designation": "U 200 × 50 × 4,75",
+      "aliases": [
+        "U200x50x4,75",
+        "U 200x50x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 50.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 10.6,
+        "area": 13.51
+      },
+      "section_properties": {
+        "ix": 699.39,
+        "wx": 69.94,
+        "rx": 7.2,
+        "x0": 2.21,
+        "iy": 25.55,
+        "wy": 6.45,
+        "ry": 1.38,
+        "it": 1.015,
+        "cw": 1807.54,
+        "r0": 7.65
+      },
+      "centroid": {
+        "x": 1.04
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 94,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x50x4,75",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 50.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 10.6,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x50x6.30",
+      "designation": "U 200 × 50 × 6,30",
+      "aliases": [
+        "U200x50x6,30",
+        "U 200x50x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 50.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 13.81,
+        "area": 17.6
+      },
+      "section_properties": {
+        "ix": 888.08,
+        "wx": 88.81,
+        "rx": 7.1,
+        "x0": 2.18,
+        "iy": 32.2,
+        "wy": 8.27,
+        "ry": 1.35,
+        "it": 2.326,
+        "cw": 2252.32,
+        "r0": 7.55
+      },
+      "centroid": {
+        "x": 1.11
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 95,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x50x6,30",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 50.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 13.81,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x50x8.00",
+      "designation": "U 200 × 50 × 8,00",
+      "aliases": [
+        "U200x50x8,00",
+        "U 200x50x8.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 50.0,
+        "tn": 8.0,
+        "t": 8.0,
+        "ri": 12.0
+      },
+      "physical_properties": {
+        "mass_per_length": 16.97,
+        "area": 21.62
+      },
+      "section_properties": {
+        "ix": 1045.75,
+        "wx": 104.57,
+        "rx": 6.95,
+        "x0": 2.15,
+        "iy": 38.34,
+        "wy": 10.08,
+        "ry": 1.33,
+        "it": 4.608,
+        "cw": 2668.14,
+        "r0": 7.4
+      },
+      "centroid": {
+        "x": 1.2
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 96,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x50x8,00",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 50.0,
+          "tn": 8.0,
+          "t": 8.0,
+          "ri": 12.0
+        },
+        "source_mass_per_length_kg_m": 16.97,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x75x2.65",
+      "designation": "U 200 × 75 × 2,65",
+      "aliases": [
+        "U200x75x2,65",
+        "U 200x75x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 75.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 7.1,
+        "area": 9.04
+      },
+      "section_properties": {
+        "ix": 542.22,
+        "wx": 54.22,
+        "rx": 7.74,
+        "x0": 4.14,
+        "iy": 47.7,
+        "wy": 8.26,
+        "ry": 2.3,
+        "it": 0.211,
+        "cw": 3312.18,
+        "r0": 9.07
+      },
+      "centroid": {
+        "x": 1.72
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 97,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x75x2,65",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 75.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 7.1,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x75x3.00",
+      "designation": "U 200 × 75 × 3,00",
+      "aliases": [
+        "U200x75x3,00",
+        "U 200x75x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 75.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 8.01,
+        "area": 10.2
+      },
+      "section_properties": {
+        "ix": 608.93,
+        "wx": 60.89,
+        "rx": 7.72,
+        "x0": 4.13,
+        "iy": 53.58,
+        "wy": 9.3,
+        "ry": 2.29,
+        "it": 0.306,
+        "cw": 3710.53,
+        "r0": 9.05
+      },
+      "centroid": {
+        "x": 1.74
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 98,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x75x3,00",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 75.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 8.01,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x75x3.35",
+      "designation": "U 200 × 75 × 3,35",
+      "aliases": [
+        "U200x75x3,35",
+        "U 200x75x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 75.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 8.91,
+        "area": 11.36
+      },
+      "section_properties": {
+        "ix": 674.51,
+        "wx": 67.45,
+        "rx": 7.71,
+        "x0": 4.12,
+        "iy": 59.37,
+        "wy": 10.33,
+        "ry": 2.29,
+        "it": 0.424,
+        "cw": 4100.12,
+        "r0": 9.03
+      },
+      "centroid": {
+        "x": 1.75
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 99,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x75x3,35",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 75.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 8.91,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x75x3.75",
+      "designation": "U 200 × 75 × 3,75",
+      "aliases": [
+        "U200x75x3,75",
+        "U 200x75x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 75.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 9.94,
+        "area": 12.66
+      },
+      "section_properties": {
+        "ix": 748.1,
+        "wx": 74.81,
+        "rx": 7.69,
+        "x0": 4.11,
+        "iy": 65.87,
+        "wy": 11.5,
+        "ry": 2.28,
+        "it": 0.593,
+        "cw": 4534.78,
+        "r0": 9.01
+      },
+      "centroid": {
+        "x": 1.77
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 100,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x75x3,75",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 75.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 9.94,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x75x4.25",
+      "designation": "U 200 × 75 × 4,25",
+      "aliases": [
+        "U200x75x4,25",
+        "U 200x75x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 75.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 11.21,
+        "area": 14.28
+      },
+      "section_properties": {
+        "ix": 838.04,
+        "wx": 83.8,
+        "rx": 7.66,
+        "x0": 4.1,
+        "iy": 73.83,
+        "wy": 12.94,
+        "ry": 2.27,
+        "it": 0.859,
+        "cw": 5062.47,
+        "r0": 8.98
+      },
+      "centroid": {
+        "x": 1.79
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 101,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x75x4,25",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 75.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 11.21,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x75x4.75",
+      "designation": "U 200 × 75 × 4,75",
+      "aliases": [
+        "U200x75x4,75",
+        "U 200x75x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 75.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 12.47,
+        "area": 15.88
+      },
+      "section_properties": {
+        "ix": 925.74,
+        "wx": 92.57,
+        "rx": 7.63,
+        "x0": 4.09,
+        "iy": 81.59,
+        "wy": 14.36,
+        "ry": 2.27,
+        "it": 1.193,
+        "cw": 5573.07,
+        "r0": 8.95
+      },
+      "centroid": {
+        "x": 1.82
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 102,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x75x4,75",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 75.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 12.47,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x75x6.30",
+      "designation": "U 200 × 75 × 6,30",
+      "aliases": [
+        "U200x75x6,30",
+        "U 200x75x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 75.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 16.29,
+        "area": 20.75
+      },
+      "section_properties": {
+        "ix": 1183.54,
+        "wx": 118.35,
+        "rx": 7.55,
+        "x0": 4.05,
+        "iy": 104.47,
+        "wy": 18.61,
+        "ry": 2.24,
+        "it": 2.742,
+        "cw": 7050.81,
+        "r0": 8.86
+      },
+      "centroid": {
+        "x": 1.89
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 103,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x75x6,30",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 75.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 16.29,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x75x8.00",
+      "designation": "U 200 × 75 × 8,00",
+      "aliases": [
+        "U200x75x8,00",
+        "U 200x75x8.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 75.0,
+        "tn": 8.0,
+        "t": 8.0,
+        "ri": 12.0
+      },
+      "physical_properties": {
+        "mass_per_length": 20.11,
+        "area": 25.62
+      },
+      "section_properties": {
+        "ix": 1414.39,
+        "wx": 141.44,
+        "rx": 7.43,
+        "x0": 4.03,
+        "iy": 126.56,
+        "wy": 22.95,
+        "ry": 2.22,
+        "it": 5.461,
+        "cw": 8497.13,
+        "r0": 8.74
+      },
+      "centroid": {
+        "x": 1.99
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 104,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x75x8,00",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 75.0,
+          "tn": 8.0,
+          "t": 8.0,
+          "ri": 12.0
+        },
+        "source_mass_per_length_kg_m": 20.11,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x100x2.65",
+      "designation": "U 200 × 100 × 2,65",
+      "aliases": [
+        "U200x100x2,65",
+        "U 200x100x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 100.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 8.14,
+        "area": 10.37
+      },
+      "section_properties": {
+        "ix": 671.23,
+        "wx": 67.12,
+        "rx": 8.05,
+        "x0": 6.19,
+        "iy": 105.35,
+        "wy": 14.28,
+        "ry": 3.19,
+        "it": 0.242,
+        "cw": 7230.5,
+        "r0": 10.64
+      },
+      "centroid": {
+        "x": 2.62
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 105,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x100x2,65",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 100.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 8.14,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x100x3.00",
+      "designation": "U 200 × 100 × 3,00",
+      "aliases": [
+        "U200x100x3,00",
+        "U 200x100x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 100.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 9.19,
+        "area": 11.7
+      },
+      "section_properties": {
+        "ix": 754.46,
+        "wx": 75.45,
+        "rx": 8.03,
+        "x0": 6.18,
+        "iy": 118.54,
+        "wy": 16.1,
+        "ry": 3.18,
+        "it": 0.351,
+        "cw": 8113.14,
+        "r0": 10.62
+      },
+      "centroid": {
+        "x": 2.64
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 106,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x100x3,00",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 100.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 9.19,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x100x3.35",
+      "designation": "U 200 × 100 × 3,35",
+      "aliases": [
+        "U200x100x3,35",
+        "U 200x100x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 100.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 10.23,
+        "area": 13.03
+      },
+      "section_properties": {
+        "ix": 836.45,
+        "wx": 83.64,
+        "rx": 8.01,
+        "x0": 6.17,
+        "iy": 131.57,
+        "wy": 17.91,
+        "ry": 3.18,
+        "it": 0.487,
+        "cw": 8979.48,
+        "r0": 10.6
+      },
+      "centroid": {
+        "x": 2.65
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 107,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x100x3,35",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 100.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 10.23,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x100x3.75",
+      "designation": "U 200 × 100 × 3,75",
+      "aliases": [
+        "U200x100x3,75",
+        "U 200x100x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 100.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 11.41,
+        "area": 14.54
+      },
+      "section_properties": {
+        "ix": 928.63,
+        "wx": 92.86,
+        "rx": 7.99,
+        "x0": 6.16,
+        "iy": 146.24,
+        "wy": 19.96,
+        "ry": 3.17,
+        "it": 0.681,
+        "cw": 9949.85,
+        "r0": 10.58
+      },
+      "centroid": {
+        "x": 2.67
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 108,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x100x3,75",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 100.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 11.41,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x100x4.25",
+      "designation": "U 200 × 100 × 4,25",
+      "aliases": [
+        "U200x100x4,25",
+        "U 200x100x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 100.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 12.88,
+        "area": 16.41
+      },
+      "section_properties": {
+        "ix": 1041.61,
+        "wx": 104.16,
+        "rx": 7.97,
+        "x0": 6.15,
+        "iy": 164.29,
+        "wy": 22.49,
+        "ry": 3.16,
+        "it": 0.987,
+        "cw": 11133.57,
+        "r0": 10.55
+      },
+      "centroid": {
+        "x": 2.7
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 109,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x100x4,25",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 100.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 12.88,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x100x4.75",
+      "designation": "U 200 × 100 × 4,75",
+      "aliases": [
+        "U200x100x4,75",
+        "U 200x100x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 100.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 14.33,
+        "area": 18.26
+      },
+      "section_properties": {
+        "ix": 1152.09,
+        "wx": 115.21,
+        "rx": 7.94,
+        "x0": 6.14,
+        "iy": 182.0,
+        "wy": 25.0,
+        "ry": 3.16,
+        "it": 1.372,
+        "cw": 12285.3,
+        "r0": 10.53
+      },
+      "centroid": {
+        "x": 2.72
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 110,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x100x4,75",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 100.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 14.33,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x100x6.30",
+      "designation": "U 200 × 100 × 6,30",
+      "aliases": [
+        "U200x100x6,30",
+        "U 200x100x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 100.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 18.76,
+        "area": 23.9
+      },
+      "section_properties": {
+        "ix": 1479.01,
+        "wx": 147.9,
+        "rx": 7.87,
+        "x0": 6.11,
+        "iy": 234.76,
+        "wy": 32.57,
+        "ry": 3.13,
+        "it": 3.158,
+        "cw": 15657.61,
+        "r0": 10.44
+      },
+      "centroid": {
+        "x": 2.79
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 111,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x100x6,30",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 100.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 18.76,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-200x100x8.00",
+      "designation": "U 200 × 100 × 8,00",
+      "aliases": [
+        "U200x100x8,00",
+        "U 200x100x8.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 200.0,
+        "bf": 100.0,
+        "tn": 8.0,
+        "t": 8.0,
+        "ri": 12.0
+      },
+      "physical_properties": {
+        "mass_per_length": 23.25,
+        "area": 29.62
+      },
+      "section_properties": {
+        "ix": 1783.03,
+        "wx": 178.3,
+        "rx": 7.76,
+        "x0": 6.1,
+        "iy": 286.79,
+        "wy": 40.39,
+        "ry": 3.11,
+        "it": 6.313,
+        "cw": 19025.36,
+        "r0": 10.35
+      },
+      "centroid": {
+        "x": 2.9
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 112,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U200x100x8,00",
+        "source_dimensions": {
+          "bw": 200.0,
+          "bf": 100.0,
+          "tn": 8.0,
+          "t": 8.0,
+          "ri": 12.0
+        },
+        "source_mass_per_length_kg_m": 23.25,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-250x100x2.65",
+      "designation": "U 250 × 100 × 2,65",
+      "aliases": [
+        "U250x100x2,65",
+        "U 250x100x2.65"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 250.0,
+        "bf": 100.0,
+        "tn": 2.65,
+        "t": 2.65,
+        "ri": 2.65
+      },
+      "physical_properties": {
+        "mass_per_length": 9.18,
+        "area": 11.69
+      },
+      "section_properties": {
+        "ix": 1122.57,
+        "wx": 89.81,
+        "rx": 9.8,
+        "x0": 5.69,
+        "iy": 112.63,
+        "wy": 14.7,
+        "ry": 3.1,
+        "it": 0.273,
+        "cw": 12228.31,
+        "r0": 11.75
+      },
+      "centroid": {
+        "x": 2.34
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 113,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U250x100x2,65",
+        "source_dimensions": {
+          "bw": 250.0,
+          "bf": 100.0,
+          "tn": 2.65,
+          "t": 2.65,
+          "ri": 2.65
+        },
+        "source_mass_per_length_kg_m": 9.18,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-250x100x3.00",
+      "designation": "U 250 × 100 × 3,00",
+      "aliases": [
+        "U250x100x3,00",
+        "U 250x100x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 250.0,
+        "bf": 100.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 10.37,
+        "area": 13.2
+      },
+      "section_properties": {
+        "ix": 1262.96,
+        "wx": 101.04,
+        "rx": 9.78,
+        "x0": 5.68,
+        "iy": 126.77,
+        "wy": 16.58,
+        "ry": 3.1,
+        "it": 0.396,
+        "cw": 13732.54,
+        "r0": 11.73
+      },
+      "centroid": {
+        "x": 2.36
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 114,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U250x100x3,00",
+        "source_dimensions": {
+          "bw": 250.0,
+          "bf": 100.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 10.37,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-250x100x3.35",
+      "designation": "U 250 × 100 × 3,35",
+      "aliases": [
+        "U250x100x3,35",
+        "U 250x100x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 250.0,
+        "bf": 100.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 11.54,
+        "area": 14.71
+      },
+      "section_properties": {
+        "ix": 1401.53,
+        "wx": 112.12,
+        "rx": 9.76,
+        "x0": 5.67,
+        "iy": 140.74,
+        "wy": 18.45,
+        "ry": 3.09,
+        "it": 0.55,
+        "cw": 15211.69,
+        "r0": 11.71
+      },
+      "centroid": {
+        "x": 2.37
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 115,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U250x100x3,35",
+        "source_dimensions": {
+          "bw": 250.0,
+          "bf": 100.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 11.54,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-250x100x3.75",
+      "designation": "U 250 × 100 × 3,75",
+      "aliases": [
+        "U250x100x3,75",
+        "U 250x100x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 250.0,
+        "bf": 100.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 12.88,
+        "area": 16.41
+      },
+      "section_properties": {
+        "ix": 1557.7,
+        "wx": 124.62,
+        "rx": 9.74,
+        "x0": 5.66,
+        "iy": 156.5,
+        "wy": 20.56,
+        "ry": 3.09,
+        "it": 0.769,
+        "cw": 16871.78,
+        "r0": 11.68
+      },
+      "centroid": {
+        "x": 2.39
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 116,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U250x100x3,75",
+        "source_dimensions": {
+          "bw": 250.0,
+          "bf": 100.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 12.88,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-250x100x4.25",
+      "designation": "U 250 × 100 × 4,25",
+      "aliases": [
+        "U250x100x4,25",
+        "U 250x100x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 250.0,
+        "bf": 100.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 14.55,
+        "area": 18.53
+      },
+      "section_properties": {
+        "ix": 1749.62,
+        "wx": 139.97,
+        "rx": 9.72,
+        "x0": 5.65,
+        "iy": 175.89,
+        "wy": 23.18,
+        "ry": 3.08,
+        "it": 1.115,
+        "cw": 18901.83,
+        "r0": 11.65
+      },
+      "centroid": {
+        "x": 2.41
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 117,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U250x100x4,25",
+        "source_dimensions": {
+          "bw": 250.0,
+          "bf": 100.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 14.55,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-250x100x4.75",
+      "designation": "U 250 × 100 × 4,75",
+      "aliases": [
+        "U250x100x4,75",
+        "U 250x100x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 250.0,
+        "bf": 100.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 16.2,
+        "area": 20.63
+      },
+      "section_properties": {
+        "ix": 1937.89,
+        "wx": 155.03,
+        "rx": 9.69,
+        "x0": 5.64,
+        "iy": 194.93,
+        "wy": 25.76,
+        "ry": 3.07,
+        "it": 1.55,
+        "cw": 20882.49,
+        "r0": 11.62
+      },
+      "centroid": {
+        "x": 2.43
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 118,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U250x100x4,75",
+        "source_dimensions": {
+          "bw": 250.0,
+          "bf": 100.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 16.2,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-250x100x6.30",
+      "designation": "U 250 × 100 × 6,30",
+      "aliases": [
+        "U250x100x6,30",
+        "U 250x100x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 250.0,
+        "bf": 100.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 21.23,
+        "area": 27.05
+      },
+      "section_properties": {
+        "ix": 2498.72,
+        "wx": 199.9,
+        "rx": 9.61,
+        "x0": 5.6,
+        "iy": 251.83,
+        "wy": 33.59,
+        "ry": 3.05,
+        "it": 3.575,
+        "cw": 26716.05,
+        "r0": 11.54
+      },
+      "centroid": {
+        "x": 2.5
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 119,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U250x100x6,30",
+        "source_dimensions": {
+          "bw": 250.0,
+          "bf": 100.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 21.23,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-250x100x6.35",
+      "designation": "U 250 × 100 × 6,35",
+      "aliases": [
+        "U250x100x6,35",
+        "U 250x100x6.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 250.0,
+        "bf": 100.0,
+        "tn": 6.35,
+        "t": 6.35,
+        "ri": 9.525
+      },
+      "physical_properties": {
+        "mass_per_length": 21.26,
+        "area": 27.08
+      },
+      "section_properties": {
+        "ix": 2488.67,
+        "wx": 199.09,
+        "rx": 9.59,
+        "x0": 5.61,
+        "iy": 252.56,
+        "wy": 33.77,
+        "ry": 3.05,
+        "it": 3.636,
+        "cw": 26896.67,
+        "r0": 11.52
+      },
+      "centroid": {
+        "x": 2.52
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 120,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U250x100x6,35",
+        "source_dimensions": {
+          "bw": 250.0,
+          "bf": 100.0,
+          "tn": 6.35,
+          "t": 6.35,
+          "ri": 9.525
+        },
+        "source_mass_per_length_kg_m": 21.26,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-250x100x8.00",
+      "designation": "U 250 × 100 × 8,00",
+      "aliases": [
+        "U250x100x8,00",
+        "U 250x100x8.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 250.0,
+        "bf": 100.0,
+        "tn": 8.0,
+        "t": 8.0,
+        "ri": 12.0
+      },
+      "physical_properties": {
+        "mass_per_length": 26.39,
+        "area": 33.62
+      },
+      "section_properties": {
+        "ix": 3031.02,
+        "wx": 242.48,
+        "rx": 9.49,
+        "x0": 5.58,
+        "iy": 308.79,
+        "wy": 41.74,
+        "ry": 3.03,
+        "it": 7.165,
+        "cw": 32599.97,
+        "r0": 11.42
+      },
+      "centroid": {
+        "x": 2.6
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 121,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U250x100x8,00",
+        "source_dimensions": {
+          "bw": 250.0,
+          "bf": 100.0,
+          "tn": 8.0,
+          "t": 8.0,
+          "ri": 12.0
+        },
+        "source_mass_per_length_kg_m": 26.39,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-300x100x3.00",
+      "designation": "U 300 × 100 × 3,00",
+      "aliases": [
+        "U300x100x3,00",
+        "U 300x100x3.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 300.0,
+        "bf": 100.0,
+        "tn": 3.0,
+        "t": 3.0,
+        "ri": 3.0
+      },
+      "physical_properties": {
+        "mass_per_length": 11.54,
+        "area": 14.7
+      },
+      "section_properties": {
+        "ix": 1937.22,
+        "wx": 129.15,
+        "rx": 11.48,
+        "x0": 5.26,
+        "iy": 133.32,
+        "wy": 16.94,
+        "ry": 3.01,
+        "it": 0.441,
+        "cw": 21110.31,
+        "r0": 12.98
+      },
+      "centroid": {
+        "x": 2.13
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 122,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U300x100x3,00",
+        "source_dimensions": {
+          "bw": 300.0,
+          "bf": 100.0,
+          "tn": 3.0,
+          "t": 3.0,
+          "ri": 3.0
+        },
+        "source_mass_per_length_kg_m": 11.54,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-300x100x3.35",
+      "designation": "U 300 × 100 × 3,35",
+      "aliases": [
+        "U300x100x3,35",
+        "U 300x100x3.35"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 300.0,
+        "bf": 100.0,
+        "tn": 3.35,
+        "t": 3.35,
+        "ri": 3.35
+      },
+      "physical_properties": {
+        "mass_per_length": 12.86,
+        "area": 16.38
+      },
+      "section_properties": {
+        "ix": 2151.24,
+        "wx": 143.42,
+        "rx": 11.46,
+        "x0": 5.25,
+        "iy": 148.04,
+        "wy": 18.85,
+        "ry": 3.01,
+        "it": 0.612,
+        "cw": 23397.2,
+        "r0": 12.96
+      },
+      "centroid": {
+        "x": 2.15
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 123,
+        "source_page": 24,
+        "source_pdf_page": 30,
+        "source_designation": "U300x100x3,35",
+        "source_dimensions": {
+          "bw": 300.0,
+          "bf": 100.0,
+          "tn": 3.35,
+          "t": 3.35,
+          "ri": 3.35
+        },
+        "source_mass_per_length_kg_m": 12.86,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-300x100x3.75",
+      "designation": "U 300 × 100 × 3,75",
+      "aliases": [
+        "U300x100x3,75",
+        "U 300x100x3.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 300.0,
+        "bf": 100.0,
+        "tn": 3.75,
+        "t": 3.75,
+        "ri": 3.75
+      },
+      "physical_properties": {
+        "mass_per_length": 14.36,
+        "area": 18.29
+      },
+      "section_properties": {
+        "ix": 2392.81,
+        "wx": 159.52,
+        "rx": 11.44,
+        "x0": 5.24,
+        "iy": 164.65,
+        "wy": 21.01,
+        "ry": 3.0,
+        "it": 0.856,
+        "cw": 25967.19,
+        "r0": 12.93
+      },
+      "centroid": {
+        "x": 2.16
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 124,
+        "source_page": 25,
+        "source_pdf_page": 31,
+        "source_designation": "U300x100x3,75",
+        "source_dimensions": {
+          "bw": 300.0,
+          "bf": 100.0,
+          "tn": 3.75,
+          "t": 3.75,
+          "ri": 3.75
+        },
+        "source_mass_per_length_kg_m": 14.36,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-300x100x4.25",
+      "designation": "U 300 × 100 × 4,25",
+      "aliases": [
+        "U300x100x4,25",
+        "U 300x100x4.25"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 300.0,
+        "bf": 100.0,
+        "tn": 4.25,
+        "t": 4.25,
+        "ri": 4.25
+      },
+      "physical_properties": {
+        "mass_per_length": 16.22,
+        "area": 20.66
+      },
+      "section_properties": {
+        "ix": 2690.26,
+        "wx": 179.35,
+        "rx": 11.41,
+        "x0": 5.23,
+        "iy": 185.1,
+        "wy": 23.68,
+        "ry": 2.99,
+        "it": 1.242,
+        "cw": 29114.97,
+        "r0": 12.9
+      },
+      "centroid": {
+        "x": 2.18
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 125,
+        "source_page": 25,
+        "source_pdf_page": 31,
+        "source_designation": "U300x100x4,25",
+        "source_dimensions": {
+          "bw": 300.0,
+          "bf": 100.0,
+          "tn": 4.25,
+          "t": 4.25,
+          "ri": 4.25
+        },
+        "source_mass_per_length_kg_m": 16.22,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-300x100x4.75",
+      "designation": "U 300 × 100 × 4,75",
+      "aliases": [
+        "U300x100x4,75",
+        "U 300x100x4.75"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 300.0,
+        "bf": 100.0,
+        "tn": 4.75,
+        "t": 4.75,
+        "ri": 4.75
+      },
+      "physical_properties": {
+        "mass_per_length": 18.06,
+        "area": 23.01
+      },
+      "section_properties": {
+        "ix": 2982.71,
+        "wx": 198.85,
+        "rx": 11.39,
+        "x0": 5.21,
+        "iy": 205.2,
+        "wy": 26.33,
+        "ry": 2.99,
+        "it": 1.729,
+        "cw": 32191.74,
+        "r0": 12.87
+      },
+      "centroid": {
+        "x": 2.21
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 126,
+        "source_page": 25,
+        "source_pdf_page": 31,
+        "source_designation": "U300x100x4,75",
+        "source_dimensions": {
+          "bw": 300.0,
+          "bf": 100.0,
+          "tn": 4.75,
+          "t": 4.75,
+          "ri": 4.75
+        },
+        "source_mass_per_length_kg_m": 18.06,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-300x100x6.30",
+      "designation": "U 300 × 100 × 6,30",
+      "aliases": [
+        "U300x100x6,30",
+        "U 300x100x6.30"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 300.0,
+        "bf": 100.0,
+        "tn": 6.3,
+        "t": 6.3,
+        "ri": 6.3
+      },
+      "physical_properties": {
+        "mass_per_length": 23.7,
+        "area": 30.2
+      },
+      "section_properties": {
+        "ix": 3857.91,
+        "wx": 257.19,
+        "rx": 11.3,
+        "x0": 5.18,
+        "iy": 265.33,
+        "wy": 34.35,
+        "ry": 2.96,
+        "it": 3.991,
+        "cw": 41288.31,
+        "r0": 12.78
+      },
+      "centroid": {
+        "x": 2.27
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 127,
+        "source_page": 25,
+        "source_pdf_page": 31,
+        "source_designation": "U300x100x6,30",
+        "source_dimensions": {
+          "bw": 300.0,
+          "bf": 100.0,
+          "tn": 6.3,
+          "t": 6.3,
+          "ri": 6.3
+        },
+        "source_mass_per_length_kg_m": 23.7,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    },
+    {
+      "id": "u-300x100x8.00",
+      "designation": "U 300 × 100 × 8,00",
+      "aliases": [
+        "U300x100x8,00",
+        "U 300x100x8.00"
+      ],
+      "catalog_markers": [
+        "Tabela A.2",
+        "aço sem revestimento"
+      ],
+      "availability_status": "normative_table",
+      "geometry_status": "released",
+      "series_id": "u-simple-nbr-6355",
+      "geometry_type": "cold_formed_channel",
+      "geometry": {
+        "bw": 300.0,
+        "bf": 100.0,
+        "tn": 8.0,
+        "t": 8.0,
+        "ri": 12.0
+      },
+      "physical_properties": {
+        "mass_per_length": 29.53,
+        "area": 37.62
+      },
+      "section_properties": {
+        "ix": 4700.96,
+        "wx": 313.4,
+        "rx": 11.18,
+        "x0": 5.15,
+        "iy": 326.12,
+        "wy": 42.73,
+        "ry": 2.94,
+        "it": 8.018,
+        "cw": 50522.51,
+        "r0": 12.66
+      },
+      "centroid": {
+        "x": 2.37
+      },
+      "source_metadata": {
+        "source_table": "A.2",
+        "source_row": 128,
+        "source_page": 25,
+        "source_pdf_page": 31,
+        "source_designation": "U300x100x8,00",
+        "source_dimensions": {
+          "bw": 300.0,
+          "bf": 100.0,
+          "tn": 8.0,
+          "t": 8.0,
+          "ri": 12.0
+        },
+        "source_mass_per_length_kg_m": 29.53,
+        "mass_type": "published",
+        "mass_basis": "normative_table"
+      }
+    }
+  ],
+  "generation_audit": {
+    "generator": "scripts/generate_nbr6355_simple_u_catalog.py",
+    "snapshot": "abnt_nbr_6355_2012_a2_extracted.json",
+    "source": {
+      "file": "NBR_6355_2012_Perfis_Formados_a_Frio_Ajustado.xlsx",
+      "sha256": "291618ca5ad72dfb97606b4b340e72d18cfdb368b9ebaf50dc43b69c7c370155",
+      "sheet": "U - Sem revest",
+      "range": "A4:R128",
+      "pdf_sha256": "92de1de4f0547c44c1007397d87a3f80b20ae02b772fbb141220c6fda6ae4b71"
+    },
+    "cells_sha256": "a0394c448abc0f1c8ecc5beddaf312816dd0562106b53627d878d675cb33883f",
+    "profile_count": 125,
+    "numeric_cells_compared_with_pdf": 2125,
+    "numeric_differences": 0,
+    "excluded_pdf_row": {
+      "designation": "U300x100x2,65",
+      "pdf_page": 30,
+      "printed_page": 24,
+      "reason": "Ausente da planilha autorizada; célula de massa vazia no PDF. Nenhum valor reconstruído."
+    },
+    "area_policy": "Tabela A.2 preservada; aparente inconsistência de uma dobra na expressão impressa do item 10 documentada, sem correção silenciosa.",
+    "source_corrections_applied": []
+  }
+}

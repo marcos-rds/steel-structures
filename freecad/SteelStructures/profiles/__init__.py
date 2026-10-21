@@ -45,6 +45,10 @@ from .ue_section import (
     build_simplified_ue_section, build_ue_section, nbr_6355_expected_internal_radius,
     ue_derived_dimensions, ue_normative_properties,
 )
+from .u_section import (
+    SimpleUDerivedDimensions, simple_u_derived_dimensions,
+    build_simple_u_mean_path, build_simple_u_section, build_simplified_simple_u_section,
+)
 from .hollow_sections import (
     HollowSectionDefinition, HollowSectionRadii, HollowSectionRadiusMetadata,
     build_circular_hollow_section, canonical_rhs_key,
@@ -115,4 +119,6 @@ __all__ = [
     "build_square_hollow_section", "nominal_hollow_section_radii",
     "normalize_hollow_profile_definition", "normalize_rhs_dimensions",
     "ue_derived_dimensions", "ue_normative_properties",
+    "SimpleUDerivedDimensions", "simple_u_derived_dimensions",
+    "build_simple_u_mean_path", "build_simple_u_section", "build_simplified_simple_u_section",
 ]

@@ -9,6 +9,8 @@ import unittest
 from pathlib import Path
 
 from freecad.SteelStructures import profile_catalog
+from freecad.SteelStructures.paths import CATALOGS_DIR
+from freecad.SteelStructures.profiles import ProfileLibrary
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -201,11 +203,33 @@ class ProfileOptionsBrowserIntegrationTests(unittest.TestCase):
         self.module.ProfileOptionsWidget._refresh_insertion_options(widget)
         self.assertEqual(widget.insertion.currentText(), "Centroide")
 
-    def test_browser_creation_receives_current_insertion_without_global_state(self):
-        source = (ROOT / "freecad/SteelStructures/interactive/profile_options_widget.py").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("insertion=self.insertion.currentText()", source)
+    def test_browser_creation_is_neutral_and_preserves_profile_and_filter(self):
+        module_name = self.module.__package__ + ".profile_browser"
+        browser = types.ModuleType(module_name)
+        browser.ProfileBrowserDialog = type("Dialog", (), {
+            "SELECT_MODE": "select", "__init__": lambda dialog, **kwargs: setattr(dialog, "kwargs", kwargs),
+        })
+        previous = sys.modules.get(module_name)
+        sys.modules[module_name] = browser
+        try:
+            candidates = [p for p in ProfileLibrary(CATALOGS_DIR).list_profiles()
+                          if profile_catalog.is_creation_profile(p)]
+            for profile in candidates:
+                ref = profile.ref
+                widget = types.SimpleNamespace(_current_profile_ref=lambda: ref,
+                    insertion=_Combo(("Face externa da alma",)))
+                dialog = self.module.ProfileOptionsWidget._create_profile_browser_dialog(widget)
+                self.assertEqual(dialog.kwargs["initial_profile_ref"], ref)
+                self.assertNotIn("insertion", dialog.kwargs)
+                self.assertEqual(widget.insertion.currentText(), "Face externa da alma")
+            widget._catalog = types.SimpleNamespace(predicate=lambda p: p.ref == ref)
+            dialog = self.module.ProfileOptionsWidget._create_profile_browser_dialog(widget)
+            self.assertTrue(dialog.kwargs["profile_filter"](profile))
+        finally:
+            if previous is None:
+                del sys.modules[module_name]
+            else:
+                sys.modules[module_name] = previous
 
     def test_local_preview_uses_current_profile_insertion_and_rotation(self):
         class Preview:

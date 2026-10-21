@@ -365,36 +365,45 @@ def validate_catalog_payload(payload, path: Path):
                 if geometry["tl"] >= (geometry["bf"] - geometry["tw"]) / 2.0:
                     raise _error(path, catalog_id, f"perfil {profile_id}: TL deve ficar antes da alma")
         elif geometry_type == "cold_formed_channel":
-            if series_definition.geometry_variant != "stiffened_u":
+            variant = series_definition.geometry_variant
+            if variant not in {"stiffened_u", "simple_u"}:
                 raise _error(path, catalog_id, "variante cold-formed ainda não suportada")
-            for parameter in ("bw", "bf", "D", "tn", "t", "ri"):
+            parameters = (("bw", "bf", "tn", "t", "ri") if variant == "simple_u"
+                          else ("bw", "bf", "D", "tn", "t", "ri"))
+            if variant == "simple_u" and set(geometry_raw) != set(parameters):
+                raise _error(path, catalog_id, f"perfil {profile_id}: parâmetros U simples inválidos")
+            for parameter in parameters:
                 geometry[parameter] = convert_to_canonical(
                     _number(geometry_raw.get(parameter), path, catalog_id,
                             f"profiles[{index}].geometry.{parameter}", True),
                     "length", units["length"],
                 )
             from .ue_section import nbr_6355_expected_internal_radius, ue_derived_dimensions
+            from .u_section import simple_u_derived_dimensions
+            dimension_builder = (simple_u_derived_dimensions if variant == "simple_u"
+                                 else ue_derived_dimensions)
             try:
-                ue_derived_dimensions(**{
-                    key: geometry[key] for key in ("bw", "bf", "D", "t", "ri")
+                dimension_builder(**{
+                    key: geometry[key] for key in parameters if key != "tn"
                 })
             except ValueError as exc:
                 raise _error(path, catalog_id, f"perfil {profile_id}: {exc}") from exc
-            is_nbr_6355_a3_uncoated = (
-                catalog_id == "abnt-nbr-6355-2012-a3"
-                and series_id == "ue-nbr-6355"
-            )
-            if (is_nbr_6355_a3_uncoated
+            uncoated_table = {
+                ("abnt-nbr-6355-2012-a3", "ue-nbr-6355"): "A.3",
+                ("abnt-nbr-6355-2012-a2", "u-simple-nbr-6355"): "A.2",
+            }.get((catalog_id, series_id))
+            if (uncoated_table
                     and not math.isclose(geometry["t"], geometry["tn"],
                                          rel_tol=1.0e-12, abs_tol=1.0e-9)):
                 raise _error(
                     path, catalog_id,
-                    f"perfil {profile_id}: Tabela A.3, aço sem revestimento, exige t = tn",
+                    f"perfil {profile_id}: Tabela {uncoated_table}, aço sem revestimento, exige t = tn",
                 )
             expected_ri = nbr_6355_expected_internal_radius(geometry["tn"])
             if not math.isclose(geometry["ri"], expected_ri, abs_tol=1.0e-9):
                 raise _error(path, catalog_id,
-                             f"perfil {profile_id}: ri diverge da regra da Tabela A.3")
+                             f"perfil {profile_id}: ri diverge da regra da Tabela "
+                             f"{'A.2' if variant == 'simple_u' else 'A.3'}")
         elif geometry_type == "equal_angle":
             for parameter in ("b", "t"):
                 geometry[parameter] = convert_to_canonical(

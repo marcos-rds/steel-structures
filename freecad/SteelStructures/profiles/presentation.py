@@ -61,6 +61,19 @@ def format_engineering_value(value: float, scale: float, unit: str, decimals=Non
     return f"{rendered} {unit}".rstrip()
 
 
+def _dimension_value(profile, key):
+    value = profile.geometry[key]
+    # Tabela A.2 includes ri = 9.525 mm. Preserve that published precision in
+    # both dimension tables and callouts without changing other families.
+    precise_radius = ((profile.geometry_type, profile.geometry_variant)
+                      == ("cold_formed_channel", "simple_u")
+                      and key == "ri" and round(value, 2) != value)
+    return format_engineering_value(
+        value, 1.0, "°" if key == "flange_angle" else "mm",
+        3 if precise_radius else None,
+    )
+
+
 def profile_dimension_rows(profile: ProfileDefinition) -> tuple[PresentationRow, ...]:
     if profile.geometry_type == "solid_section":
         labels = {
@@ -78,9 +91,8 @@ def profile_dimension_rows(profile: ProfileDefinition) -> tuple[PresentationRow,
     for key, value in profile.geometry.items():
         if key not in _DIMENSION_LABELS:
             continue
-        unit = "°" if key == "flange_angle" else "mm"
         rows.append(PresentationRow(
-            _DIMENSION_LABELS[key], format_engineering_value(value, 1.0, unit)
+            _DIMENSION_LABELS[key], _dimension_value(profile, key)
         ))
     return tuple(rows)
 
@@ -98,6 +110,7 @@ def profile_preview_dimension_rows(profile: ProfileDefinition) -> tuple[Presenta
         ("channel_section", "tapered_flange"): ("d", "bf", "tw", "tf"),
         ("tee_section", "standard_tee"): ("d", "bf", "tw", "tf"),
         ("cold_formed_channel", "stiffened_u"): ("bw", "bf", "D", "t", "ri"),
+        ("cold_formed_channel", "simple_u"): ("bw", "bf", "t", "ri"),
         ("hollow_section", "square"): ("b", "t"),
         ("hollow_section", "rectangular"): ("h", "b", "t"),
         ("hollow_section", "circular"): ("d", "t"),
@@ -112,7 +125,7 @@ def profile_preview_dimension_rows(profile: ProfileDefinition) -> tuple[Presenta
         PresentationRow(
             hollow_labels.get(key, key)
             if profile.geometry_type in ("hollow_section", "solid_section") else key,
-            format_engineering_value(profile.geometry[key], 1.0, "mm"),
+            _dimension_value(profile, key),
         )
         for key in keys_by_geometry[key] if key in profile.geometry
     )
@@ -124,16 +137,19 @@ def _property_rows(profile, keys):
         if key not in profile.section_properties:
             continue
         label, scale, unit, tooltip = _PROPERTY_SPECS[key]
+        decimals = (3 if key == "it" and
+                    (profile.geometry_type, profile.geometry_variant)
+                    == ("cold_formed_channel", "simple_u") else None)
         rows.append(PresentationRow(
-            label, format_engineering_value(profile.section_properties[key], scale, unit), tooltip
+            label, format_engineering_value(profile.section_properties[key], scale, unit, decimals), tooltip
         ))
     return tuple(rows)
 
 
 def profile_property_groups(profile: ProfileDefinition) -> tuple[PresentationGroup, ...]:
     physical = profile.physical_properties
-    is_ue = (profile.geometry_type, profile.geometry_variant) == (
-        "cold_formed_channel", "stiffened_u"
+    is_folded_u = (profile.geometry_type, profile.geometry_variant) in (
+        ("cold_formed_channel", "stiffened_u"), ("cold_formed_channel", "simple_u"),
     )
     is_solid = profile.geometry_type == "solid_section"
     physical_rows = []
@@ -141,7 +157,7 @@ def profile_property_groups(profile: ProfileDefinition) -> tuple[PresentationGro
         physical_rows.append(PresentationRow(
             "Massa linear", format_engineering_value(
                 physical.mass_per_length_kg_m, 1.0, "kg/m",
-                3 if is_solid else (2 if is_ue else 1),
+                3 if is_solid else (2 if is_folded_u else 1),
             ),
             ("Massa calculada para fixture de desenvolvimento"
              if is_solid and getattr(profile.catalog.source, "source_type", None)
@@ -153,7 +169,7 @@ def profile_property_groups(profile: ProfileDefinition) -> tuple[PresentationGro
     if physical.area_mm2 is not None:
         physical_rows.append(PresentationRow(
             "Área", format_engineering_value(
-                physical.area_mm2, 0.01, "cm²", 2 if is_ue or is_solid else 1
+                physical.area_mm2, 0.01, "cm²", 2 if is_folded_u or is_solid else 1
             ),
             ("Área técnica calculada; independente da representação CAD"
              if profile.geometry_type in ("hollow_section", "solid_section") else None),
@@ -184,9 +200,9 @@ def profile_property_groups(profile: ProfileDefinition) -> tuple[PresentationGro
         ))
     elif "x" in profile.centroid:
         centroid.append(PresentationRow(
-            "Xg" if is_ue else "x do centroide",
+            "Xg" if is_folded_u else "x do centroide",
             format_engineering_value(profile.centroid["x"], 0.1, "cm"),
-            "Distância do centroide à face externa da alma" if is_ue else None,
+            "Distância do centroide à face externa da alma" if is_folded_u else None,
         ))
         if (profile.geometry_type, profile.geometry_variant) == ("equal_angle", "equal_leg"):
             centroid.append(PresentationRow(
@@ -300,19 +316,22 @@ def profile_source_groups(profile: ProfileDefinition) -> tuple[PresentationGroup
         )
     else:
         calculated_rows = ()
-    if key == ("cold_formed_channel", "stiffened_u"):
+    if key in (("cold_formed_channel", "stiffened_u"), ("cold_formed_channel", "simple_u")):
+        is_simple = key[1] == "simple_u"
+        table = "A.2" if is_simple else "A.3"
         return (
             PresentationGroup("Fonte", (
                 PresentationRow("Organismo", "ABNT", source_tooltip),
                 PresentationRow("Norma", "ABNT NBR 6355"),
                 PresentationRow("Edição", "2012"),
                 PresentationRow("Anexo", "A — informativo"),
-                PresentationRow("Figura", "A.3"),
-                PresentationRow("Tabela", "A.3"),
+                PresentationRow("Figura", table),
+                PresentationRow("Tabela", table),
                 PresentationRow("Condição", "Aço sem revestimento"),
             )),
             PresentationGroup("Geometria", (
-                PresentationRow("Definição", "Perfil U enrijecido formado a frio", profile.geometry_notes),
+                PresentationRow("Definição", "Perfil U dobrado simples" if is_simple
+                                else "Perfil U enrijecido formado a frio", profile.geometry_notes),
                 PresentationRow("Propriedades", "Seção bruta — método linear normativo"),
             )),
         )
