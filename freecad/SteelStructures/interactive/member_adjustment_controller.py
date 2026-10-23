@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import isfinite
+import math
 
 from ..member_adjustment_geometry import (
     DEFAULT_TOLERANCE,
@@ -54,6 +55,15 @@ class ResolvedAdjustment:
     message: str
 
 
+@dataclass(frozen=True)
+class AdjustmentCandidate:
+    """A newly generated solid, never the document's previous Shape."""
+    resolved: ResolvedAdjustment | None
+    values: dict
+    result: object
+    message: str
+
+
 def _point(value):
     return float(value.x), float(value.y), float(value.z)
 
@@ -63,14 +73,13 @@ def _quantity(value):
 
 
 def is_structural_member(obj) -> bool:
-    proxy = getattr(obj, "Proxy", None)
-    return (
-        obj is not None
-        and getattr(obj, "TypeId", "") == "Part::FeaturePython"
-        and proxy is not None
-        and proxy.__class__.__name__ == "StructuralMemberProxy"
-        and proxy.__class__.__module__.endswith(".member")
-    )
+    try:
+        proxy = getattr(obj, "Proxy", None)
+        return (obj is not None and getattr(obj, "TypeId", "") == "Part::FeaturePython"
+                and proxy is not None and proxy.__class__.__name__ == "StructuralMemberProxy"
+                and proxy.__class__.__module__.endswith(".member"))
+    except (RuntimeError, ReferenceError):
+        return False
 
 
 def member_display_name(member) -> str:
@@ -84,7 +93,10 @@ def reference_display_name(reference) -> str:
     if unpacked is None:
         return "Nenhuma referência selecionada"
     obj, subelement = unpacked
-    return f"{getattr(obj, 'Label', getattr(obj, 'Name', 'Objeto'))} — {subelement}"
+    try:
+        return f"{getattr(obj, 'Label', getattr(obj, 'Name', 'Objeto'))} — {subelement}"
+    except (RuntimeError, ReferenceError):
+        return "Referência indisponível"
 
 
 def _axis(member):
@@ -214,6 +226,8 @@ class MemberAdjustmentController:
 
     def validate_existing_fixed(self, *, geometry_mode, end_choice, gap):
         obj = self.member
+        if not isfinite(float(gap)):
+            raise AdjustmentValidationError("Gap inválido.")
         if end_choice not in ("Start", "End"):
             raise AdjustmentValidationError("Escolha Início ou Fim.")
         prefix = end_choice
@@ -236,56 +250,103 @@ class MemberAdjustmentController:
             None, "", station, offset, normal, "Ajuste fixo",
         )
 
-    def apply(self, resolved: ResolvedAdjustment):
+    def _prepare_candidate(self, values):
+        from ..member_batch import prepare_member
+        return prepare_member(self.member, values, preserve_placement=not bool(
+            getattr(self.member, "GenerationOwner", None)))
+
+    def _candidate(self, resolved, values):
+        try:
+            result = self._prepare_candidate(values)
+        except Exception as exc:
+            raise AdjustmentValidationError(
+                "Não foi possível calcular o ajuste. Verifique as duas extremidades, "
+                "a referência, a folga e o plano de corte. " + str(exc)) from exc
+        return AdjustmentCandidate(resolved, values, result, "Prévia calculada. Confirme com OK.")
+
+    def evaluate(self, resolved: ResolvedAdjustment):
         if resolved.member is not self.member:
             raise AdjustmentValidationError("O membro-alvo foi alterado.")
+        # Resolve again: a reference may have moved since the last preview.
+        if resolved.reference_object is not None:
+            resolved = self.validate(
+                geometry_mode=resolved.geometry_mode, end_choice=resolved.adjusted_end,
+                gap=resolved.gap, keep_reference=resolved.keep_reference,
+                reference=(resolved.reference_object, [resolved.subelement]))
+        else:
+            resolved = self.validate_existing_fixed(
+                geometry_mode=resolved.geometry_mode, end_choice=resolved.adjusted_end, gap=resolved.gap)
+        prefix = resolved.adjusted_end
+        values = {prefix + "AdjustmentGeometryMode": resolved.geometry_mode,
+                  prefix + "AdjustmentGap": resolved.gap}
+        if resolved.keep_reference:
+            values.update({prefix + "AdjustmentMode": "Associative",
+                           prefix + "AdjustmentReference": (resolved.reference_object, [resolved.subelement])})
+        else:
+            values.update({prefix + "AdjustmentMode": "Fixed", prefix + "AdjustmentReference": None,
+                           prefix + "FixedReferenceOffset": resolved.fixed_reference_offset})
+            if resolved.fixed_plane_normal is not None:
+                import FreeCAD as App
+                values[prefix + "FixedPlaneNormal"] = App.Vector(*resolved.fixed_plane_normal)
+        return self._candidate(resolved, values)
+
+    def evaluate_removal(self, slot):
+        if self.member is None or slot not in ("Start", "End"):
+            raise AdjustmentValidationError("Escolha Início ou Fim para remover o ajuste.")
+        return self._candidate(None, {slot + "AdjustmentMode": "None", slot + "AdjustmentReference": None})
+
+    def _verify_applied(self, candidate):
+        obj = self.member
+        shape = getattr(obj, "Shape", None)
+        if "Invalid" in getattr(obj, "State", ()):
+            raise AdjustmentValidationError("O FreeCAD não conseguiu recalcular o membro.")
+        if (shape is None or shape.isNull() or not shape.isValid()
+                or not isfinite(float(shape.Volume)) or shape.Volume <= DEFAULT_TOLERANCE):
+            raise AdjustmentValidationError("O ajuste não produziu um sólido válido.")
+        if (getattr(obj, "GenerationOwner", None) is not None
+                and str(getattr(obj, "GenerationStatus", "")) != "Valid"):
+            raise AdjustmentValidationError("O membro gerado recusou o ajuste: " + str(obj.GenerationStatus))
+        # Guard against a recompute that retained old outputs without raising.
+        for name in ("AdjustedLength", "TotalMass"):
+            if not math.isclose(_quantity(getattr(obj, name)), _quantity(getattr(candidate.result, name)),
+                                rel_tol=1e-8, abs_tol=1e-7):
+                raise AdjustmentValidationError("O resultado atual diverge da geometria candidata.")
+        if not math.isclose(float(shape.Volume), float(candidate.result.Shape.Volume), rel_tol=1e-8, abs_tol=1e-6):
+            raise AdjustmentValidationError("O volume atual diverge da geometria candidata.")
+        if hasattr(obj.Placement, "toMatrix"):
+            if any(abs(a - b) > 1e-7 for a, b in zip(
+                    obj.Placement.toMatrix().A, candidate.result.Placement.toMatrix().A)):
+                raise AdjustmentValidationError("O posicionamento atual diverge da geometria candidata.")
+
+    def _commit_candidate(self, candidate, title):
         doc = self.document
-        doc.openTransaction("Recortar / Ajustar membro")
+        doc.openTransaction(title)
         try:
-            obj = resolved.member
-            prefix = resolved.adjusted_end
-            setattr(obj, prefix + "AdjustmentGeometryMode", resolved.geometry_mode)
-            setattr(obj, prefix + "AdjustmentGap", resolved.gap)
-            if resolved.keep_reference:
-                setattr(obj, prefix + "AdjustmentMode", "Associative")
-                setattr(obj, prefix + "AdjustmentReference", (
-                    resolved.reference_object, [resolved.subelement]
-                ))
-            else:
-                setattr(obj, prefix + "AdjustmentMode", "Fixed")
-                setattr(obj, prefix + "AdjustmentReference", None)
-                setattr(obj, prefix + "FixedReferenceOffset", resolved.fixed_reference_offset)
-                if resolved.fixed_plane_normal is not None:
-                    import FreeCAD as App
-                    setattr(obj, prefix + "FixedPlaneNormal", App.Vector(*resolved.fixed_plane_normal))
+            for name, value in candidate.values.items():
+                setattr(self.member, name, value)
             doc.recompute()
-            shape = getattr(obj, "Shape", None)
-            if shape is None or (hasattr(shape, "isNull") and shape.isNull()):
-                raise AdjustmentValidationError("O ajuste resultou em geometria vazia.")
+            self._verify_applied(candidate)
             doc.commitTransaction()
         except Exception:
             doc.abortTransaction()
             raise
-        return resolved
+
+    def apply(self, resolved: ResolvedAdjustment):
+        candidate = self.evaluate(resolved)  # Must succeed BEFORE any mutation or Undo entry.
+        self._commit_candidate(candidate, "Recortar / Ajustar membro")
+        return candidate.resolved
 
     def remove_adjustment(self, slot):
         if self.member is None:
             raise AdjustmentValidationError("Selecione um membro estrutural.")
         if slot not in ("Start", "End"):
             raise AdjustmentValidationError("Escolha Início ou Fim para remover o ajuste.")
-        self.document.openTransaction("Remover ajuste do membro")
-        try:
-            setattr(self.member, slot + "AdjustmentMode", "None")
-            setattr(self.member, slot + "AdjustmentReference", None)
-            self.document.recompute()
-            self.document.commitTransaction()
-        except Exception:
-            self.document.abortTransaction()
-            raise
+        candidate = self.evaluate_removal(slot)
+        self._commit_candidate(candidate, "Remover ajuste do membro")
 
 
 __all__ = [
-    "AdjustmentProposal", "AdjustmentValidationError", "END_CHOICES",
+    "AdjustmentCandidate", "AdjustmentProposal", "AdjustmentValidationError", "END_CHOICES",
     "GEOMETRY_MODES", "MemberAdjustmentController", "ResolvedAdjustment",
     "freeze_adjustment_reference", "is_structural_member", "member_display_name",
     "reference_display_name", "resolve_adjusted_end", "validate_proposal",

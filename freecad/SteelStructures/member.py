@@ -729,6 +729,18 @@ class StructuralMemberProxy:
                 or getattr(self, "_syncing_placement", False)
                 or getattr(self, "_syncing_axis_source", False)):
             return
+        if (getattr(getattr(obj, "Document", None), "Transacting", False)
+                and prop in ("Placement", "StartPoint", "EndPoint", "Length", "Rotation")):
+            # Undo/Redo replays stored inputs AND Placement. Do not interpret a
+            # restored cut base as a user move and translate the nominal axis.
+            if prop == "Placement":
+                self._remember_placement(obj)
+                self._placement_from_points_pending = False
+            elif prop == "Rotation":
+                self._last_section_rotation = _quantity_value(obj.Rotation)
+            elif prop == "Length":
+                self._last_valid_length = _quantity_value(obj.Length)
+            return
         if getattr(obj, "GenerationOwner", None) is not None and prop in (
                 "Placement", "StartPoint", "EndPoint", "Length", "Rotation", "Profile",
                 "ProfileCategory", "ProfileSeries", "Insertion", "AxisDefinitionMode"):

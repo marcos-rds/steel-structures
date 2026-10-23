@@ -1,9 +1,12 @@
 """Controller tests for the Recortar / Ajustar Membro command."""
 
 import importlib.util
+import ast
+import math
 import sys
 import types
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from freecad.SteelStructures.member_adjustment_geometry import axis_geometry
@@ -60,7 +63,30 @@ class Document:
 
 class MemberAdjustmentControllerTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls): cls.member_module = load_member()
+    def setUpClass(cls):
+        cls.member_module = load_member()
+        # Execute the actual detached evaluator with the established Part/App
+        # doubles; no replacement extrusion or candidate algorithm in the test.
+        source = PACKAGE / "member_batch.py"
+        tree = ast.parse(source.read_text(encoding="utf-8"))
+        names = {"INPUTS", "OUTPUTS", "ADJUSTMENT_INPUTS", "MemberInputSnapshot",
+                 "_copy", "snapshot", "prepare_member"}
+        nodes = [node for node in tree.body if getattr(node, "name", None) in names
+                 or isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id in names for t in node.targets)]
+        namespace = dict(App=cls.member_module.App, member=cls.member_module, math=math,
+                         SimpleNamespace=types.SimpleNamespace)
+        exec(compile(ast.Module(body=nodes, type_ignores=[]), str(source), "exec"), namespace)
+        cls.prepare = staticmethod(namespace["prepare_member"])
+
+    def setUp(self):
+        modules = patch.dict(sys.modules, {"FreeCAD": self.member_module.App})
+        modules.start()
+        self.addCleanup(modules.stop)
+        prepare = self.prepare
+        replacement = lambda controller, values: prepare(controller.member, values, preserve_placement=True)
+        change = patch.object(MemberAdjustmentController, "_prepare_candidate", replacement)
+        change.start()
+        self.addCleanup(change.stop)
 
     def member(self, start=(0, 0, 0), end=(3000, 0, 0)):
         obj = MemberObject(start, end)
@@ -221,6 +247,86 @@ class MemberAdjustmentControllerTests(unittest.TestCase):
             obj, (Reference(point=(2800, 0, 0)), ["Face3"]), "LengthLimit", "End"
         )
         self.assertEqual((start.fixed_reference_offset, end.fixed_reference_offset), (200, 200))
+
+    def test_candidate_is_new_geometry_without_mutating_original_or_undo(self):
+        obj, proxy = self.member()
+        doc = Document(lambda: proxy.execute(obj))
+        controller = MemberAdjustmentController(doc, obj)
+        before = (obj.Shape, obj.AdjustedLength, obj.EndAdjustmentMode, obj.EndAdjustmentReference)
+        resolved = validate_proposal(self.proposal(obj, end_choice="End"))
+        candidate = controller.evaluate(resolved)
+        self.assertEqual(candidate.result.AdjustedLength, 2800)
+        self.assertIsNot(candidate.result.Shape, obj.Shape)
+        self.assertEqual(before, (obj.Shape, obj.AdjustedLength, obj.EndAdjustmentMode, obj.EndAdjustmentReference))
+        self.assertEqual((doc.opened, doc.recomputes), ([], 0))
+
+    def test_crossed_candidate_rejected_before_mutation_or_transaction(self):
+        for mode in ("LengthLimit", "PlaneCut"):
+            obj, proxy = self.member()
+            doc = Document(lambda: proxy.execute(obj))
+            controller = MemberAdjustmentController(doc, obj)
+            resolved = validate_proposal(self.proposal(obj, geometry_mode=mode, end_choice="Start", gap=5000))
+            before = (obj.Shape, obj.StartAdjustmentMode, obj.StartAdjustmentGap.Value)
+            with self.assertRaises(AdjustmentValidationError):
+                controller.apply(resolved)
+            self.assertEqual(before, (obj.Shape, obj.StartAdjustmentMode, obj.StartAdjustmentGap.Value))
+            self.assertEqual((doc.opened, doc.commits, doc.aborts, doc.recomputes), ([], 0, 0, 0))
+
+    def test_reference_moves_between_preview_and_ok_are_recalculated(self):
+        obj, proxy = self.member()
+        ref = Reference(point=(2800, 0, 0))
+        controller = MemberAdjustmentController(Document(lambda: proxy.execute(obj)), obj)
+        resolved = validate_proposal(self.proposal(obj, (ref, ["Face3"]), end_choice="End"))
+        first = controller.evaluate(resolved)
+        ref.local_face.point = Vector(2600, 0, 0)
+        controller.apply(resolved)
+        self.assertEqual(first.result.AdjustedLength, 2800)
+        self.assertEqual(obj.AdjustedLength, 2600)
+
+    def test_preserved_shape_with_generation_error_is_not_success(self):
+        obj, _proxy = self.member()
+        controller = MemberAdjustmentController(Document(), obj)
+        candidate = controller.evaluate(validate_proposal(self.proposal(obj)))
+        obj.GenerationOwner = object()
+        obj.GenerationStatus = "Erro: geometria candidata inválida"
+        with self.assertRaisesRegex(AdjustmentValidationError, "gerado recusou"):
+            controller._verify_applied(candidate)
+
+    def test_fixed_gap_must_be_finite(self):
+        obj, _proxy = self.member()
+        obj.EndAdjustmentMode = "Fixed"
+        controller = MemberAdjustmentController(Document(), obj)
+        for gap in (float("nan"), float("inf")):
+            with self.assertRaisesRegex(AdjustmentValidationError, "Gap inválido"):
+                controller.validate_existing_fixed(geometry_mode="LengthLimit", end_choice="End", gap=gap)
+
+    def test_occ_failure_diagnosed_before_transaction(self):
+        obj, _proxy = self.member()
+        doc = Document()
+        controller = MemberAdjustmentController(doc, obj)
+        original = obj.Shape
+        with patch.object(controller, "_prepare_candidate", side_effect=RuntimeError("OCC failure")):
+            with self.assertRaisesRegex(AdjustmentValidationError, "OCC failure"):
+                controller.apply(validate_proposal(self.proposal(obj)))
+        self.assertIs(obj.Shape, original)
+        self.assertEqual(doc.opened, [])
+
+    def test_native_invalid_state_rejected_even_with_valid_old_shape(self):
+        obj, _proxy = self.member()
+        controller = MemberAdjustmentController(Document(), obj)
+        candidate = controller.evaluate(validate_proposal(self.proposal(obj)))
+        obj.State = ["Invalid"]
+        with self.assertRaisesRegex(AdjustmentValidationError, "recalcular"):
+            controller._verify_applied(candidate)
+
+    def test_candidate_nonfinite_volume_rejected(self):
+        obj, _proxy = self.member()
+        controller = MemberAdjustmentController(Document(), obj)
+        with patch.object(self.member_module.StructuralMemberProxy, "execute",
+                          lambda proxy, target: setattr(target, "Shape", types.SimpleNamespace(
+                              isNull=lambda: False, isValid=lambda: True, Volume=float("nan")))):
+            with self.assertRaisesRegex(AdjustmentValidationError, "candidato inválido"):
+                controller.evaluate(validate_proposal(self.proposal(obj)))
 
 
 if __name__ == "__main__":

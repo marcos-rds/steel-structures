@@ -380,7 +380,7 @@ class CreateGridCommand:
 
 
 class AdjustMemberCommand:
-    """Open the non-preview task panel for one member end adjustment."""
+    """Open the candidate-preview task panel for one member end adjustment."""
 
     def GetResources(self):
         return {
@@ -428,6 +428,8 @@ def _adjustment_panel_closed(panel, _accepted):
     global _active_adjustment_panel
     if _active_adjustment_panel is panel:
         _active_adjustment_panel = None
+    if panel.form is None:
+        return  # Native TaskDialog is already destroying its form.
     try:
         Gui.Control.closeDialog()
     except Exception:

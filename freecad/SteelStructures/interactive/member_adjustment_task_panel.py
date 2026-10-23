@@ -14,6 +14,25 @@ from .member_adjustment_controller import (
     member_display_name,
     reference_display_name,
 )
+from .member_adjustment_preview import MemberAdjustmentPreview
+
+
+class _PanelLifecycle(QtCore.QObject):
+    """Owned by the form; closing/Esc cannot leave a scene branch alive."""
+    def __init__(self, panel):
+        super().__init__(panel.form)
+        self.panel = panel
+
+    def eventFilter(self, obj, event):
+        panel = self.panel
+        if panel is None:
+            return False
+        if event.type() == QtCore.QEvent.Close:
+            panel.reject()
+        elif event.type() == QtCore.QEvent.KeyPress and event.key() == QtCore.Qt.Key_Escape:
+            panel.reject()
+            return True
+        return False
 
 
 GEOMETRY_LABELS = {
@@ -56,6 +75,9 @@ class MemberAdjustmentTaskPanel:
         self._drafts = {}
         self.reference = None
         self._last_error = None
+        self._candidate = None
+        self._preview = None
+        self._watch_state = None
         self.form = QtWidgets.QWidget()
         self.form.setWindowTitle("Recortar / Ajustar Membro")
         root = QtWidgets.QVBoxLayout(self.form)
@@ -81,6 +103,7 @@ class MemberAdjustmentTaskPanel:
         self.gap.setRange(-1.0e9, 1.0e9)
         self.gap.setDecimals(2)
         self.gap.setSuffix(" mm")
+        self.gap.setKeyboardTracking(False)
         adjustment_form.addRow("Operação:", self.geometry_mode)
         adjustment_form.addRow("Extremidade:", self.end_choice)
         adjustment_form.addRow("Gap:", self.gap)
@@ -113,8 +136,84 @@ class MemberAdjustmentTaskPanel:
         self.gap.valueChanged.connect(self._configuration_changed)
         self.keep_reference.toggled.connect(self._configuration_changed)
         self.remove_button.clicked.connect(self.remove_adjustment)
+        self._lifecycle = _PanelLifecycle(self)
+        self.form.installEventFilter(self._lifecycle)
+        self.form.destroyed.connect(self._form_destroyed)
+        self._preview_timer = QtCore.QTimer(self.form)
+        self._preview_timer.setInterval(180)
+        self._preview_timer.timeout.connect(self._poll_reference)
         self._initialize_drafts()
         self._refresh()
+        self._preview_timer.start()
+
+    def _clear_preview(self):
+        preview, self._preview = self._preview, None
+        self._candidate = None
+        if preview is not None:
+            preview.clear()
+
+    def _reference_signature(self):
+        from ..member_batch import signature
+        from ..member_adjustment_reference import (
+            linear_reference_from_link, plane_reference_from_link, unpack_link_sub,
+        )
+        obj = self.controller.member
+        if obj is None:
+            return None
+        links = [self.reference, getattr(obj, "StartAdjustmentReference", None),
+                 getattr(obj, "EndAdjustmentReference", None), getattr(obj, "AxisSource", None)]
+        geometry = []
+        for link in links:
+            unpacked = unpack_link_sub(link)
+            if unpacked is not None:
+                source, element = unpacked
+                shape = source.getSubObject(element)
+                # A native subshape hash can stay equal after its support moves.
+                # Observe the same global plane/line used to evaluate the member.
+                support = (plane_reference_from_link(link) if element.startswith("Face")
+                           else linear_reference_from_link(link))
+                geometry.append((source.Name, element, shape.hashCode() if shape is not None else None,
+                                 support))
+        return (signature(obj), tuple(obj.Placement.toMatrix().A), bool(obj.ViewObject.Visibility),
+                str(obj.ViewObject.DisplayMode), tuple(geometry),
+                Gui.activeDocument().Document.Name if Gui.activeDocument() else None)
+
+    def _poll_reference(self):
+        if self._closed:
+            return
+        try:
+            if App.listDocuments().get(self.document.Name) is not self.document:
+                self.reject()
+                return
+            state = self._reference_signature()
+            gui_doc = Gui.activeDocument()
+            if (self._preview is not None and gui_doc is not None
+                    and gui_doc.Document is self.document
+                    and gui_doc.activeView().getSceneGraph() != self._preview.scene_graph):
+                self._refresh()
+                return
+        except (RuntimeError, ReferenceError, AttributeError, ValueError):
+            state = ("unavailable",)
+        if state != self._watch_state:
+            self._refresh()
+
+    def _show_candidate(self, candidate):
+        gui_doc = Gui.activeDocument()
+        if gui_doc is None or gui_doc.Document is not self.document:
+            raise AdjustmentValidationError("Ative o documento do membro para visualizar o ajuste.")
+        scene = gui_doc.activeView().getSceneGraph()
+        if self._preview is not None and self._preview.scene_graph != scene:
+            self._clear_preview()
+        if self._preview is None:
+            self._preview = MemberAdjustmentPreview(scene)
+        self._preview.update(self.controller.member, candidate.result)
+        self._candidate = candidate
+
+    def _form_destroyed(self, *_args):
+        # TaskDialogPython has already started closing. Its native dialog must
+        # not be closed recursively from the on_closed callback.
+        self.form = None
+        self._finish(False)
 
     def _slot_draft(self, prefix):
         obj = self.controller.member
@@ -252,7 +351,12 @@ class MemberAdjustmentTaskPanel:
         self._refresh()
 
     def _refresh(self):
+        if self._closed:
+            return False
         obj = self.controller.member
+        if obj is not None and not is_structural_member(obj):
+            self._finish(False)
+            return False
         self.member_label.setText(
             member_display_name(obj) if obj is not None else "Selecione um membro estrutural."
         )
@@ -278,11 +382,14 @@ class MemberAdjustmentTaskPanel:
         self.remove_button.setVisible(current_mode != "None")
         try:
             resolved = self._validate()
+            candidate = self.controller.evaluate(resolved)
+            self._show_candidate(candidate)
             self._last_error = None
-            self._set_message(resolved.message, error=False)
+            self._set_message(candidate.message, error=False)
             self._set_accept_enabled(True)
             return True
-        except AdjustmentValidationError as exc:
+        except Exception as exc:
+            self._clear_preview()
             self._last_error = str(exc)
             message = str(exc)
             if (obj is not None and self.reference is None
@@ -294,10 +401,16 @@ class MemberAdjustmentTaskPanel:
             self._set_message(message, error=True)
             self._set_accept_enabled(False)
             return False
+        finally:
+            try:
+                self._watch_state = self._reference_signature()
+            except (RuntimeError, ReferenceError, AttributeError, ValueError):
+                self._watch_state = ("unavailable",)
 
     def _set_message(self, text, error):
         self.validation_message.setText(text)
-        self.validation_message.setStyleSheet("color: #c33" if error else "color: #287a3b")
+        # Inherit the theme's readable foreground, including QSS-based themes.
+        self.validation_message.setStyleSheet("font-weight: 600" if error else "")
 
     def _set_accept_enabled(self, enabled):
         try:
@@ -313,10 +426,13 @@ class MemberAdjustmentTaskPanel:
         return self._last_error is None
 
     def accept(self):
+        if self._closed:
+            return False
         try:
             resolved = self._validate()
             self.controller.apply(resolved)
         except Exception as exc:
+            self._clear_preview()
             self._last_error = str(exc)
             self._set_message(str(exc), error=True)
             self._set_accept_enabled(False)
@@ -347,6 +463,13 @@ class MemberAdjustmentTaskPanel:
             return
         self._closed = True
         self._remove_selection_observer()
+        self._clear_preview()
+        try:
+            self._preview_timer.stop()
+            self._preview_timer.timeout.disconnect(self._poll_reference)
+        except RuntimeError:
+            pass  # Form and its owned timer may already be destroyed.
+        self._lifecycle.panel = None
         callback, self._on_closed = self._on_closed, None
         if callback:
             callback(self, accepted)

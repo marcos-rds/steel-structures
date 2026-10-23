@@ -71,14 +71,22 @@ def snapshot(obj=None, values=None):
     return MemberInputSnapshot(**defaults)
 
 
-def prepare_member(obj=None, values=None):
+def prepare_member(obj=None, values=None, *, preserve_placement=False):
     result = snapshot(obj, values)
     proxy = member.StructuralMemberProxy.__new__(member.StructuralMemberProxy)
     proxy.__setstate__(None)
     proxy._placement_from_points_pending = True
+    if preserve_placement and obj is not None:
+        # An independent member may have a full user rotation not represented
+        # by its section roll alone. Match its normal adjustment recompute.
+        result.Placement = App.Placement(obj.Placement)
+        proxy._last_placement = App.Placement(obj.Placement)
+        proxy._placement_from_points_pending = bool(
+            getattr(obj.Proxy, "_placement_from_points_pending", False))
     proxy.execute(result)
     shape = getattr(result, "Shape", None)
-    if shape is None or shape.isNull() or not shape.isValid() or shape.Volume <= 1e-7:
+    if (shape is None or shape.isNull() or not shape.isValid()
+            or not math.isfinite(float(shape.Volume)) or shape.Volume <= 1e-7):
         raise ValueError("Membro candidato inválido; verifique perfil, eixo e ajustes das extremidades.")
     return result
 

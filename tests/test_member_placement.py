@@ -157,7 +157,8 @@ def load_member():
     app = types.ModuleType("FreeCAD")
     app.Vector, app.Rotation, app.Placement = Vector, Rotation, Placement
     app.Console = types.SimpleNamespace(PrintWarning=lambda *_args: None)
-    part = types.ModuleType("Part"); part.Face = Face; part.Wire = Wire; part.Shape = lambda: types.SimpleNamespace(empty=True)
+    part = types.ModuleType("Part"); part.Face = Face; part.Wire = Wire
+    part.Shape = lambda: types.SimpleNamespace(empty=True, isNull=lambda: True, isValid=lambda: False, Volume=0.)
     part.makePolygon = lambda points: Wire([(points[index], points[index + 1]) for index in range(len(points) - 1)])
     part.makeLine = lambda start, end: (start, end)
     part.Arc = lambda start, _mid, end: types.SimpleNamespace(toShape=lambda: (start, end))
@@ -343,6 +344,39 @@ class MemberPlacementTests(unittest.TestCase):
         self.assertVector(obj.Placement.Base, (1, 2, 3)); self.assertAlmostEqual(obj.MemberLength, math.sqrt(94))
         obj.EndPoint = Vector(1, 2, 13); proxy.onChanged(obj, "EndPoint"); proxy.execute(obj)
         self.assertVector(obj.Placement.Base, (1, 2, 3)); self.assertAlmostEqual(obj.MemberLength, 10)
+
+    def test_transaction_replay_cut_base_does_not_translate_nominal_axis(self):
+        obj, proxy = self.create((0, 0, 0), (0, 0, 1000))
+        original = Placement(obj.Placement)
+        obj.StartAdjustmentMode = "Fixed"
+        obj.FixedReferenceOffset = Quantity(215)
+        proxy.execute(obj)
+        self.assertVector(obj.Placement.Base, (0, 0, 215))
+        obj.Document = types.SimpleNamespace(Transacting=True)
+        obj.StartAdjustmentMode = "None"
+        obj.Placement = original
+        proxy.onChanged(obj, "Placement")
+        self.assertVector(obj.StartPoint, (0, 0, 0))
+        self.assertVector(obj.EndPoint, (0, 0, 1000))
+        obj.Document.Transacting = False
+        proxy.execute(obj)
+        self.assertVector(obj.Placement.Base, (0, 0, 0))
+        # A real subsequent move still transforms the axis once.
+        self.translate(obj, proxy, 3, 4, 5)
+        self.assertVector(obj.StartPoint, (3, 4, 5))
+        self.assertVector(obj.EndPoint, (3, 4, 1005))
+
+    def test_transaction_replay_suppresses_derived_roll_and_endpoint_changes(self):
+        obj, proxy = self.create((0, 0, 0), (0, 0, 1000))
+        obj.Document = types.SimpleNamespace(Transacting=True)
+        obj.Rotation = Quantity(35)
+        before = Placement(obj.Placement)
+        for prop in ("Rotation", "Length", "StartPoint", "EndPoint"):
+            proxy.onChanged(obj, prop)
+        self.assertVector(obj.EndPoint, (0, 0, 1000))
+        self.assertEqual(obj.Placement.Rotation.matrix, before.Rotation.matrix)
+        self.assertEqual(proxy._last_section_rotation, 35)
+        self.assertEqual(proxy._last_valid_length, 1000)
 
     def test_fixed_start_gap_extensions_lengths_and_mass(self):
         obj, proxy = self.create((0, 0, 0), (3000, 0, 0))
