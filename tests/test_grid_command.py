@@ -103,7 +103,7 @@ class GridCommandTests(unittest.TestCase):
     def test_registration_and_resources(self):
         self.assertEqual([name for name, _cmd in self.registered], [
             "SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_CreateGrid",
-            "SteelStructures_AdjustMember",
+            "SteelStructures_AdjustMember", "SteelStructures_MiterMembers",
             "SteelStructures_ProfileBrowser", "SteelStructures_CreateTruss", "SteelStructures_UpdateTruss",
             "SteelStructures_CreatePlate"
         ])

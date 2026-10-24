@@ -15,6 +15,7 @@ from .paths import ADJUST_MEMBER_ICON, COLUMN_ICON, GRID_COMMAND_ICON, MEMBER_IC
 _active_member_tool = None
 _active_grid_panel = None
 _active_adjustment_panel = None
+_active_miter_panel = None
 _active_plate_panel = None
 _active_plate_session = None
 _move_copy_registered = False
@@ -424,6 +425,74 @@ class AdjustMemberCommand:
             )
 
 
+class MiterMembersCommand:
+    """Open the fixed bilateral miter task without mutating either member."""
+
+    def GetResources(self):
+        from .paths import MITER_MEMBERS_ICON
+        return {
+            "Pixmap": MITER_MEMBERS_ICON,
+            "MenuText": "Meia-esquadria",
+            "ToolTip": "Recorta dois membros compatíveis no mesmo plano, em uma única operação.",
+        }
+
+    def IsActive(self):
+        return App.ActiveDocument is not None
+
+    def Activated(self):
+        global _active_miter_panel
+        if _active_miter_panel is not None and not getattr(_active_miter_panel, "_closed", False):
+            App.Console.PrintWarning("Steel Structures: o painel Meia-esquadria já está ativo.\n")
+            return
+        if _get_active_task_dialog() is not None:
+            App.Console.PrintWarning("Steel Structures: feche a tarefa atual antes de iniciar Meia-esquadria.\n")
+            return
+        document = App.ActiveDocument
+        if document is None:
+            return
+        from .interactive.member_adjustment_controller import is_structural_member
+        from .interactive.member_miter_task_panel import MemberMiterTaskPanel
+        members = Gui.Selection.getSelection()
+        if len(members) > 2 or any(not is_structural_member(obj) for obj in members):
+            App.Console.PrintWarning("Steel Structures: selecione no máximo dois membros estruturais.\n")
+            return
+        panel = None
+        try:
+            panel = MemberMiterTaskPanel(document, members, _miter_panel_closed)
+            _active_miter_panel = panel
+            Gui.Control.showDialog(panel)
+        except Exception:
+            if panel is not None:
+                panel.reject()
+            _active_miter_panel = None
+            App.Console.PrintError("Steel Structures: falha ao abrir Meia-esquadria:\n" + traceback.format_exc())
+
+
+def _miter_panel_closed(panel, _accepted):
+    global _active_miter_panel
+    if _active_miter_panel is panel:
+        _active_miter_panel = None
+    if panel.form is None:
+        return
+    try:
+        Gui.Control.closeDialog()
+    except Exception:
+        pass
+
+
+def close_miter_panel():
+    global _active_miter_panel
+    panel = _active_miter_panel
+    if panel is None:
+        return False
+    try:
+        panel.reject()
+    finally:
+        if _active_miter_panel is panel:
+            _active_miter_panel = None
+    return True
+
+
 def _adjustment_panel_closed(panel, _accepted):
     global _active_adjustment_panel
     if _active_adjustment_panel is panel:
@@ -498,6 +567,7 @@ Gui.addCommand("SteelStructures_CreateMember", CreateMemberCommand())
 Gui.addCommand("SteelStructures_CreateColumn", CreateColumnCommand())
 Gui.addCommand("SteelStructures_CreateGrid", CreateGridCommand())
 Gui.addCommand("SteelStructures_AdjustMember", AdjustMemberCommand())
+Gui.addCommand("SteelStructures_MiterMembers", MiterMembersCommand())
 Gui.addCommand("SteelStructures_ProfileBrowser", ProfileBrowserCommand())
 
 

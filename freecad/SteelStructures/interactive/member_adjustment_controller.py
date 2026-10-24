@@ -295,6 +295,10 @@ class MemberAdjustmentController:
             raise AdjustmentValidationError("Escolha Início ou Fim para remover o ajuste.")
         return self._candidate(None, {slot + "AdjustmentMode": "None", slot + "AdjustmentReference": None})
 
+    def evaluate_values(self, values):
+        """Evaluate explicit end-slot values through the same detached pipeline."""
+        return self._candidate(None, dict(values))
+
     def _verify_applied(self, candidate):
         obj = self.member
         shape = getattr(obj, "Shape", None)
@@ -345,9 +349,14 @@ class MemberAdjustmentController:
         self._commit_candidate(candidate, "Remover ajuste do membro")
 
 
+def verify_adjustment_candidate(member, candidate):
+    """Shared post-recompute guard for unilateral and atomic pair commands."""
+    MemberAdjustmentController(None, member)._verify_applied(candidate)
+
+
 __all__ = [
     "AdjustmentCandidate", "AdjustmentProposal", "AdjustmentValidationError", "END_CHOICES",
     "GEOMETRY_MODES", "MemberAdjustmentController", "ResolvedAdjustment",
     "freeze_adjustment_reference", "is_structural_member", "member_display_name",
-    "reference_display_name", "resolve_adjusted_end", "validate_proposal",
+    "reference_display_name", "resolve_adjusted_end", "validate_proposal", "verify_adjustment_candidate",
 ]

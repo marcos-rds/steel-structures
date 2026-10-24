@@ -101,7 +101,7 @@ class SteelStructuresWorkbench(Gui.Workbench):
     def Initialize(self):
         from . import commands  # noqa: F401 - registers FreeCAD commands
 
-        member_commands = ["SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_AdjustMember", "SteelStructures_CreateGrid"]
+        member_commands = ["SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_AdjustMember", "SteelStructures_MiterMembers", "SteelStructures_CreateGrid"]
         member_commands += ["SteelStructures_CreateTruss"]
         member_commands += ["SteelStructures_CreatePlate"]
         catalog_commands = ["SteelStructures_ProfileBrowser"]
@@ -137,6 +137,7 @@ class SteelStructuresWorkbench(Gui.Workbench):
         commands.close_member_tool()
         commands.close_grid_panel()
         commands.close_adjustment_panel()
+        commands.close_miter_panel()
         commands.close_plate_panel()
         from .interactive.truss_controller import close_truss_panel
         close_truss_panel()

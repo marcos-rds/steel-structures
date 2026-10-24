@@ -148,7 +148,7 @@ class GeneralToolsTests(unittest.TestCase):
         self.assertIn(expected, [(title, tuple(items)) for title, items in workbench.menus])
         self.assertIn(("Steel Structures", [
             "SteelStructures_CreateMember", "SteelStructures_CreateColumn",
-            "SteelStructures_AdjustMember", "SteelStructures_CreateGrid",
+            "SteelStructures_AdjustMember", "SteelStructures_MiterMembers", "SteelStructures_CreateGrid",
             "SteelStructures_CreateTruss", "SteelStructures_CreatePlate"
         ]), workbench.menus)
 

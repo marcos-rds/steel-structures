@@ -4,8 +4,9 @@ import FreeCAD as App
 
 
 class MemberAdjustmentPreview:
-    def __init__(self, scene_graph):
+    def __init__(self, scene_graph, color=(.12, .62, .82)):
         self.scene_graph = scene_graph
+        self.color = tuple(color)
         self.node = None
         self.shape = None
         self._hidden_switch = None
@@ -29,7 +30,7 @@ class MemberAdjustmentPreview:
         pick.style = coin.SoPickStyle.UNPICKABLE
         node.addChild(pick)
         material = coin.SoMaterial()
-        material.diffuseColor.setValue(.12, .62, .82)
+        material.diffuseColor.setValue(*self.color)
         material.transparency = .15
         material.setOverride(True)
         node.addChild(material)
