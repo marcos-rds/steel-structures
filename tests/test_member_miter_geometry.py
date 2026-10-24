@@ -2,10 +2,47 @@
 import math
 import unittest
 
-from freecad.SteelStructures.member_miter_geometry import resolve_miter, MiterValidationError, dot
+from freecad.SteelStructures.member_miter_geometry import inspect_miter, resolve_miter, MiterValidationError, dot
 
 
 class MiterGeometryTests(unittest.TestCase):
+    def test_controlled_trim_matrix_and_selection_order(self):
+        for angle in (60., 90., 120.):
+            for reverse_a, reverse_b in ((False, False), (True, False), (False, True), (True, True)):
+                for trimmed in ((True, False), (False, True), (True, True)):
+                    axes = self.pair(angle, reverse_a, reverse_b, gap=-80.)
+                    ends = tuple("End" if v else "Start" for v in (reverse_a, reverse_b))
+                    for i, enabled in enumerate(trimmed):
+                        if not enabled:
+                            axes[2*i+(1 if ends[i] == "End" else 0)] = (0., 0., 0.)
+                    with self.subTest(angle=angle, ends=ends, trimmed=trimmed):
+                        context = inspect_miter(*axes)
+                        self.assertEqual(context.automatic_ends,
+                            tuple(None if enabled else end for end, enabled in zip(ends, trimmed)))
+                        with self.assertRaises(MiterValidationError):
+                            resolve_miter(*axes, ends=ends)
+                        p = resolve_miter(*axes, ends=ends, allow_trim=trimmed)
+                        q = resolve_miter(*(axes[2:]+axes[:2]), ends=ends[::-1], allow_trim=trimmed[::-1])
+                        self.assertEqual(p.ends, ends)
+                        self.assertAlmostEqual(p.angle_degrees, angle)
+                        for value, enabled in zip(p.trim_lengths, trimmed):
+                            self.assertAlmostEqual(value, 80. if enabled else 0.)
+                        for a, b in zip(p.normal, q.normal): self.assertAlmostEqual(a, b)
+
+    def test_interior_requires_choice_and_each_permission_even_for_large_tail(self):
+        axes = ((-10000, 0, 0), (1000, 0, 0), (0, -8000, 0), (0, 1000, 0))
+        for ends, allowed in (((None, None), (True, True)),
+                              (("Start", "Start"), (True, False)),
+                              (("End", "Start"), (False, True))):
+            with self.assertRaises(MiterValidationError):
+                resolve_miter(*axes, ends=ends, allow_trim=allowed)
+        for ends in (("Start", "Start"), ("End", "Start"), ("Start", "End"), ("End", "End")):
+            p = resolve_miter(*axes, ends=ends, allow_trim=(True, True))
+            for value, end, large in zip(p.trim_lengths, ends, (10000., 8000.)):
+                self.assertAlmostEqual(value, large if end == "Start" else 1000.)
+            for direction, end, axis in zip(p.inward, ends, inspect_miter(*axes).axes):
+                self.assertEqual(direction, axis.direction if end == "Start" else tuple(-d for d in axis.direction))
+
     def pair(self, angle=90., reverse_a=False, reverse_b=False, gap=50., scale=1.):
         rays = ((1., 0., 0.), (math.cos(math.radians(angle)), math.sin(math.radians(angle)), 0.))
         axes = []

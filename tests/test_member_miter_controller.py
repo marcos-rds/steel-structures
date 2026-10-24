@@ -137,6 +137,66 @@ class MiterControllerTests(unittest.TestCase):
         self.controller.prepare_inputs()
         self.assertEqual(self.doc.recomputed, [])
 
+    def test_global_trim_consent_and_revocation(self):
+        self.controller.trim_context = lambda: types.SimpleNamespace(automatic_ends=(None, None))
+        self.controller.input_signature = lambda **_kw: (self.a.Profile, self.b.Profile)
+        self.controller.set_trim_end(0, "Start")
+        self.controller.set_trim_end(1, "End")
+        self.controller.set_trim_allowed(True)
+        self.assertTrue(self.controller.trim_allowed())
+        self.controller.set_trim_end(1, "End")  # same effective choice
+        self.controller.set_member(0, self.a)  # same participant
+        self.assertTrue(self.controller.trim_allowed())
+        self.controller.set_trim_end(1, "Start")
+        self.assertFalse(self.controller.trim_allowed())
+        self.controller.set_trim_allowed(True)
+        original = self.a.Profile
+        self.a.Profile = "changed"
+        self.assertFalse(self.controller.trim_allowed())
+        self.a.Profile = original
+        self.assertFalse(self.controller.trim_allowed())
+        self.controller.set_trim_allowed(True)
+        self.controller.set_member(0, self.member("C"))
+        self.assertEqual(self.controller.trim_ends, [None, None])
+        self.assertFalse(self.controller.trim_allowed())
+
+    def test_trim_permission_requires_explicit_end_and_an_interior_encounter(self):
+        for automatic in ((None, "Start"), ("End", None), (None, None), ("End", "Start")):
+            self.controller.trim_context = lambda: types.SimpleNamespace(automatic_ends=automatic)
+            with self.assertRaisesRegex(MiterValidationError, "Escolha"):
+                self.controller.set_trim_allowed(True)
+
+    def test_one_global_permission_covers_exact_required_set(self):
+        self.controller.input_signature = lambda **_kw: (self.a.Profile, self.b.Profile)
+        for automatic in ((None, "Start"), ("End", None), (None, None)):
+            with self.subTest(automatic=automatic):
+                self.controller.trim_context = lambda: types.SimpleNamespace(automatic_ends=automatic)
+                self.controller.trim_ends = [None, None]
+                self.controller.set_trim_allowed(False)
+                required = [i for i, end in enumerate(automatic) if end is None]
+                for i in required:
+                    self.controller.set_trim_end(i, "Start")
+                self.controller.set_trim_allowed(True)
+                self.assertTrue(self.controller.trim_allowed())
+                self.controller.set_trim_allowed(False)
+                self.assertFalse(self.controller.trim_allowed())
+
+    def test_presentation_and_member_touched_flag_do_not_change_consent_token(self):
+        self.namespace["unpack_link_sub"] = lambda _link: None
+        placement = types.SimpleNamespace(toMatrix=lambda: types.SimpleNamespace(A=(1, 0, 0, 1)))
+        for obj in (self.a, self.b): obj.Placement = placement
+        self.controller.trim_context = lambda: types.SimpleNamespace(automatic_ends=(None, None))
+        for i in (0, 1): self.controller.set_trim_end(i, "Start")
+        self.controller.set_trim_allowed(True)
+        before = self.controller.input_signature()
+        self.a.Label, self.a.State = "Custom label", ("Touched",)
+        self.a.ViewObject = types.SimpleNamespace(Visibility=False, DisplayMode="Wireframe")
+        self.assertNotEqual(before, self.controller.input_signature())
+        self.assertTrue(self.controller.trim_allowed())
+        self.b.Profile = "new material configuration"
+        self.assertFalse(self.controller.trim_allowed())
+
+
     def test_only_pending_participant_recomputes(self):
         self.a.State = ("Recompute",)
         self.controller.prepare_inputs()

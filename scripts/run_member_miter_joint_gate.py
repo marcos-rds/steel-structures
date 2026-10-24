@@ -25,6 +25,9 @@ def main():
                         "AppData/Roaming/FreeCAD/v1-1/Mod/OpenTheme/OpenDark")
     parser.add_argument("--timeout", type=int, default=300,
                         help="Process watchdog only; never a criterion for preview correctness")
+    parser.add_argument("--ui-only", action="store_true", help="Run the focused presentation gate only")
+    parser.add_argument("--scale-factor", choices=("1", "1.25", "1.5", "2"),
+                        help="Request QT_SCALE_FACTOR in the isolated process; record actual screen metrics")
     args = parser.parse_args()
     executable = args.install / "bin/freecad.exe"
     if not executable.is_file():
@@ -55,6 +58,10 @@ def main():
     env.pop("PYTHONPATH", None)
     env.update(FREECAD_USER_HOME=str(home), FREECAD_USER_DATA=str(home),
                SS_MITER_ROOT=str(root), SS_MITER_OUT=str(out), SS_MITER_THEME=args.theme)
+    if args.ui_only:
+        env["SS_MITER_UI_ONLY"] = "1"
+    if args.scale_factor:
+        env["QT_SCALE_FACTOR"] = args.scale_factor
     if args.theme == "OpenDark":
         qss = args.opendark / "OpenDark.qss"
         if not qss.is_file():
@@ -63,7 +70,7 @@ def main():
     command = [str(executable), "--write-log", "--log-file", str(out / "FreeCAD.log"), str(probe)]
     sources = [probe, Path(__file__), *sorted((root / "freecad/SteelStructures").rglob("*.py"))]
     (out / "manifest.json").write_text(json.dumps(dict(command=command, root=str(root),
-        theme=args.theme, preference_pack=str(pack_path),
+        theme=args.theme, preference_pack=str(pack_path), ui_only=args.ui_only, scale_factor=args.scale_factor,
         sources={str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}), indent=2), encoding="utf-8")
     startup = subprocess.STARTUPINFO()
     startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW

@@ -105,7 +105,7 @@ def profiles():
 
 
 def pair(doc, profile, *, angle=90, ends=("Start", "Start"), rolls=(0, 0),
-         second_profile=None, rigid=False):
+         second_profile=None, rigid=False, overruns=(None, None)):
     import FreeCAD as App
     from freecad.SteelStructures.member import create_member
     rays = [App.Vector(1, 0, 0), App.Vector(math.cos(math.radians(angle)), math.sin(math.radians(angle)), 0)]
@@ -114,8 +114,8 @@ def pair(doc, profile, *, angle=90, ends=("Start", "Start"), rolls=(0, 0),
         rotation = App.Rotation(App.Vector(1, 2, 3), 37)
         rays, k = [rotation.multVec(v) for v in rays], rotation.multVec(k)
     result = []
-    for ray, designation, end, roll in zip(rays, (profile, second_profile or profile), ends, rolls):
-        start, finish = ray*50, ray*1000
+    for ray, designation, end, roll, overrun in zip(rays, (profile, second_profile or profile), ends, rolls, overruns):
+        start, finish = ray*(50 if overrun is None else -overrun), ray*1000
         if end == "End":
             start, finish = finish, start
         obj = create_member(doc, start, finish, designation)
@@ -936,6 +936,7 @@ def ui_probe(out, check):
             QtWidgets.QApplication.processEvents()
             assert_ok_enabled(check, "replacement selection complete", panel, True)
         check(mode + " bilateral candidate valid", panel.isValid() and panel._candidate is not None and panel._preview is not None)
+        check(mode + " conventional encounter has no trim controls", not panel.trim_section.isVisible())
         preview = panel._preview
         check(mode + " owns two previews", len(preview.previews) == 2)
         for obj, shape, native in zip(panel._candidate.members, panel._candidate.global_shapes, preview.previews):
@@ -1039,6 +1040,466 @@ def ui_probe(out, check):
             App.closeDocument(document_name)
 
 
+def controlled_trim_probe(out, check):
+    import FreeCAD as App
+    import FreeCADGui as Gui
+    from PySide import QtWidgets
+    from freecad.SteelStructures.interactive.member_miter_controller import MemberMiterController
+    from freecad.SteelStructures.interactive.member_miter_task_panel import MemberMiterTaskPanel
+    chosen = profiles()
+    rows = []
+    fixtures = [("SHS", angle, ends, overrun) for angle in (60, 90, 120)
+                for ends in (("Start", "Start"), ("Start", "End"), ("End", "Start"), ("End", "End"))
+                for overrun in ((80, None), (None, 80), (80, 120))]
+    fixtures += [(family, angle, ("Start", "Start"), (80, 120))
+                 for family in ("W", "U", "Ue", "RHS") for angle in (60, 90, 120)]
+    fixtures += [("SHS", 90, ("End", "Start"), (10000, 8000))]
+    for number, (family, angle, ends, overruns) in enumerate(fixtures):
+        label = "trim-%02d-%s-%s" % (number, family, angle)
+        doc = App.newDocument("ControlledTrim")
+        doc.UndoMode = 1
+        members = pair(doc, chosen[family], angle=angle, ends=ends, overruns=overruns)
+        # Preserve both an opposite fixed adjustment and a free-end extension.
+        if number == 0:
+            members[0].EndAdjustmentMode = "Fixed"
+            members[0].EndFixedReferenceOffset = 30
+            members[0].StartExtension = 25
+            doc.recompute()
+        before, undo, names = [state(o) for o in members], doc.UndoCount, [o.Name for o in doc.Objects]
+        controller = MemberMiterController(doc, members)
+        context = controller.trim_context()
+        try:
+            controller.apply()
+            raise AssertionError(label + " silently applied interior encounter")
+        except ValueError:
+            pass
+        check(label + " no consent leaves pair/tree/history", same(before, [state(o) for o in members])
+              and undo == doc.UndoCount and names == [o.Name for o in doc.Objects])
+        for i, excess in enumerate(overruns):
+            if excess is not None:
+                controller.set_trim_end(i, ends[i])
+        for i, excess in enumerate(overruns):
+            if excess is not None:
+                check(label + " measured excess " + str(i), near(controller.trim_length(context, i, ends[i]),
+                      excess + (25 if number == 0 and i == 0 else 0)))
+        controller.set_trim_allowed(True)
+        candidate = controller.evaluate()
+        check(label + " choice respected", candidate.plan.ends == ends)
+        check(label + " actual angle", near(candidate.plan.angle_degrees, angle))
+        reverse = MemberMiterController(doc, members[::-1])
+        for i, excess in enumerate(overruns[::-1]):
+            if excess is not None:
+                reverse.set_trim_end(i, ends[::-1][i])
+        reverse.set_trim_allowed(True)
+        reversed_shapes = reverse.evaluate().global_shapes[::-1]
+        for obj, shape, reversed_shape in zip(members, candidate.global_shapes, reversed_shapes):
+            assert_shape(check, label + " A/B invariant " + obj.Name, reversed_shape, shape)
+        expected = [s.copy() for s in candidate.global_shapes]
+        check(label + " evaluation untouched", same(before, [state(o) for o in members]) and doc.UndoCount == undo)
+        if number == 0:
+            from freecad.SteelStructures.interactive import member_miter_controller as module
+            original_verify, calls = module.verify_adjustment_candidate, []
+            def fail_second(obj, item):
+                original_verify(obj, item)
+                calls.append(obj.Name)
+                if len(calls) == 2:
+                    raise ValueError("Injected controlled-trim late failure")
+            module.verify_adjustment_candidate = fail_second
+            try:
+                try:
+                    controller.apply()
+                    raise AssertionError("trim late failure did not abort")
+                except ValueError:
+                    pass
+            finally:
+                module.verify_adjustment_candidate = original_verify
+            doc.recompute()
+            check("trim late failure rolls back both and history", len(calls) == 2
+                  and same(before, [state(o) for o in members]) and doc.UndoCount == undo)
+            controller.set_trim_allowed(True)
+        controller.apply()
+        check(label + " atomic one Undo", doc.UndoCount == undo+1 and names == [o.Name for o in doc.Objects])
+        after = [state(o) for o in members]
+        for i, (obj, shape) in enumerate(zip(members, expected)):
+            assert_shape(check, label + " preview equals commit " + obj.Name, world_shape(obj), shape)
+            for key in ("StartPoint", "EndPoint", "StartExtension", "EndExtension"):
+                check(label + " nominal preserved " + obj.Name + key, same(before[i]["inputs"][key], after[i]["inputs"][key]))
+        if number == 0:
+            check(label + " opposite occupied slot preserved", members[0].EndAdjustmentMode == "Fixed"
+                  and near(members[0].EndFixedReferenceOffset.Value, 30))
+        doc.undo()
+        doc.recompute()
+        check(label + " Undo both", same(before, [state(o) for o in members]))
+        doc.redo()
+        doc.recompute()
+        check(label + " Redo both", same(after, [state(o) for o in members]))
+        path = out / (label + ".FCStd")
+        member_names = [o.Name for o in members]
+        doc.saveAs(str(path))
+        App.closeDocument(doc.Name)
+        doc = App.openDocument(str(path))
+        doc.recompute()
+        members = tuple(doc.getObject(n) for n in member_names)
+        check(label + " FCStd inputs and outputs", same(after, [state(o) for o in members]))
+        for obj, shape in zip(members, expected):
+            assert_shape(check, label + " restored solid " + obj.Name, world_shape(obj), shape)
+        rows.append(dict(label=label, ends=ends, overruns=overruns, angle=angle,
+                         offsets=[float(getattr(o, end+"FixedReferenceOffset").Value) for o, end in zip(members, ends)]))
+        App.closeDocument(doc.Name)
+
+    # Real signals and Coin previews, including the two alternative retained sides.
+    for mode in ("cancel-before", "cancel-after", "accept", "revoke-end", "revoke-input", "consent-race", "other-side"):
+        doc = App.newDocument("TrimUI")
+        doc.UndoMode = 1
+        members = pair(doc, chosen["SHS"], overruns=(300 if mode == "other-side" else 80, 120))
+        before, undo, names = [state(o) for o in members], doc.UndoCount, [o.Name for o in doc.Objects]
+        def closed(panel, _accepted):
+            if panel.form is not None:
+                Gui.Control.closeDialog()
+        panel = MemberMiterTaskPanel(doc, members=members, on_closed=closed)
+        Gui.Control.showDialog(panel)
+        QtWidgets.QApplication.processEvents()
+        QtWidgets.QApplication.sendPostedEvents(panel.form)
+        check(mode + " no guessed end or preview", panel.controller.trim_ends == [None, None]
+              and panel._preview is None and not panel.isValid() and not panel.accept())
+        check(mode + " contextual rows visible", panel.trim_section.isVisible()
+              and all(all(widget.isVisible() for widget in row) for row in panel.trim_rows))
+        assert_ok_enabled(check, mode + " initial", panel, False)
+        if mode == "cancel-before":
+            panel.reject()
+        else:
+            selected = ("End" if mode == "other-side" else "Start", "Start")
+            for i, end in enumerate(selected):
+                panel.trim_end_combos[i].setCurrentIndex(panel.trim_end_combos[i].findData(end))
+            if mode == "consent-race":
+                members[0].StartExtension = 25
+                doc.recompute()
+                before = [state(o) for o in members]
+                # Click while the old amount is still displayed, before the poll.
+                panel.trim_check.setChecked(True)
+                check("changed displayed amount requires a new consent click", not panel.trim_check.isChecked()
+                      and not panel.controller.trim_allowed() and not panel.isValid())
+                check("changed amount visibly refreshed", "105 mm" in panel.trim_end_combos[0].currentText())
+            check(mode + " choices alone cannot confirm", not panel.isValid() and not panel.trim_check.isChecked())
+            panel.trim_check.setChecked(True)
+            check(mode + " one global authorization", panel.isValid())
+            assert_ok_enabled(check, mode + " permission", panel, True)
+            check(mode + " full bilateral preview", panel._preview is not None and len(panel._preview.previews) == 2)
+            expected = [item.shape.copy() for item in panel._preview.previews]
+            nodes = preview_nodes(panel._preview)
+            for item, shape in zip(panel._preview.previews, panel._candidate.global_shapes):
+                assert_shape(check, mode + " real Coin candidate", item.shape, shape)
+            if mode == "accept":
+                view = Gui.activeDocument().activeView()
+                view.viewAxonometric()
+                view.fitAll()
+                view.saveImage(str(out / "controlled-trim-preview.png"), 1000, 700, "Current")
+                panel.form.grab().save(str(out / "controlled-trim-panel.png"))
+                Gui.getMainWindow().grab().save(str(out / "controlled-trim-window.png"))
+                check(mode + " confirm", panel.accept())
+                check(mode + " one Undo", doc.UndoCount == undo+1)
+                for obj, shape in zip(members, expected):
+                    assert_shape(check, mode + " native preview equals final", world_shape(obj), shape)
+                doc.undo()
+                # Reopen immediately, without a manual recompute; choose and consent again.
+                panel = MemberMiterTaskPanel(doc, members=members, on_closed=closed)
+                Gui.Control.showDialog(panel)
+                QtWidgets.QApplication.processEvents()
+                check("trim Undo reuse requires new intent", not panel.isValid() and panel._preview is None)
+                for i in (0, 1): panel.trim_end_combos[i].setCurrentIndex(1)
+                panel.trim_check.setChecked(True)
+                check("trim Undo reuse valid", panel.isValid())
+                check("trim Undo reuse apply", panel.accept())
+                for obj, shape in zip(members, expected):
+                    assert_shape(check, "trim reapply equals original", world_shape(obj), shape)
+            else:
+                if mode == "revoke-end":
+                    panel.trim_end_combos[0].setCurrentIndex(2)
+                    check("end change revokes global permission", not panel.isValid() and panel._preview is None
+                          and not panel.trim_check.isChecked())
+                elif mode == "revoke-input":
+                    members[0].StartExtension = 15
+                    doc.recompute()
+                    before = [state(o) for o in members]
+                    # No polling: stale consent must already prevent direct controller apply.
+                    try:
+                        panel.controller.apply()
+                        raise AssertionError("stale consent applied")
+                    except ValueError:
+                        pass
+                    wait_poll(panel)
+                    check("input change revokes consent and preview", not panel.isValid() and panel._preview is None
+                          and not panel.trim_check.isChecked())
+                panel.reject()
+            QtWidgets.QApplication.processEvents()
+            assert_cleanup(check, mode, panel, nodes)
+        if mode != "accept":
+            check(mode + " cancellation preserves pair/tree/Undo", same(before, [state(o) for o in members])
+                  and undo == doc.UndoCount and names == [o.Name for o in doc.Objects])
+        App.closeDocument(doc.Name)
+
+    # Geometric and occupied-slot vetoes remain independent of consent.
+    for mode in ("occupied", "eliminates", "contact", "parallel", "skew"):
+        doc = App.newDocument("TrimInvalid")
+        doc.UndoMode = 1
+        members = pair(doc, chosen["SHS"], overruns=(80, None))
+        if mode == "occupied":
+            members[0].StartAdjustmentMode = "Fixed"
+            members[0].StartFixedReferenceOffset = 5
+        elif mode == "eliminates":
+            members[0].EndAdjustmentMode = "Fixed"
+            members[0].EndFixedReferenceOffset = 999
+        elif mode == "contact":
+            members[1].OffsetX = 100
+        elif mode in ("parallel", "skew"):
+            start = App.Vector(0, 10, 0) if mode == "parallel" else App.Vector(0, 50, 10)
+            finish = App.Vector(1000, 10, 0) if mode == "parallel" else App.Vector(0, 1000, 10)
+            members[1].StartPoint, members[1].EndPoint = start, finish
+        doc.recompute()
+        before, undo = [state(o) for o in members], doc.UndoCount
+        controller = MemberMiterController(doc, members)
+        controller.set_trim_end(0, "Start")
+        try:
+            controller.set_trim_allowed(True)
+            controller.apply()
+            raise AssertionError("invalid authorized trim accepted: " + mode)
+        except ValueError:
+            pass
+        check("invalid trim " + mode + " preserves pair/history", same(before, [state(o) for o in members])
+              and undo == doc.UndoCount)
+        App.closeDocument(doc.Name)
+    (out / "controlled-trim-cases.json").write_text(json.dumps(rows, indent=2), encoding="utf-8")
+
+
+def global_trim_ui_probe(out, check):
+    import FreeCAD as App
+    import FreeCADGui as Gui
+    from PySide import QtCore, QtWidgets
+    from freecad.SteelStructures.interactive.member_miter_task_panel import MemberMiterTaskPanel, _member_caption
+    from freecad.SteelStructures.interactive.member_miter_controller import SUPPORTED_SECTIONS
+    from freecad.SteelStructures import profile_catalog
+    for label, overruns in (("A", (80, None)), ("B", (None, 120)), ("AB", (80, 120))):
+        doc = App.newDocument("GlobalTrimUI")
+        doc.UndoMode = 1
+        profile = (max((p.designation for p in profile_catalog.profiles().values()
+                        if (p.definition.geometry_type, p.definition.geometry_variant) in SUPPORTED_SECTIONS), key=len)
+                   if label == "AB" else profiles()["SHS"])
+        members = pair(doc, profile, overruns=overruns)
+        a, b = members
+        a.Label = "Viga 002 - " + str(a.Profile)
+        b.Label = "Pórtico principal com identificação personalizada muito longa / eixo lateral do pavimento superior"
+        doc.recompute()
+        labels = [o.Label for o in members]
+        before, undo = [state(o) for o in members], doc.UndoCount
+        def closed(panel, _accepted):
+            if panel.form is not None:
+                Gui.Control.closeDialog()
+        panel = MemberMiterTaskPanel(doc, members=members, on_closed=closed)
+        Gui.Control.showDialog(panel)
+        QtWidgets.QApplication.processEvents()
+        QtWidgets.QApplication.sendPostedEvents(panel.form)
+        check(label + " exactly one global checkbox", len(panel.form.findChildren(QtWidgets.QCheckBox)) == 1
+              and panel.trim_check.text() == "Autorizar os aparos indicados")
+        check(label + " no group box borders", not panel.form.findChildren(QtWidgets.QGroupBox))
+        check(label + " consent disabled before all choices", not panel.trim_check.isEnabled()
+              and not panel.trim_check.isChecked() and not panel.isValid())
+        check(label + " actual member Label preserved", labels == [o.Label for o in members])
+        check(label + " profile not duplicated in name", panel.member_labels[0]._full_text == "Viga 002"
+              and panel.profile_labels[0]._full_text == str(a.Profile))
+        check(label + " customized long name is single line with full tooltip", panel.member_labels[1]._full_text == b.Label
+              and panel.member_labels[1].toolTip() == b.Label and not panel.member_labels[1].wordWrap()
+              and panel.member_labels[1].height() <= panel.member_labels[1].fontMetrics().height()+4)
+        check(label + " profile uses one line and full tooltip", not panel.profile_labels[1].wordWrap()
+              and panel.profile_labels[1].toolTip() == str(b.Profile))
+        if label == "AB":
+            check("longest supported section description stays on one line", panel.profile_labels[1]._full_text == str(b.Profile)
+                  and panel.profile_labels[1].height() <= panel.profile_labels[1].fontMetrics().height()+4)
+        required = [i for i, excess in enumerate(overruns) if excess is not None]
+        for i, excess in enumerate(overruns):
+            check(label + " row context " + str(i), all(w.isVisible() == (excess is not None) for w in panel.trim_rows[i]))
+        for number, i in enumerate(required):
+            panel.trim_end_combos[i].setCurrentIndex(1)
+            check(label + " choose without authorizing " + str(i), not panel.trim_check.isChecked() and not panel.isValid())
+            check(label + " consent enabled only after whole configuration " + str(i),
+                  panel.trim_check.isEnabled() == (number == len(required)-1))
+            check(label + " selected endpoint includes actual amount " + str(i),
+                  panel.trim_end_combos[i].currentText() == "Início (%s mm)" % overruns[i]
+                  and panel.trim_end_combos[i].currentData() == "Start")
+            check(label + " no repeated amount column " + str(i), len(panel.trim_rows[i]) == 2)
+        panel.trim_check.setChecked(True)
+        check(label + " single click authorizes entire current set", panel.isValid() and panel.controller.trim_allowed())
+        check(label + " no repeated ends in footer", not panel.joint_summary.text())
+        assert_ok_enabled(check, label + " global consent", panel, True)
+        for operation in ("rename", "display", "visibility", "palette", "resize", "same-choice", "same-member", "view"):
+            if operation == "rename":
+                b.Label = labels[1] + " / renomeado"
+            elif operation == "display":
+                a.ViewObject.DisplayMode = "Wireframe"
+                a.ViewObject.LineColor = (0.2, 0.5, 0.3)
+            elif operation == "visibility":
+                a.ViewObject.Visibility = False
+            elif operation == "palette":
+                QtWidgets.QApplication.sendEvent(panel.form, QtCore.QEvent(QtCore.QEvent.PaletteChange))
+            elif operation == "resize":
+                panel.form.resize(330, panel.form.height())
+            elif operation == "same-choice":
+                panel.controller.set_trim_end(required[0], "Start")
+            elif operation == "same-member":
+                panel.controller.set_member(0, a)
+            elif operation == "view":
+                Gui.activeDocument().createView("Gui::View3DInventor")
+            panel._poll_reference()
+            QtWidgets.QApplication.processEvents()
+            check(label + " presentation preserves global consent " + operation,
+                  panel.controller.trim_allowed() and panel.trim_check.isChecked() and panel.isValid())
+        a.ViewObject.Visibility = True
+        a.ViewObject.DisplayMode = "Flat Lines"
+        panel._refresh()
+        QtWidgets.QApplication.processEvents()
+        Gui.getMainWindow().grab().save(str(out / ("global-trim-" + label + "-window.png")))
+        panel.form.grab().save(str(out / ("global-trim-" + label + "-panel.png")))
+        b.Label = str(b.Profile) + " — " + labels[1]
+        panel._poll_reference()
+        check(label + " section inside custom name is not duplicated", not panel.profile_labels[1].isVisible()
+              and panel.member_labels[1]._full_text == b.Label and panel.controller.trim_allowed())
+        # A stale OK must revoke the old authorization before any transaction.
+        target = members[required[0]]
+        target.StartExtension = 15
+        doc.recompute()
+        check(label + " stale direct apply blocked", not panel.accept() and doc.UndoCount == undo)
+        check(label + " changed amount revokes whole authorization", not panel.trim_check.isChecked()
+              and not panel.controller.trim_allowed() and panel._preview is None)
+        panel.trim_check.setChecked(True)
+        check(label + " new configuration can be authorized", panel.isValid())
+        panel.trim_end_combos[required[-1]].setCurrentIndex(2)
+        check(label + " endpoint change revokes global consent", not panel.trim_check.isChecked() and not panel.isValid())
+        panel.trim_end_combos[required[-1]].setCurrentIndex(1)
+        check(label + " reverting choice does not resurrect consent", not panel.trim_check.isChecked())
+        panel.trim_check.setChecked(True)
+        replacement = pair(doc, profiles()["SHS"], overruns=overruns)[0]
+        panel.controller.set_member(0, replacement)
+        panel._refresh()
+        check(label + " participant change revokes global consent", not panel.trim_check.isChecked() and not panel.isValid())
+        nodes = preview_nodes(panel._preview) if panel._preview is not None else []
+        panel.reject()
+        QtWidgets.QApplication.processEvents()
+        assert_cleanup(check, label + " global cancel", panel, nodes)
+        check(label + " global cancel creates no Undo", doc.UndoCount == undo)
+        App.closeDocument(doc.Name)
+
+
+def final_presentation_probe(out, check):
+    import FreeCAD as App
+    import FreeCADGui as Gui
+    from PySide import QtCore, QtWidgets
+    from freecad.SteelStructures.interactive.member_miter_task_panel import MemberMiterTaskPanel
+    # Capture settled item views, not the transient Windows roll effect. This
+    # is confined to this isolated QA process and does not alter app preferences.
+    QtWidgets.QApplication.setEffectEnabled(QtCore.Qt.UI_AnimateCombo, False)
+    doc = App.newDocument("MiterPresentation")
+    doc.UndoMode = 1
+    a, b = members = pair(doc, profiles()["SHS"], overruns=(5000, 100))
+    a.Label = "Viga do pórtico com identificação principal deliberadamente longa / eixo superior"
+    b.Label = "Travessa de cobertura com outro nome personalizado longo / alinhamento lateral"
+    b.EndAdjustmentMode, b.EndFixedReferenceOffset = "Fixed", 50
+    doc.recompute()
+    def closed(panel, _accepted):
+        if panel.form is not None:
+            Gui.Control.closeDialog()
+    panel = MemberMiterTaskPanel(doc, members=members, on_closed=closed)
+    panel.form.setFixedWidth(280)
+    Gui.Control.showDialog(panel)
+    # Keep the isolated QA dock visible. Without real pointer interaction the
+    # FreeCAD overlay can auto-hide it during captures, outside the main window.
+    ancestor = panel.form.parentWidget()
+    while ancestor is not None:
+        if ancestor.metaObject().className() == "Gui::OverlaySplitter":
+            Gui.runCommand("Std_DockOverlayAll", 0)
+            break
+        ancestor = ancestor.parentWidget()
+    QtWidgets.QApplication.processEvents()
+    QtWidgets.QApplication.sendPostedEvents(panel.form)
+    check("option values before choosing", panel.trim_end_combos[0].itemText(1) == "Início (5.000 mm)"
+          and panel.trim_end_combos[0].itemText(2) == "Fim (1.000 mm)")
+    check("occupied option unavailable without a fictitious valid cut", not panel.trim_end_combos[1].model().item(2).isEnabled()
+          and panel.trim_end_combos[1].itemText(2) == "Fim — indisponível"
+          and "já possui ajuste" in panel.trim_end_combos[1].itemData(2, QtCore.Qt.ToolTipRole))
+    check("no separate amount labels", not hasattr(panel, "trim_labels") and all(len(row) == 2 for row in panel.trim_rows))
+    assert_message_style(out, check, "final-neutral", panel, "info")
+    for i in (0, 1):
+        panel.trim_end_combos[i].setCurrentIndex(1)
+    assert_message_style(out, check, "final-blocked", panel, "error")
+    panel.trim_check.setChecked(True)
+    QtWidgets.QApplication.processEvents()
+    position = panel.validation_message.mapTo(Gui.getMainWindow(), QtCore.QPoint())
+    check("QA status inside composed window", Gui.getMainWindow().rect().contains(
+        QtCore.QRect(position, panel.validation_message.size())))
+    assert_message_style(out, check, "final-success", panel, "success")
+    check("presentation setup authorized", panel.isValid() and panel.controller.trim_allowed())
+    check("closed option keeps amount and ID", panel.trim_end_combos[0].currentText() == "Início (5.000 mm)"
+          and panel.trim_end_combos[0].currentData() == "Start")
+    a.StartExtension = 25
+    doc.recompute()
+    # Popup must observe the new value and revoke consent before the timer.
+    panel.trim_end_combos[0].showPopup()
+    QtWidgets.QApplication.processEvents()
+    check("popup opening updates both values before polling", panel.trim_end_combos[0].itemText(1) == "Início (5.025 mm)"
+          and panel.trim_end_combos[0].itemText(2) == "Fim (1.000 mm)")
+    check("popup refresh preserves ID and revokes changed consent", panel.trim_end_combos[0].currentData() == "Start"
+          and not panel.trim_check.isChecked() and not panel.isValid())
+    panel.trim_end_combos[0].hidePopup()
+    panel.trim_check.setChecked(True)
+    check("updated option can be explicitly authorized", panel.isValid())
+    metrics = []
+    for width in (360, 280):
+        panel.form.setFixedWidth(width)
+        QtWidgets.QApplication.processEvents()
+        for i, (row, marker, divider, name, profile, button, combo) in enumerate(zip(
+                panel.member_rows, panel.member_markers, panel.member_dividers, panel.member_labels,
+                panel.profile_labels, panel.select_member_buttons, panel.trim_end_combos)):
+            check("member name bold %s %s" % (width, i), name.font().bold())
+            check("member pair remains single line %s %s" % (width, i), not name.wordWrap() and not profile.wordWrap())
+            check("marker vertically centered %s %s" % (width, i),
+                  abs(marker.geometry().center().y()-button.geometry().center().y()) <= 2)
+            check("theme native short divider %s %s" % (width, i), divider.frameShape() == QtWidgets.QFrame.VLine
+                  and 0 < divider.height() <= row.height())
+            check("row controls remain inside compact group %s %s" % (width, i),
+                  marker.x() >= 0 and button.geometry().right() < row.width()
+                  and name.width() > 0 and profile.width() > 0)
+            check("selected value fits reduced width %s %s" % (width, i),
+                  combo.fontMetrics().horizontalAdvance(combo.currentText())+28 <= combo.width())
+            check("complete tooltips preserved %s %s" % (width, i), name.toolTip() == members[i].Label
+                  and profile.toolTip() == str(members[i].Profile))
+        for index, combo in enumerate(panel.trim_end_combos):
+            combo.setFocus()
+            combo.showPopup()
+            QtWidgets.QApplication.processEvents()
+            check("narrow popup visible %s %s" % (width, index), combo.view().isVisible())
+            check("popup list capture %s %s" % (width, index), combo.view().grab().save(
+                str(out / ("final-options-list-%s-%s.png" % (width, index)))))
+            Gui.getMainWindow().grab().save(str(out / ("final-options-popup-%s.png" % width)))
+            combo.hidePopup()
+            QtWidgets.QApplication.processEvents()
+        Gui.getMainWindow().grab().save(str(out / ("final-members-%s-window.png" % width)))
+        panel.form.grab().save(str(out / ("final-members-%s-panel.png" % width)))
+        metrics.append(dict(width=panel.form.width(), dpr=panel.form.devicePixelRatioF(),
+            font_point_size=panel.form.font().pointSizeF(),
+            combo_widths=[combo.width() for combo in panel.trim_end_combos]))
+        check("presentation changes keep consent %s" % width, panel.isValid() and panel.controller.trim_allowed())
+    screen = QtWidgets.QApplication.primaryScreen()
+    (out / "presentation-metrics.json").write_text(json.dumps(dict(
+        requested_scale=os.environ.get("QT_SCALE_FACTOR"), logical_dpi=screen.logicalDotsPerInch(),
+        physical_dpi=screen.physicalDotsPerInch(), screen_dpr=screen.devicePixelRatio(), layouts=metrics), indent=2), encoding="utf-8")
+    before, undo = [state(obj) for obj in members], doc.UndoCount
+    nodes = preview_nodes(panel._preview)
+    panel.reject()
+    QtWidgets.QApplication.processEvents()
+    assert_cleanup(check, "final presentation cancel", panel, nodes)
+    check("final presentation cancel preserves pair and history", same(before, [state(obj) for obj in members])
+          and doc.UndoCount == undo)
+    App.closeDocument(doc.Name)
+
+
 def command_probe(check):
     import FreeCAD as App
     import FreeCADGui as Gui
@@ -1084,6 +1545,11 @@ def run(out):
         checks.append(label)
         (out / "checks.json").write_text(json.dumps(checks, indent=2), encoding="utf-8")
     try:
+        if os.environ.get("SS_MITER_UI_ONLY") == "1":
+            final_presentation_probe(out, check)
+            check("no Python/Qt callback errors", not callback_errors)
+            return dict(ok=True, version=App.Version()[:3], theme=os.environ.get("SS_MITER_THEME"),
+                        checks=checks, callback_errors=callback_errors)
         native_history = abort_history_probe(out, check)
         candidate_probe(out, check)
         invalid_probe(out, check)
@@ -1091,6 +1557,9 @@ def run(out):
         replay_probe(out, check, native_history)
         container_probe(out, check)
         ui_probe(out, check)
+        controlled_trim_probe(out, check)
+        global_trim_ui_probe(out, check)
+        final_presentation_probe(out, check)
         command_probe(check)
         check("no Python/Qt callback errors", not callback_errors)
         return dict(ok=True, version=App.Version()[:3], theme=os.environ.get("SS_MITER_THEME"),

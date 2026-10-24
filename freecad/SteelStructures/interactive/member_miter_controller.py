@@ -8,7 +8,7 @@ import Part
 
 from .. import member as member_module, profile_catalog
 from ..member_adjustment_reference import would_create_adjustment_cycle, unpack_link_sub, plane_reference_from_link, linear_reference_from_link
-from ..member_miter_geometry import MiterValidationError, dot, resolve_miter
+from ..member_miter_geometry import MiterValidationError, dot, inspect_miter, resolve_miter
 from ..member_plane_cut import global_plane_to_member_local, orthonormal_plane_basis, plane_axial_span
 from ..member_batch import signature
 from .member_adjustment_controller import (
@@ -110,6 +110,8 @@ class MemberMiterController:
         if len(members) > 2:
             raise MiterValidationError("Selecione somente dois membros para a meia-esquadria.")
         self.members = list(members)+[None]*max(0, 2-len(members))
+        self.trim_ends = [None, None]
+        self._trim_approval = None
 
     def set_member(self, index, member):
         if index not in (0, 1) or not is_structural_member(member):
@@ -118,7 +120,52 @@ class MemberMiterController:
             raise MiterValidationError("Selecione dois membros diferentes.")
         if member.Document is not self.document:
             raise MiterValidationError("Os dois membros devem pertencer ao documento da tarefa.")
+        if self.members[index] is member:
+            return
         self.members[index] = member
+        self.trim_ends = [None, None]
+        self._trim_approval = None
+
+    def _axis_points(self):
+        return tuple(tuple(parent_placement(obj).multVec(p)) for obj in self.members
+                     for p in (obj.StartPoint, obj.EndPoint))
+
+    def trim_context(self):
+        self.prepare_inputs()
+        return inspect_miter(*self._axis_points())
+
+    def set_trim_end(self, index, end):
+        if index not in (0, 1) or end not in (None, "Start", "End"):
+            raise MiterValidationError("Escolha Início ou Fim para o aparo.")
+        if self.trim_ends[index] != end:
+            self.trim_ends[index] = end
+            self._trim_approval = None
+
+    def _trim_token(self):
+        # Member State may be Touched by renaming/presentation. Eligibility and
+        # recompute still check it; consent tracks actual inputs, not that flag.
+        return (tuple(id(obj) for obj in self.members),
+                self.input_signature(include_member_state=False), tuple(self.trim_ends))
+
+    def trim_allowed(self):
+        if self._trim_approval != self._trim_token():
+            self._trim_approval = None
+        return self._trim_approval is not None
+
+    def set_trim_allowed(self, allowed):
+        if not allowed:
+            self._trim_approval = None
+            return
+        context = self.trim_context()
+        required = [i for i, end in enumerate(context.automatic_ends) if end is None]
+        if not required or any(self.trim_ends[i] not in ("Start", "End") for i in required):
+            raise MiterValidationError("Escolha todas as extremidades a aparar antes de autorizar.")
+        self._trim_approval = self._trim_token()
+
+    def trim_length(self, context, index, end):
+        # A free endpoint may have an extension beyond the nominal axis.
+        extension = float(getattr(self.members[index], end+"Extension").Value)
+        return context.excess(index, end) + max(0., extension)
 
     @staticmethod
     def _sources(obj):
@@ -196,8 +243,8 @@ class MemberMiterController:
             self.prepare_inputs()
             members = tuple(self.members)
             parents = tuple(parent_placement(obj) for obj in members)
-            plan = resolve_miter(*(tuple(parent.multVec(p)) for obj, parent in zip(members, parents)
-                                   for p in (obj.StartPoint, obj.EndPoint)))
+            plan = resolve_miter(*self._axis_points(), ends=self.trim_ends,
+                                 allow_trim=(self.trim_allowed(),)*2)
             candidates, sizes = [], []
             for obj, parent, prefix, station in zip(members, parents, plan.ends, plan.stations):
                 if str(getattr(obj, prefix+"AdjustmentMode")) != "None":
@@ -286,7 +333,7 @@ class MemberMiterController:
             raise
         return candidate
 
-    def input_signature(self):
+    def input_signature(self, *, include_member_state=True):
         result = []
         for obj in self.members:
             if obj is None:
@@ -302,7 +349,8 @@ class MemberMiterController:
                                   else linear_reference_from_link(link)))
             global_placement = obj.getGlobalPlacement() if hasattr(obj, "getGlobalPlacement") else obj.Placement
             result.append((obj.Name, signature(obj), tuple(obj.Placement.toMatrix().A), tuple(global_placement.toMatrix().A),
-                           tuple(obj.State), self._source_states(obj), repr(obj.ExpressionEngine), tuple(links),
+                           tuple(obj.State) if include_member_state else None,
+                           self._source_states(obj), repr(obj.ExpressionEngine), tuple(links),
                            str(getattr(obj, "GenerationOwner", None)),
                            str(getattr(obj, "PhysicalFitPlan", "")), str(getattr(obj, "PhysicalFitAutoState", ""))))
         return tuple(result)
