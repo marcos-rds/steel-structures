@@ -81,10 +81,24 @@ class GeneralToolsTests(unittest.TestCase):
         qtcore.QT_TRANSLATE_NOOP = lambda _context, text: text
         pyside.QtCore = qtcore
         pyside.QtWidgets = types.SimpleNamespace(QMessageBox=types.SimpleNamespace())
+        interactive = types.ModuleType(f"{self.package_name}.interactive")
+        interactive.__path__ = [str(PACKAGE / "interactive")]
+        reference_commands = types.ModuleType(interactive.__name__ + ".structural_reference_commands")
+        self.reference_ids = ["SteelStructures_DisplayPhysical", "SteelStructures_DisplayStructural",
+                              "SteelStructures_DisplayXRay", "SteelStructures_ToggleMemberAxes",
+                              "SteelStructures_ToggleMemberEndpoints"]
+        reference_commands.register_commands = lambda: list(self.reference_ids)
+        reference_view = types.ModuleType(interactive.__name__ + ".structural_reference_view")
+        self.reference_activations = []
+        reference_view.activate = lambda: self.reference_activations.append(True)
+        reference_view.deactivate = lambda: self.reference_activations.append(False)
         self.injected = {
             self.package_name: package, "FreeCAD": app, "DraftTools": draft_tools,
             "draftutils": draftutils, "PySide": pyside, "PySide.QtCore": qtcore,
             f"{self.package_name}.paths": paths,
+            interactive.__name__: interactive,
+            reference_commands.__name__: reference_commands,
+            reference_view.__name__: reference_view,
         }
         self.previous = {name: sys.modules.get(name) for name in self.injected}
         sys.modules.update(self.injected)
@@ -157,6 +171,12 @@ class GeneralToolsTests(unittest.TestCase):
         workbench.Initialize(); before = (list(workbench.toolbars), list(workbench.menus))
         workbench.Activated(); workbench.Activated()
         self.assertEqual((workbench.toolbars, workbench.menus), before)
+        self.assertEqual(self.reference_activations, [True, True])
+
+    def test_additive_reference_commands_have_their_own_toolbar_and_submenu(self):
+        self.workbench.Initialize()
+        self.assertIn(("Steel Structures - Visualização", self.reference_ids), self.workbench.toolbars)
+        self.assertIn((["Steel Structures", "Visualização"], self.reference_ids), self.workbench.menus)
 
     def test_drawing_toolbar_and_submenu_reuse_official_commands(self):
         names = ("Draft_Line", "Draft_Wire", "Draft_Rectangle")

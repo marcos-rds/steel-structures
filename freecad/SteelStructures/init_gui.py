@@ -100,6 +100,9 @@ class SteelStructuresWorkbench(Gui.Workbench):
 
     def Initialize(self):
         from . import commands  # noqa: F401 - registers FreeCAD commands
+        from .interactive.structural_reference_commands import register_commands
+
+        reference_commands = register_commands()
 
         member_commands = ["SteelStructures_CreateMember", "SteelStructures_CreateColumn", "SteelStructures_AdjustMember", "SteelStructures_MiterMembers", "SteelStructures_CreateGrid"]
         member_commands += ["SteelStructures_CreateTruss"]
@@ -115,6 +118,7 @@ class SteelStructuresWorkbench(Gui.Workbench):
         except (ImportError, AttributeError, RuntimeError, TypeError):
             self.snapbar = []
         self.appendToolbar("Steel Structures - Elementos", member_commands)
+        self.appendToolbar("Steel Structures - Visualização", reference_commands)
         if self.general_tools:
             self.appendToolbar("Ferramentas Gerais", self.general_tools)
         if self.drawing_tools:
@@ -123,6 +127,7 @@ class SteelStructuresWorkbench(Gui.Workbench):
             self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Draft Snap"), self.snapbar)
         self.appendMenu("Steel Structures", member_commands)
         self.appendMenu("Steel Structures", catalog_commands)
+        self.appendMenu(["Steel Structures", "Visualização"], reference_commands)
         if self.drawing_tools:
             self.appendMenu(["Steel Structures", "Desenho Draft"], self.drawing_tools)
         if self.general_tools:
@@ -130,9 +135,14 @@ class SteelStructuresWorkbench(Gui.Workbench):
 
     def Activated(self):
         _activate_native_draft_interface()
+        from .interactive.structural_reference_view import activate
+        activate()
 
     def Deactivated(self):
         from . import commands
+        from .interactive.structural_reference_view import deactivate
+
+        deactivate()
 
         commands.close_member_tool()
         commands.close_grid_panel()
